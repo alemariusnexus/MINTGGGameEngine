@@ -42,12 +42,15 @@ private:
     };
     
 public:
-    AudioEngine() : speakerPin(-1), curSpeakerFreq(0) {}
+    AudioEngine() : speakerPin(-1), curSpeakerFreq(0), mute(false) {}
     
     bool begin(uint8_t speakerPin);
     
     void playClip(const AudioClip& clip, Priority prio = Priority::Effect, bool loop = false, bool advanceInBackground = false);
     bool stopClip(const AudioClip& clip);
+    
+    void setMute(bool mute);
+    bool isMute() const { return mute; }
 
 private:
     bool tick(float deltaTime);
@@ -63,6 +66,7 @@ private:
 private:
     int16_t speakerPin;
     uint16_t curSpeakerFreq;
+    bool mute;
     
     std::set<AudioState> states;
     

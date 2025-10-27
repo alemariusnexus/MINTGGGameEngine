@@ -40,30 +40,17 @@ bool AudioEngine::stopClip(const AudioClip& clip)
     return false;
 }
 
+void AudioEngine::setMute(bool mute)
+{
+    this->mute = mute;
+    curSpeakerFreq = 0;
+}
+
 bool AudioEngine::tick(float deltaTime)
 {
     auto stateIt = states.begin();
     
     while (stateIt != states.end()) {
-        /*AudioState& astate = const_cast<AudioState&>(*stateIt);
-        
-        float clipDeltaTime = astate.clip.realTimeToBaseUnits(deltaTime);
-        astate.playTime += clipDeltaTime;
-        
-        AudioClip::Atom* curAtom = nullptr;
-        float timeWithinAtom = 0.0f;
-        float newPlayTime = astate.clip.getPlaybackPosition(astate.playTime, &curAtom, &timeWithinAtom);
-        
-        if (!curAtom  ||  (newPlayTime != astate.playTime  &&  !astate.loop)) {
-            // Clip finished
-            auto finishedIt = stateIt;
-            stateIt++;
-            onAudioStateFinished(finishedIt);
-            continue;
-        }
-        
-        astate.newPlayTime = newPlayTime;*/
-        
         AudioState& astate = const_cast<AudioState&>(*stateIt);
         
         AudioClip::Atom* curAtom = nullptr;
@@ -158,6 +145,10 @@ void AudioEngine::setTone(uint16_t freq)
     if (speakerPin < 0) {
         return;
     }
+    if (mute) {
+        noTone(speakerPin);
+        return;
+    }
     if (curSpeakerFreq == freq) {
         return;
     }
@@ -165,10 +156,8 @@ void AudioEngine::setTone(uint16_t freq)
     curSpeakerFreq = freq;
     if (freq == 0) {
         noTone(speakerPin);
-        Serial.printf("noTone()\r\n");
     } else {
         tone(speakerPin, freq);
-        Serial.printf("tone(%u)\r\n", freq);
     }
 }
 
