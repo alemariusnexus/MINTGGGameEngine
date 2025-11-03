@@ -44,6 +44,7 @@ public:
 
     float getX() const { return d->x; }
     float getY() const { return d->y; }
+	Vec2 getPosition() const { return Vec2(getX(), getY()); }
     Vec2 getMoveDirection() const { return d->moveDir; }
     FlipDir getFlipDir() const { return d->flipDir; }
     uint16_t getZOrder() const { return d->zOrder; }
@@ -54,6 +55,8 @@ public:
 
     void setPosition(float x, float y) { d->x = x; d->y = y; }
     void setPosition(const Vec2& p) { setPosition(p.x(), p.y()); }
+	void setX(float x) { d->x = x; }
+	void setY(float y) { d->y = y; }
     void setMoveDirection(const Vec2& dir) { d->moveDir = dir.normalized(); }
     void setMoveDirection(float x, float y) { setMoveDirection(Vec2(x, y)); }
     void move(float dx, float dy) { setPosition(d->x + dx, d->y + dy); }
