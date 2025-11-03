@@ -131,4 +131,24 @@ void ScreenST7735::commit()
     tft->endWrite();
 }
 
+bool ScreenST7735::saveScreenshot(const char* path)
+{
+    if (SD.exists(path)) {
+        SD.remove(path);
+    }
+    File f = SD.open(path, FILE_WRITE);
+    if (!f) {
+        return false;
+    }
+    const uint8_t* data = reinterpret_cast<const uint8_t*>(canvas.getBuffer());
+    size_t totalSize = getWidth()*getHeight()*2;
+    size_t writtenSize = 0;
+    do {
+        writtenSize += f.write(data + writtenSize, totalSize-writtenSize);
+    } while (writtenSize < totalSize);
+    f.flush();
+    f.close();
+    return true;
+}
+
 }

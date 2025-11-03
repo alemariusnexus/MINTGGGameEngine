@@ -23,6 +23,8 @@ public:
     virtual void drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir flipDir = FlipDir::None) = 0;
     virtual void drawText(const Text& text) = 0;
     
+    virtual bool saveScreenshot(const char* path) {}
+    
     virtual void commit() = 0;
 };
 
