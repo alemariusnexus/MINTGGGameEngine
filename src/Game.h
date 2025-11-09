@@ -21,7 +21,7 @@ class Game
 private:
     struct GOZOrderComparator
     {
-        static bool operator()(const GameObject& a, const GameObject& b)
+        bool operator()(const GameObject& a, const GameObject& b) const
         {
             if (a.getZOrder() < b.getZOrder()) {
                 return true;
