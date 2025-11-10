@@ -93,6 +93,7 @@ public:
      * \param out outErrmsg Pointer to an error message, in case the loading
      *      fails. Can be NULL if no error message if required.
      * \return The loaded bitmap.
+     * \see loadBMP(const char*, const char**)
      */
     static Bitmap loadBMP(File& file, const char** outErrmsg = nullptr);
     
@@ -112,9 +113,18 @@ public:
      * \brief Create a bitmap from the given raw RGB565 and bitmask data,
      *      without copying.
      *
-     * This is equivalent to calling takeOwnership().
+     * The raw data is not copied, and no ownership is taken. The data must
+     * remain valid for the entire lifetime of the Bitmap (and its shallow
+     * copies). This constructor is primarily useful for creating bitmaps from
+     * global static data.
      *
-     * \see takeOwnership().
+     * \param w The width in pixels.
+     * \param h The height in pixels.
+     * \param d The raw RGB565 data.
+     * \param m The bit mask, or null if none is used.
+     * \see takeOwnership()
+     * \see copyFrom()
+     * \see loadBMP()
      */
     Bitmap(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m = nullptr)
             : d(std::make_shared<Data>(w, h, d, m, false)) {}
@@ -123,6 +133,10 @@ public:
      * \brief Create an invalid bitmap.
      */
     Bitmap() : d() {}
+    
+    /**
+     * \brief Copy constructor, creating a shallow copy (reference sharing).
+     */
     Bitmap(const Bitmap& o) : d(o.d) {}
     
     

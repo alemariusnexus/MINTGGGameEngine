@@ -101,7 +101,7 @@
  *
  * Each GameObject can have one or more tags associated with it. A tag is like
  * a marker used for categorizing the "type" of object that it is. For example,
- * all enemies in the game might have the tag TagPlayer, and all bullets shot by
+ * all enemies in the game might have the tag TagEnemy, and all bullets shot by
  * the player might have the tag TagPlayerBullet. Tagging is useful to later
  * identify what a certain GameObject is, or to fetch all GameObjects of a given
  * type that are currently spawned.
@@ -117,7 +117,7 @@
  *      };
  * \endcode
  *
- * An bullet shot by the player can then be tagged accordingly:
+ * A bullet shot by the player can then be tagged accordingly:
  *
  * \code{.cpp}
  *      GameObject bullet = GameObject::createCircle(player.getX(), player.getY()-5, 3); // x, y, radius
@@ -151,11 +151,11 @@
  * arbitrary color bitmaps. Bitmap sprites can be loaded from raw RGB565 data,
  * or from simple BMP image files on an SD card (if any is attached).
  *
- * If a SD card is not available, the RGB data can be included in the code by
+ * If an SD card is not available, the RGB data can be included in the code by
  * using a converter like [image2cpp](https://javl.github.io/image2cpp/). Make
  * sure to use a draw mode of "Horizontal - 2 bytes per pixel (565)".
  *
- * Here's an example for how to load a Bitmap sprite from a BMP file from an
+ * Here's an example for how to load a Bitmap sprite from a BMP file on an
  * SD card.
  *
  * \code{.cpp}
@@ -169,7 +169,7 @@
  * above, the Bitmap can be created like this (assuming a 16x16 pixel image):
  *
  * \code{.cpp}
- *      Bitmap bmp = Bitmap::copyFrom(16, 16, epd_bitmap_player); // width, height, data
+ *      Bitmap bmp(16, 16, epd_bitmap_player); // width, height, data
  * \endcode
  *
  *
