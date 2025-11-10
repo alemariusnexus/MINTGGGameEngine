@@ -9,6 +9,17 @@
 namespace MINTGGGameEngine
 {
 
+/**
+ * \brief Frequency values in Hz for common piano notes in equal temperament
+ *      tuning.
+ *
+ * The english notation for note names is used here, and frequencies are
+ * reounded to the nearest integer value.
+ * 
+ * A small letter s in the note name indicates the sharp version of the note.
+ * For flat notes, the enharmonic sharp equivalent must be used (example:
+ * NOTE_Fs4 is F sharp 4, alias G flat 4, at ~370Hz).
+ */
 enum Note
 {
     NOTE_A0  = 28,
@@ -110,9 +121,39 @@ enum Note
 };
 
 
+/**
+ * \brief An simple audio clip.
+ *
+ * Audio clips can be played through the AudioEngine. They can be single-shot
+ * or looped. See AudioEngine for details.
+ *
+ * A clip is a sequence of atoms (i.e. notes or pauses). Each Atom is defined
+ * by its frequency and duration.
+ *
+ * Time is measured in so called base units. The actual real time duration of
+ * this base unit is defined by the clip's tempo: The tempo is the number of
+ * base units per minute of real time. This allows speeding up or slowing down
+ * a clip simply by changing its tempo on-the-fly, without having to change
+ * individual atoms.
+ * It is up to the user to define what a base unit corresponds to. It usually
+ * corresponds to a certain note value in sheet music (e.g. a quarter note, or
+ * an eighth note). Example: If the base unit is chosen to be a quarter note,
+ * the tempo defines the number of quarter notes in a minute.
+ * Note that the base unit can't be subdivided (note durations in this class
+ * are integer values), so the base unit must be chosen to be the lowest common
+ * denominator of all durations encountered in the clip.
+ *
+ * This class assumes that only one note (or none in case of pauses) is playing
+ * at any given time, i.e. it does not support harmony.
+ *
+ * \see AudioEngine
+ */
 class AudioClip
 {
 public:
+    /**
+     * \brief A single note (or pause) in the clip.
+     */
     struct Atom
     {
         Atom(uint16_t freq, uint16_t duration, uint32_t timestamp) : freq(freq), duration(duration), timestamp(timestamp) {}
@@ -125,9 +166,9 @@ public:
         bool operator>(const Atom& o) const { return timestamp > o.timestamp; }
         bool operator>=(const Atom& o) const { return timestamp >= o.timestamp; }
         
-        uint16_t freq;
-        uint16_t duration; // In base units (arbitrary, length defined by tempo, e.g. sixteenth notes)
-        uint32_t timestamp; // Offset from start of clip, in base units
+        uint16_t freq; ///< Frequency (in Hz), or 0 for a pause
+        uint16_t duration; ///< Note duration (in base units)
+        uint32_t timestamp; ///< Time offset from start of clip (in base units)
     };
     struct Data
     {
@@ -138,32 +179,132 @@ public:
     };
     
 public:
+    /**
+     * \brief Create an empty audio clip.
+     */
     AudioClip() : d(std::make_shared<Data>()) {}
     AudioClip(const AudioClip& other) : d(other.d) {}
+    
+    
+    /// \name Atoms (Notes and Pauses)
+    ///@{
+    
+    /**
+     * \brief Add a single note to the end of the clip.
+     *
+     * \param freq The note's frequency. See Note enum for predefined values.
+     * \param duration The note's duration, in base units.
+     */
+    void note(uint16_t freq, uint16_t duration) { newAtom(freq, duration); }
+    
+    /**
+     * \brief Add a single pause (i.e. silence) to the end of the clip.
+     *
+     * \param duration The pause's duration, in base units.
+     */
+    void pause(uint16_t duration) { newAtom(0, duration); }
+    
+    /**
+     * \brief Remove all notes and pauses from the clip.
+     */
+    void clear();
+    
+    /**
+     * \brief Return all atoms (notes and pauses) of the clip, in chronological
+     *      order.
+     */
+    const std::vector<Atom>& getAtoms() const { return d->atoms; }
+    
+    ///@}
+    
+    
+    /// \name Clip Properties
+    ///@{
+    
+    /**
+     * \brief Get the clip's tempo, i.e. how many base units per minute.
+     */
+    float getTempo() const { return d->tempo; }
+    
+    /**
+     * \brief Get the clip's tempo in reference to the given base unit.
+     */
+    float getTempo(uint16_t unit) const;
+    
+    /**
+     * \brief Set the tempo of the clip, i.e. how many base units per minute.
+     */
+    void setTempo(float tempo) { d->tempo = tempo; }
+    
+    /**
+     * \brief Set the tempo of the clip in reference to a given unit, i.e. how
+     *      many such units per minute.
+     */
+    void setTempo(uint16_t unit, float tempo);
+    
+    /**
+     * \brief Get the duration for which to release a note prior to its end.
+     *
+     * Currently, this is a value between 0 and 1. 0.1 means that the final 10%
+     * of each note's duration are actually silent. A value of 0 would play the
+     * notes legato.
+     */
+    float getNoteEndReleaseDuration() const { return d->noteEndReleaseDuration; }
+    
+    /**
+     * \brief Set the duration for which to release a note prior to its end.
+     *
+     * \see getNoteEndReleaseDurtion()
+     */
+    void setNoteEndReleaseDuration(float noteEndReleaseDuration) { d->noteEndReleaseDuration = noteEndReleaseDuration; }
+    
+    /**
+     * \brief Get the length of the clip, in base units.
+     */
+    uint32_t getLength() const;
+    
+    ///@}
+    
+    
+    /// \name Playback Utilities
+    ///@{
+    
+    /**
+     * \brief Convert real time since clip start to base units since clip start.
+     *
+     * \param timeMs Real time offset from clip start, in milliseconds.
+     * \return Base unit offset from clip start, including fractional units.
+     */
+    float realTimeToBaseUnits(float timeMs) const;
+    
+    /**
+     * \brief Get information about playback at a given point in the clip.
+     *
+     * This returns the atom (i.e. note or pause) that is active at that given
+     * time, as well as the time within that note.
+     *
+     * \param in pos The offset from clip start, in base units. It is valid to
+     *      provide a position past the end of the clip, in which case it will
+     *      wrap back around to the clip start (useful e.g. for looping clips).
+     * \param out Atom that is currently playing at the given playback position.
+     * \param out outTimeWithinAtom The offset from the start of the currently
+     *      playing atom at the given playback position, in base units.
+     * \return The actual playback position (in case of wrap-around).
+     */
+    float getPlaybackPosition(float pos, Atom** outAtom, float* outTimeWithinAtom) const;
+    
+    ///@}
+    
+    
+    /// \name Operators
+    ///@{
     
     AudioClip& operator=(const AudioClip& other) { d = other.d; return *this; }
     
     bool operator==(const AudioClip& other) const { return d == other.d; }
     bool operator!=(const AudioClip& other) const { return d != other.d; }
     
-    void note(uint16_t freq, uint16_t duration) { newAtom(freq, duration); }
-    void pause(uint16_t duration) { newAtom(0, duration); }
-    void clear();
-    
-    const std::vector<Atom>& getAtoms() const { return d->atoms; }
-    float getTempo() const { return d->tempo; }
-    float getTempo(uint16_t unit) const;
-    float getNoteEndReleaseDuration() const { return d->noteEndReleaseDuration; }
-    
-    void setTempo(float tempo) { d->tempo = tempo; }
-    void setTempo(uint16_t unit, float tempo);
-    void setNoteEndReleaseDuration(float noteEndReleaseDuration) { d->noteEndReleaseDuration = noteEndReleaseDuration; }
-    
-    uint32_t getLength() const;
-    
-    float realTimeToBaseUnits(float timeMs) const;
-    
-    float getPlaybackPosition(float pos, Atom** outAtom, float* outTimeWithinAtom) const;
+    ///@}
 
 private:
     void newAtom(uint16_t freq, uint16_t duration);

@@ -9,6 +9,14 @@
 namespace MINTGGGameEngine
 {
 
+/**
+ * \brief Represents text visible on the screen.
+ *
+ * Text is defined by its content, position, size and color.
+ *
+ * Text rendering is currently not well defined, and thus very dependent on the
+ * actual rendering library used in the background.
+ */
 class Text
 {
 private:
@@ -23,6 +31,17 @@ private:
     };
     
 public:
+    /**
+     * \brief Create a new text object.
+     * 
+     * \param x The x position of the top-left corner of the text's bounding
+     *      rectangle.
+     * \param y The y position of the top-left corner of the text's bounding
+     *      rectangle.
+     * \param size The size of the text.
+     * \param color The text color.
+     * \param text The text content.
+     */
     Text(int16_t x = 0, int16_t y = 0, int size = 1, Color color = Color::BLACK, String text = "");
     Text(const Text& other) : d(other.d) {}
     

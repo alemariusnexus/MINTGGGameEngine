@@ -31,6 +31,12 @@ AudioEngine& Game::audio()
 }
 
 
+InputEngine& Game::input()
+{
+    return inputEng;
+}
+
+
 void Game::checkCollisions(float shrink)
 {
     auto gameObjsLocal = gameObjs;
@@ -136,11 +142,16 @@ void Game::sleepNextFrame()
 {
     long now = millis();
     
+    uint32_t delayTimeMs = 0;
+    
     if (lastFrameTime < 0) {
-        delay(frameTime);
+        delayTimeMs = frameTime;
     } else if (now-lastFrameTime < frameTime) {
-        delay(frameTime - (now-lastFrameTime));
+        delayTimeMs = frameTime - (now-lastFrameTime);
     }
+    
+    vTaskDelay(delayTimeMs / portTICK_PERIOD_MS);
+    // delay(delayTimeMs);
     
     lastFrameTime = millis();
 }

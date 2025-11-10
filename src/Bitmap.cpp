@@ -102,7 +102,6 @@ Bitmap Bitmap::loadBMP(File& file, const char** outErrmsg)
     } else if (infoHeader.bitsPerPixel == 32) {
         // NOTE: The BMP files this was tested with store pixel data bottom-up,
         // with BGRA order.
-        // TODO: Load mask
         uint16_t maskByteW = (infoHeader.width+7) / 8;
         mask = new uint8_t[maskByteW*infoHeader.height];
         memset(mask, 0, maskByteW*infoHeader.height);
