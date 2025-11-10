@@ -83,7 +83,7 @@ public:
 private:
     Sprite(Type type) : type(type) {}
 
-public:
+private:
     Type type;
     union {
         struct {
