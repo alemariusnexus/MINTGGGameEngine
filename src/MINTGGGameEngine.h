@@ -137,7 +137,7 @@
  *
  * \code{.cpp}
  *      // Do this every frame
- *      for (GameObject enemy : game.getObjectsWithTag(TagEnemy)) { // Loop over all enemies
+ *      for (GameObject enemy : game.getGameObjectsWithTag(TagEnemy)) { // Loop over all enemies
  *          enemy.move(0, 2); // Move 2 pixels down
  *      }
  * \endcode
