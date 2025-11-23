@@ -36,8 +36,9 @@ void InputEngine::inputTaskMain()
             dev->lastState = dev->mcp.read8();
         }
         
-        // Apply all button press states (including debouncing)
         xSemaphoreTake(inputMtx, portMAX_DELAY);
+        
+        // Apply all button press states (including debouncing)
         for (auto it = buttons.begin() ; it != buttons.end() ; ++it) {
             ButtonDef* def = it->second;
             
@@ -54,6 +55,44 @@ void InputEngine::inputTaskMain()
                 }
             }
         }
+        
+        // Read all axis values
+        float analogMaxValueFloat = getAnalogReadMaxValue();
+        for (auto it = axes.begin() ; it != axes.end() ; ++it) {
+            AxisDef* def = it->second;
+            float adcT = analogRead(def->pin) / analogMaxValueFloat;
+            
+            float minVal;
+            float maxVal;
+            float finalFactor;
+            if (def->minValue < def->maxValue) {
+                finalFactor = 1.0f;
+                minVal = def->minValue;
+                maxVal = def->maxValue;
+            } else {
+                finalFactor = -1.0f;
+                minVal = def->maxValue;
+                maxVal = def->minValue;
+            }
+            
+            float value;
+            float distFromNeutral = fabs(adcT - def->neutralValue);
+            if (distFromNeutral > def->neutralWidth) {
+                if (adcT > def->neutralValue) {
+                    value = finalFactor * (distFromNeutral - def->neutralWidth)
+                            / (maxVal - def->neutralValue - def->neutralWidth);
+                } else {
+                    value = -finalFactor * (distFromNeutral - def->neutralWidth)
+                            / (def->neutralValue - minVal - def->neutralWidth);
+                }
+            } else {
+                value = 0.0f;
+            }
+            
+            def->rawValue = adcT;
+            def->value = value;
+        }
+        
         xSemaphoreGive(inputMtx);
         
         // Scan for activated button combos
@@ -142,6 +181,64 @@ bool InputEngine::defineButtonMCP23009(const std::string& id, uint8_t pin, int f
     return true;
 }
 
+bool InputEngine::undefineButton(const std::string& id)
+{
+    auto it = buttons.find(id);
+    if (it == buttons.end()) {
+        return false;
+    }
+    
+    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    delete it->second;
+    buttons.erase(it);
+    xSemaphoreGive(inputMtx);
+    
+    return true;
+}
+
+bool InputEngine::defineAxis (
+        const std::string& id, uint8_t pin,
+        float minValue, float maxValue,
+        float neutralValue, float neutralWidth
+) {
+    if (getAxisDef(id)) {
+        return false;
+    }
+    
+    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    
+    AxisDef* def = new AxisDef(id, pin);
+    def->minValue = minValue;
+    def->maxValue = maxValue;
+    def->neutralValue = neutralValue;
+    def->neutralWidth = neutralWidth;
+    axes[id] = def;
+    
+    xSemaphoreGive(inputMtx);
+    
+    return true;
+}
+
+bool InputEngine::undefineAxis(const std::string& id)
+{
+    auto it = axes.find(id);
+    if (it == axes.end()) {
+        return false;
+    }
+    
+    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    delete it->second;
+    axes.erase(it);
+    xSemaphoreGive(inputMtx);
+    
+    return true;
+}
+
+bool InputEngine::hasButton(const std::string& id)
+{
+    return getButtonDef(id) != nullptr;
+}
+
 bool InputEngine::isButtonPressed(const std::string& id)
 {
     ButtonDef* def = getButtonDef(id);
@@ -159,6 +256,23 @@ void InputEngine::defineButtonCombo(const std::unordered_set<std::string>& ids, 
     buttonCombos.push_back(combo);
     
     xSemaphoreGive(inputMtx);
+}
+
+bool InputEngine::hasAxis(const std::string& id)
+{
+    return getAxisDef(id) != nullptr;
+}
+
+float InputEngine::getAxis(const std::string& id)
+{
+    AxisDef* def = getAxisDef(id);
+    return def ? def->value : 0.0f;
+}
+
+float InputEngine::getAxisRaw(const std::string& id)
+{
+    AxisDef* def = getAxisDef(id);
+    return def ? def->rawValue : 0.0f;
 }
 
 InputEngine::MCP23009Device* InputEngine::registerMCP23009(uint8_t addr)
@@ -180,6 +294,12 @@ InputEngine::ButtonDef* InputEngine::getButtonDef(const std::string& id)
     return it != buttons.end() ? it->second : nullptr;
 }
 
+InputEngine::AxisDef* InputEngine::getAxisDef(const std::string& id)
+{
+    auto it = axes.find(id);
+    return it != axes.end() ? it->second : nullptr;
+}
+
 bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
 {
     if (pressed == def->pressed) {
@@ -191,6 +311,13 @@ bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
         return true;
     }
     return false;
+}
+
+uint16_t InputEngine::getAnalogReadMaxValue() const
+{
+    // TODO: This assumes the ESP32 ADC resolution of 12 bits. Arduino doesn't
+    //  have a function to query it...
+    return 4095;
 }
 
 }

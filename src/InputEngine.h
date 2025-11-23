@@ -18,9 +18,12 @@ namespace MINTGGGameEngine
  *
  * Use Game.input() to receive the active input engine.
  *
- * Currently, this class only handles buttons. Two types of buttons are
- * currently supported. Buttons can be active-high or active-low, and can
- * optionally have a pull-up or pull-down resistor enabled.
+ * Currently, this class only handles buttons and analog axes.
+ *
+ * \section sec_buttons Buttons
+ *
+ * Two types of buttons are currently supported. Buttons can be active-high or
+ * active-low, and can optionally have a pull-up or pull-down resistor enabled.
  *
  * Regular buttons are defined by defineButton(). They are directly connected
  * to the microcontroller running the game code.
@@ -33,6 +36,17 @@ namespace MINTGGGameEngine
  *
  * To be notified of when a given combination of buttons (or even a single
  * button) is pressed, you can use defineButtonCombo().
+ *
+ * \section sec_axes Analog Axes
+ *
+ * An analog axis maps an external analog signal to the range [-1.0, 1.0].
+ * The most common example of analog axes is an analog joystick: A 2D analog
+ * joystick consists of two axes: One for the x direction, and one for the y
+ * direction. See defineAxis() for configuration details.
+ *
+ * The value of an axis can be read with getAxis(). You can also use
+ * getAxisRaw() to get the raw ADC value of the axis before processing, which
+ * might be useful for joystick calibration.
  */
 class InputEngine
 {
@@ -76,6 +90,7 @@ private:
         std::string id;
         ButtonType type;
         int flags;
+        
         bool pressed;
         uint8_t debounceCount;
         
@@ -88,6 +103,22 @@ private:
                 uint8_t pin;
             } mcp23009;
         };
+    };
+    
+    struct AxisDef
+    {
+        AxisDef(const std::string& id, uint8_t pin) : id(id), pin(pin), minValue(0.0f), maxValue(1.0f),
+                neutralValue(0.5f), neutralWidth(0.1f), value(0.5f), rawValue(0.5f) {}
+        
+        std::string id;
+        uint8_t pin;
+        float minValue;
+        float maxValue;
+        float neutralValue;
+        float neutralWidth;
+        
+        float rawValue;
+        float value;
     };
     
     struct ButtonCombo
@@ -149,11 +180,75 @@ public:
      */
     bool defineButtonMCP23009(const std::string& id, uint8_t pin, int flags = PinFlagsActiveLow | PinFlagsPullup, uint8_t i2cAddr = 0x20);
     
+    /**
+     * \brief Remove a previously defined button.
+     *
+     * \param id The button ID.
+     * \return true if successfully undefined, false if button not found.
+     */
+    bool undefineButton(const std::string& id);
+    
+    ///@}
+    
+    
+    /// \name Defining Analog Axes
+    ///@{
+    
+    /**
+     * \brief Defines an analog axis (e.g. for a joystick).
+     *
+     * Each axis value is provided by an analog signal, which is linearly mapped
+     * to the range [-1.0, 1.0], with 0.0 being the neutral position (e.g. a
+     * joystick axis in middle position).
+     * A typical 2D joystick consists of two axes: one for the x direction, and
+     * one for the y direction.
+     *
+     * The raw analog input is first mapped to the range [0.0, 1.0]. The result
+     * of this mapping is what the configuration values of this function
+     * reference (i.e. they are independent of the actual ADC range and
+     * resolution).
+     *
+     * If minValue > maxValue, the axis will be inverted.
+     *
+     * \param id An arbitrary unique ID for the axis. This is used later to
+     *      identify this axis.
+     * \param pin The pin from which the analog signal is read. Must be an
+     *      ADC-capable pin.
+     * \param minValue Raw ADC value at which the axis should yield -1.0.
+     * \param maxValue Raw ADC value at which the axis should yield 1.0.
+     * \param neutralValue Raw ADC value at which the axis should yield 0.0.
+     * \param neutralWidth Range around the neutral value at which the axis
+     *      should still yield 0.0. This is useful to avoid slight drifting if
+     *      e.g. a joystick doesn't center itself on an exact value.
+     * \return true if successful, false otherwise.
+     */
+    bool defineAxis (
+            const std::string& id, uint8_t pin,
+            float minValue = 0.0f, float maxValue = 1.0f,
+            float neutralValue = 0.5f, float neutralWidth = 0.1f
+            );
+    
+    /**
+     * \brief Remove a previously defined axis.
+     *
+     * \param id The axis ID.
+     * \return true if successfully undefined, false if axis not found.
+     */
+    bool undefineAxis(const std::string& id);
+    
     ///@}
     
     
     /// \name Querying Button State
     ///@{
+    
+    /**
+     * \brief Check whether a button is defined.
+     *
+     * \param id The button ID.
+     * \return true if defined, false otherwise.
+     */
+    bool hasButton(const std::string& id);
     
     /**
      * \brief Check if the given button is currently pressed.
@@ -181,6 +276,39 @@ public:
     void defineButtonCombo(const std::unordered_set<std::string>& ids, ButtonComboCb cb);
     
     ///@}
+    
+    
+    /// \name Querying Analog Axis State
+    ///@{
+    
+    /**
+     * \brief Check whether an axis is defined.
+     *
+     * \param id The axis ID.
+     * \return true if defined, false otherwise.
+     */
+    bool hasAxis(const std::string& id);
+    
+    /**
+     * \brief Get the current value of the given axis.
+     *
+     * \param id The axis ID.
+     * \return The axis value, in range [-1.0, 1.0].
+     */
+    float getAxis(const std::string& id);
+    
+    /**
+     * \brief Get the raw value of the given axis.
+     *
+     * This returns the raw ADC value mapped to range [0.0, 1.0], before any
+     * calculations involving min, max or neutral position.
+     *
+     * \param id The axis ID.
+     * \param The raw axis value, in range [0.0, 1.0]
+     */
+    float getAxisRaw(const std::string& id);
+    
+    ///@}
 
 private:
     void inputTaskMain();
@@ -188,8 +316,11 @@ private:
     MCP23009Device* registerMCP23009(uint8_t addr);
     
     ButtonDef* getButtonDef(const std::string& id);
+    AxisDef* getAxisDef(const std::string& id);
     
     bool debounceButton(ButtonDef* def, bool pressed);
+    
+    uint16_t getAnalogReadMaxValue() const;
 
 private:
     TaskHandle_t inputTask;
@@ -198,6 +329,7 @@ private:
     std::vector<MCP23009Device*> mcp23009Devices;
     
     std::unordered_map<std::string, ButtonDef*> buttons;
+    std::unordered_map<std::string, AxisDef*> axes;
     
     std::vector<ButtonCombo*> buttonCombos;
     

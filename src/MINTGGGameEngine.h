@@ -56,7 +56,7 @@
  *  - **Rendering of 2D sprites** (circles, rectangles, bitmaps) on a simple screen (currently support ST7735 controllers in RGB565 mode)
  *  - **Collision detection** with circles and axis-aligned rectangles as basic shapes
  *  - Simple single-channel, single-voice **audio playback** on a piezo speaker
- *  - Handling of simple **input devices**. Currently only buttons, with Joystick support planned. Supports MCP23009 IO expanders.
+ *  - Handling of simple **input devices**. Currently only buttons and analog axes (e.g. joysticks). Supports MCP23009 IO expanders.
  *
  *
  * \section sec_concepts Basic Concepts
@@ -235,6 +235,32 @@
  *
  *      // Somewhere during game setup (assumes "a", "b" and "start" buttons have been defined):
  *      game.input().defineButtonCombo({"a", "b", "start"}, onUltraBlast); // Combo: a+b+start
+ * \endcode
+ *
+ * Analog axes are also supported, mainly for connecting joysticks. A simple 2D
+ * joystick can be setup with its two axes like this:
+ *
+ * \code{.cpp}
+ *      game.input().defineAxis("x", 32); // x axis connected to ADC pin 32
+ *      game.input().defineAxis("y", 33); // y axis connected to ADC pin 33
+ * \endcode
+ *
+ * It's also possible to invert an axis by swapping the minimum and maximum
+ * values like so:
+ *
+ * \code{.cpp}
+ *      game.input().defineAxis("x", 32, 1.0, 0.0); // inverted x axis
+ * \endcode
+ *
+ * Various other options for configuring an axis exist. See
+ * \ref MINTGGGameEngine::InputEngine::defineAxis() "defineAxis()" for details.
+ *
+ * Each axis provides a value between -1.0 and 1.0, which can be read using
+ * \ref MINTGGGameEngine::InputEngine::getAxis() "getAxis()". The following
+ * example shows how to move the player based on two joystick axes:
+ *
+ * \code{.cpp}
+ *      player.move(game.input().getAxis("x"), game.input().getAxis("y"));
  * \endcode
  *
  *
