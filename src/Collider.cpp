@@ -1,6 +1,10 @@
 #include "Collider.h"
 
 
+#include <cmath>
+
+#include "MathUtils.h"
+#include "RayCastResult.h"
 #include "Screen.h"
 
 
@@ -27,6 +31,28 @@ Collider::Collider(const Collider& o)
     } else {
         assert(false);
     }
+}
+
+
+float Collider::getWidth() const
+{
+    if (type == Type::Circle) {
+        return 2*circle.r;
+    } else if (type == Type::Rect) {
+        return rect.w;
+    }
+    return 0.0f;
+}
+
+
+float Collider::getHeight() const
+{
+    if (type == Type::Circle) {
+        return 2*circle.r;
+    } else if (type == Type::Rect) {
+        return rect.h;
+    }
+    return 0.0f;
 }
 
 
@@ -86,13 +112,141 @@ bool Collider::collides(const Collider& other, float shrink) const
 }
 
 
-void Collider::debugDraw(Screen& screen, const Color& color)
+void Collider::debugDraw(Screen& screen, const Color& color, const Vec2& offset)
 {
     if (type == Type::Circle) {
-        screen.drawCircle(circle.cx, circle.cy, circle.r, color, false);
+        screen.drawCircle(circle.cx+offset.x(), circle.cy+offset.y(), circle.r, color, false);
     } else if (type == Type::Rect) {
-        screen.drawRect(rect.x, rect.y, rect.w, rect.h, color, false);
+        screen.drawRect(rect.x+offset.x(), rect.y+offset.y(), rect.w, rect.h, color, false);
     }
+}
+
+
+size_t Collider::castRay (
+        std::vector<RayCastHit>& hits,
+        const Vec2& start, const Vec2& direction, float length
+) const {
+    RayCastHit hit;
+    size_t numHits = 0;
+    
+    if (type == Type::Circle) {
+        
+        Vec2 startToCenter = Vec2(circle.cx, circle.cy) - start;
+        float distRayFromCenter = startToCenter.length() * sinf(direction.angle(startToCenter));
+        if (distRayFromCenter <= circle.r) {
+            float tCenter = startToCenter.dot(direction); // Project startToCenter onto direction
+            float tEnterExitHalfDist = sqrtf(circle.r*circle.r - distRayFromCenter*distRayFromCenter);
+            float tEnter = tCenter-tEnterExitHalfDist;
+            float tExit = tCenter+tEnterExitHalfDist;
+            
+            if (tEnter >= 0.0f  &&  tEnter <= length) {
+                hit.entering = true;
+                hit.hitPoint = start + direction*tEnter;
+                hit.rayOffset = tEnter;
+                hits.push_back(hit);
+                numHits++;
+            }
+            if (tExit >= 0.0f  &&  tExit <= length) {
+                hit.entering = false;
+                hit.hitPoint = start + direction*tExit;
+                hit.rayOffset = tExit;
+                hits.push_back(hit);
+                numHits++;
+            }
+        }
+        
+    } else if (type == Type::Rect) {
+        
+        const Vec2 startToEnd = direction*length;
+        const Vec2 end = start + startToEnd;
+        
+        int numIntersects = 0;
+        float intersectTs[2];
+        
+        int numHits;
+        
+        // Top
+        intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
+                start, end,
+                Vec2(rect.x, rect.y), Vec2(rect.x+rect.w, rect.y),
+                &numHits
+                );
+        if (numHits > 0) {
+            numIntersects++;
+        }
+        
+        // Bottom
+        intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
+                start, end,
+                Vec2(rect.x, rect.y+rect.h), Vec2(rect.x+rect.w, rect.y+rect.h),
+                &numHits
+                );
+        if (numHits > 0) {
+            numIntersects++;
+        }
+        
+        if (numIntersects < 2) {
+            // Left
+            intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
+                    start, end,
+                    Vec2(rect.x, rect.y), Vec2(rect.x, rect.y+rect.h),
+                    &numHits
+                    );
+            if (numHits > 0) {
+                numIntersects++;
+            }
+        }
+        
+        if (numIntersects < 2) {
+            // Right
+            intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
+                    start, end,
+                    Vec2(rect.x+rect.w, rect.y), Vec2(rect.x+rect.w, rect.y+rect.h),
+                    &numHits
+                    );
+            if (numHits > 0) {
+                numIntersects++;
+            }
+        }
+        
+        if (numIntersects == 2) {
+            // Ray cuts through
+            
+            if (intersectTs[0] > intersectTs[1]) {
+                float tmp = intersectTs[0];
+                intersectTs[0] = intersectTs[1];
+                intersectTs[1] = tmp;
+            }
+            
+            hit.entering = true;
+            hit.hitPoint = start + startToEnd*intersectTs[0];
+            hit.rayOffset = intersectTs[0]*length;
+            hits.push_back(hit);
+            
+            hit.entering = false;
+            hit.hitPoint = start + startToEnd*intersectTs[1];
+            hit.rayOffset = intersectTs[1]*length;
+            hits.push_back(hit);
+            
+            numHits = 2;
+        } else if (numIntersects == 1) {
+            // Ray only enters or leaves
+            
+            if (PointLiesInsideAARect(start, rect.x, rect.y, rect.w, rect.h)) {
+                hit.entering = false;
+            } else {
+                hit.entering = true;
+            }
+            hit.hitPoint = start + startToEnd*intersectTs[0];
+            hit.rayOffset = intersectTs[0];
+            hits.push_back(hit);
+            
+            numHits = 1;
+        }
+        
+    }
+    
+    return numHits;
 }
 
 

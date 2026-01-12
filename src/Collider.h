@@ -2,11 +2,13 @@
 
 #include "Globals.h"
 #include "Color.h"
+#include "Vec2.h"
 
 
 namespace MINTGGGameEngine
 {
 
+class RayCastHit;
 class Screen;
 
 /**
@@ -61,6 +63,14 @@ public:
      */
     static Collider createRect(float x, float y, float w, float h)
     {
+        if (w < 0) {
+            x = x+w;
+            w = -w;
+        }
+        if (h < 0) {
+            y = y+h;
+            h = -h;
+        }
         Collider c(Type::Rect);
         c.rect.x = x;
         c.rect.y = y;
@@ -75,6 +85,9 @@ public:
      */
     Collider() : type(Type::Null) {}
     Collider(const Collider& o);
+    
+    float getWidth() const;
+    float getHeight() const;
 
     /**
      * \brief Convert all coordinates to the world coordinate system.
@@ -104,12 +117,14 @@ public:
     /**
      * \brief Draws the outline of the collider to a screen.
      */
-    void debugDraw(Screen& screen, const Color& color);
+    void debugDraw(Screen& screen, const Color& color, const Vec2& offset);
 
     /**
      * \brief Checks whether this is a valid collider (i.e. not a Null one).
      */
     operator bool() const { return type != Type::Null; }
+    
+    size_t castRay(std::vector<RayCastHit>& hits, const Vec2& start, const Vec2& direction, float length) const;
 
 private:
     Collider(Type type) : type(type) {}

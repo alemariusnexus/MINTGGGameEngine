@@ -36,8 +36,8 @@ public:
     };
 
 public:
-    static Sprite createRect(int w, int h, const Color& color, bool filled = true);
-    static Sprite createCircle(int r, const Color& color, bool filled = true);
+    static Sprite createRect(float w, float h, const Color& color, bool filled = true);
+    static Sprite createCircle(float r, const Color& color, bool filled = true);
     static Sprite createBitmap(const Bitmap& bitmap);
 
 public:
@@ -51,12 +51,12 @@ public:
     /**
      * \brief Return the width of the sprite in pixels.
      */
-    uint16_t getWidth() const;
+    float getWidth() const;
     
     /**
      * \brief Return the height of the sprite in pixels.
      */
-    uint16_t getHeight() const;
+    float getHeight() const;
     
     /**
      * \brief Return the type of sprite.
@@ -87,14 +87,14 @@ private:
     Type type;
     union {
         struct {
-            int w;
-            int h;
+            float w;
+            float h;
             Color color;
             bool filled;
         } rect;
 
         struct {
-            int r;
+            float r;
             Color color;
             bool filled;
         } circle;

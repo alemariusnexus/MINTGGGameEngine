@@ -5,6 +5,7 @@
 #include "GameObjectCollision.h"
 #include "GameObject.h"
 #include "InputEngine.h"
+#include "RayCastResult.h"
 #include "Screen.h"
 #include "Text.h"
 
@@ -34,6 +35,13 @@ private:
             }
             return a.getZOrder() < b.getZOrder();
         }
+    };
+    
+    struct RayCastDrawInfo
+    {
+        Vec2 rayStart;
+        Vec2 rayEnd;
+        RayCastResult result;
     };
     
 public:
@@ -122,6 +130,8 @@ public:
      */
     void setDrawColliders(bool drawColliders) { this->drawColliders = drawColliders; }
     
+    void setDrawRayCasts(bool drawRayCasts) { this->drawRayCasts = drawRayCasts; }
+    
     /**
      * \brief Run collision detection on all objects.
      *
@@ -149,6 +159,10 @@ public:
      * for debugging purposes (see setDrawColliders()).
      */
     void draw();
+    
+    void drawBegin();
+    
+    void drawFinish();
     
     ///@}
     
@@ -190,6 +204,8 @@ public:
      */
     bool despawnObjects(const std::vector<GameObject>& objs);
     
+    std::vector<GameObject> getGameObjects() const;
+    
     /**
      * \brief Get a list with all GameObjects that have the given tag.
      *
@@ -198,7 +214,7 @@ public:
      * \param tag The tag to search for. Only a single tag is allowed here.
      * \param List of GameObjects with the tag.
      */
-    std::vector<GameObject> getGameObjectsWithTag(uint64_t tag);
+    std::vector<GameObject> getGameObjectsWithTag(uint64_t tag) const;
     
     ///@}
     
@@ -220,6 +236,34 @@ public:
      * \param true if removed, false otherwise (e.g. if it wasn't added before).
      */
     bool removeText(const Text& text);
+    
+    ///@}
+    
+    
+    /// \name Ray Casting
+    ///@{
+    
+    RayCastResult castRay (
+            const Vec2& start, const Vec2& end,
+            const std::vector<GameObject>& gameObjects,
+            bool sort = true
+            );
+    RayCastResult castRay (
+            const Vec2& start, const Vec2& end,
+            bool sort = true
+            );
+    
+    ///@}
+    
+    
+    /// \name Camera
+    ///@{
+    
+    void setCameraOffset(const Vec2& offset) { cameraOffset = offset; }
+    void setCameraOffset(float ox, float oy) { setCameraOffset(Vec2(ox, oy)); }
+    Vec2 getCameraOffset() const { return cameraOffset; }
+    void scroll(const Vec2& delta) { setCameraOffset(getCameraOffset() + delta); }
+    void scroll(float dx, float dy) { scroll(Vec2(dx, dy)); }
     
     ///@}
     
@@ -286,9 +330,14 @@ private:
     CollisionCb collisionCb;
 
     bool drawColliders;
+    bool drawRayCasts;
     
     uint16_t frameTime;
     long lastFrameTime;
+    
+    std::vector<RayCastDrawInfo> rayCastDrawInfos;
+    
+    Vec2 cameraOffset;
 };
 
 }

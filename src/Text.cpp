@@ -13,6 +13,7 @@ Text::Text(int16_t x, int16_t y, int size, Color color, String text)
     d->color = color;
     d->text = text;
     d->visible = true;
+    d->worldSpace = false;
 }
 
 }

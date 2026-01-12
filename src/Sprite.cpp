@@ -25,7 +25,7 @@ Sprite::Sprite(const Sprite& other)
     }
 }
 
-Sprite Sprite::createRect(int w, int h, const Color& color, bool filled)
+Sprite Sprite::createRect(float w, float h, const Color& color, bool filled)
 {
     Sprite s(Type::Rect);
     s.rect.w = w;
@@ -35,7 +35,7 @@ Sprite Sprite::createRect(int w, int h, const Color& color, bool filled)
     return s;
 }
 
-Sprite Sprite::createCircle(int r, const Color& color, bool filled)
+Sprite Sprite::createCircle(float r, const Color& color, bool filled)
 {
     Sprite s(Type::Circle);
     s.circle.r = r;
@@ -51,7 +51,7 @@ Sprite Sprite::createBitmap(const Bitmap& bitmap)
     return s;
 }
 
-uint16_t Sprite::getWidth() const
+float Sprite::getWidth() const
 {
     if (type == Type::Rect) {
         return rect.w;
@@ -63,7 +63,7 @@ uint16_t Sprite::getWidth() const
     return 0;
 }
 
-uint16_t Sprite::getHeight() const
+float Sprite::getHeight() const
 {
     if (type == Type::Rect) {
         return rect.h;

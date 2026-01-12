@@ -90,6 +90,8 @@ public:
      */
     const Vec2 normalized() const { Vec2 r(*this); r.normalize(); return r; }
     
+    float angle(const Vec2& o) const;
+    
     ///@}
     
 private:

@@ -28,6 +28,7 @@ private:
         Color color;
         String text;
         bool visible;
+        bool worldSpace;
     };
     
 public:
@@ -51,12 +52,14 @@ public:
     Color getColor() const { return d->color; }
     String getText() const { return d->text; }
     bool isVisible() const { return d->visible; }
+    bool isWorldSpace() const { return d->worldSpace; }
     
     void setPosition(int16_t x, int16_t y) { d->x = x; d->y = y; }
     void setSize(int size) { d->size = size; }
     void setColor(const Color& color) { d->color = color; }
     void setText(const String& text) { d->text = text; }
     void setVisible(bool visible) { d->visible = visible; }
+    void setWorldSpace(bool worldSpace) { d->worldSpace = worldSpace; }
     
     bool operator==(const Text& other) const { return d == other.d; }
     bool operator!=(const Text& other) const { return d != other.d; }

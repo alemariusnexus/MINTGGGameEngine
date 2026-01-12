@@ -12,7 +12,9 @@ namespace MINTGGGameEngine
 
 
 Game::Game()
-    : screen(nullptr), randGen(randDev()), drawColliders(false), lastFrameTime(-1), frameTime(1000/50)
+    : screen(nullptr), randGen(randDev()),
+      drawColliders(false), drawRayCasts(false),
+      lastFrameTime(-1), frameTime(1000/50)
 {
 }
 
@@ -53,25 +55,55 @@ void Game::checkCollisions(float shrink)
 
 void Game::draw()
 {
+    drawBegin();
+    drawFinish();
+}
+
+
+void Game::drawBegin()
+{
     if (!screen) {
         return;
     }
     
+    Vec2 drawOffset = -cameraOffset;
+    
     screen->fillScreen(Color::WHITE);
 
     for (const GameObject& obj : gameObjs) {
-        obj.draw(*screen);
+        obj.draw(*screen, drawOffset);
     }
 
     if (drawColliders) {
         for (const GameObject& obj : gameObjs) {
-            obj.getWorldCollider().debugDraw(*screen, 0xF81D);
+            obj.getWorldCollider().debugDraw(*screen, 0xF81D, drawOffset);
         }
     }
     
+    // Always draw the infos in the list, so setDrawRayCasts() can be used to
+    // selectively enable/disable it for individual ray casts.
+    for (const auto& info : rayCastDrawInfos) {
+        RayCastResult::drawDebugRay(*screen, info.rayStart, info.rayEnd, drawOffset);
+        info.result.drawDebug(*screen, drawOffset);
+    }
+    rayCastDrawInfos.clear();
+}
+
+void Game::drawFinish()
+{
+    if (!screen) {
+        return;
+    }
+    
+    Vec2 drawOffset = -cameraOffset;
+    
     for (const Text& text : texts) {
         if (text.isVisible()) {
-            screen->drawText(text);
+            if (text.isWorldSpace()) {
+                screen->drawText(text, (int16_t) (drawOffset.x()+0.5f), (int16_t) (drawOffset.y()+0.5f));
+            } else {
+                screen->drawText(text);
+            }
         }
     }
     
@@ -109,7 +141,17 @@ bool Game::despawnObjects(const std::vector<GameObject>& objs)
 }
 
 
-std::vector<GameObject> Game::getGameObjectsWithTag(uint64_t tag)
+std::vector<GameObject> Game::getGameObjects() const
+{
+    std::vector<GameObject> res;
+    for (const GameObject& go : gameObjs) {
+        res.push_back(go);
+    }
+    return res;
+}
+
+
+std::vector<GameObject> Game::getGameObjectsWithTag(uint64_t tag) const
 {
     std::vector<GameObject> res;
     for (const GameObject& go : gameObjs) {
@@ -135,6 +177,52 @@ bool Game::removeText(const Text& text)
     }
     texts.erase(it);
     return true;
+}
+
+
+RayCastResult Game::castRay (
+        const Vec2& start, const Vec2& end,
+        const std::vector<GameObject>& gameObjects,
+        bool sort
+) {
+    Vec2 startToEnd = end-start;
+    Vec2 direction = startToEnd.normalized();
+    float length = startToEnd.length();
+    
+    std::vector<RayCastHit> hits;
+    
+    for (const GameObject& go : gameObjects) {
+        size_t numIntersections = go.getWorldCollider().castRay(hits, start, direction, length);
+        for (size_t i = hits.size()-numIntersections ; i != hits.size() ; i++) {
+            hits[i].gameObject = go;
+        }
+    }
+    
+    if (sort) {
+        std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) {
+            return a.rayOffset < b.rayOffset;
+        });
+    }
+    
+    RayCastResult res(std::move(hits));
+    
+    if (drawRayCasts) {
+        RayCastDrawInfo info;
+        info.rayStart = start;
+        info.rayEnd = end;
+        info.result = res;
+        rayCastDrawInfos.push_back(info);
+    }
+    
+    return res;
+}
+
+
+RayCastResult Game::castRay (
+        const Vec2& start, const Vec2& end,
+        bool sort
+) {
+    return castRay(start, end, getGameObjects(), sort);
 }
 
 

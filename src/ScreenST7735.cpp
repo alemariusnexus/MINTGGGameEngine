@@ -111,9 +111,9 @@ void ScreenST7735::drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDi
     canvas.endWrite();
 }
 
-void ScreenST7735::drawText(const Text& text)
+void ScreenST7735::drawText(const Text& text, int16_t ox, int16_t oy)
 {
-    canvas.setCursor(text.getX(), text.getY());
+    canvas.setCursor(text.getX()+ox, text.getY()+oy);
     canvas.setTextSize(text.getSize());
     canvas.setTextColor(text.getColor());
     canvas.print(text.getText());

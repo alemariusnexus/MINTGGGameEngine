@@ -82,7 +82,7 @@ public:
      * \return The new GameObject. Game.spawnObject() can be called with it.
      * \see createColliderCircle()
      */
-    static GameObject createCircle(float x, float y, int r, const Color& color, bool filled = true, bool collider = true);
+    static GameObject createCircle(float x, float y, float r, const Color& color, bool filled = true, bool collider = true);
     
     /**
      * \brief Create a GameObject with a rectangle as sprite and collider.
@@ -100,7 +100,7 @@ public:
      * \return The new GameObject. Game.spawnObject() can be called with it.
      * \see createColliderRect()
      */
-    static GameObject createRect(float x, float y, int w, int h, const Color& color, bool filled = true, bool collider = true);
+    static GameObject createRect(float x, float y, float w, float h, const Color& color, bool filled = true, bool collider = true);
     
     /**
      * \brief Create a GameObject with a Bitmap as sprite and a rectangular
@@ -132,7 +132,7 @@ public:
      * \return The new GameObject. Game.spawnObject() can be called with it.
      * \see createCircle()
      */
-    static GameObject createColliderCircle(float x, float y, int r);
+    static GameObject createColliderCircle(float x, float y, float r);
     
     /**
      * \brief Create a GameObject with a rectangle as collider and no sprite.
@@ -144,7 +144,7 @@ public:
      * \return The new GameObject. Game.spawnObject() can be called with it.
      * \see createRect()
      */
-    static GameObject createColliderRect(float x, float y, int w, int h);
+    static GameObject createColliderRect(float x, float y, float w, float h);
     
     ///@}
 
@@ -252,6 +252,8 @@ public:
      */
     void setPosition(const Vec2& p) { setPosition(p.x(), p.y()); }
     
+    Vec2 getCenterPosition(bool useSprite = false) const;
+    
     /**
      * \brief Return the object's movement direction.
      *
@@ -317,6 +319,16 @@ public:
      * \see setPosition()
      */
     void move(float speed) { move(d->moveDir * speed); }
+    
+    bool isLeftOf(const GameObject& other, bool useSprite = false) const;
+    bool isRightOf(const GameObject& other, bool useSprite = false) const;
+    bool isAbove(const GameObject& other, bool useSprite = false) const;
+    bool isBelow(const GameObject& other, bool useSprite = false) const;
+    
+    float getWidth(bool useSprite = false) const;
+    float getHeight(bool useSprite = false) const;
+    Vec2 getSize(bool useSprite = false) const
+            { return Vec2(getWidth(useSprite), getHeight(useSprite)); }
     
     ///@}
     
@@ -429,9 +441,10 @@ public:
      * called by Game.draw().
      *
      * \param screen The screen to draw on.
+     * \param offset Position offset, e.g. to apply camera transform.
      * \see Game.draw()
      */
-    void draw(Screen& screen) const;
+    void draw(Screen& screen, const Vec2& offset = Vec2()) const;
 
     /**
      * \brief Check whether this GameObjects collides with another.
