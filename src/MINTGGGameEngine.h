@@ -19,6 +19,9 @@
 #include "Vec2.h"
 
 
+namespace MINTGGGameEngine
+{
+
 /**
  * \mainpage MINTGGGameEngine - A Simple 2D Game Engine for Microcontrollers
  *
@@ -317,4 +320,82 @@
  *      // Assumes an AudioClip object called backgroundAudio was previously created.
  *      game.audio().playClip(backgroundAudio, AudioEngine::Priority::Background, true, true); // clip, priority, loop, advanceInBackground
  * \endcode
+ *
+ *
+ * \section sec_raycasting Ray Casting
+ *
+ * The engine supports simple ray casting: It can calculate the intersections
+ * between a ray (line segment) and GameObjects, calculating which objects
+ * were hit in what order, along with the intersection points.
+ *
+ * The following example casts a ray from the top-left to the bottom-right
+ * corner of the screen, and prints information about all objects that were
+ * hit to the console. It only checks intersections with objects that have
+ * the TagRayCast tag.
+ *
+ * \code{.cpp}
+ *		Vec2 rayStart(0, 0);
+ *		Vec2 rayEnd(screen.getWidth(), screen.getHeight());
+ *		RayCastResult res = game.castRay (
+ *				rayStart, rayEnd,
+ *				game.getGameObjectsWithTag(TagRayCast)
+ *				);
+ *		for (RayCastHit hit : res.getHits()) {
+ *			GameObject hitObject = hit.gameObject; // What was hit?
+ *			Serial.printf (
+ *					"Ray %s object at (%.1f, %.1f), distance %.1f\r\n",
+ *					hit.entering ? "enters" : "exits",
+ *					hit.hitPoint.x(), hit.hitPoint.y(),
+ *					hit.rayOffset
+ *					);
+ *		}
+ * \endcode
+ *
+ * A ray can be cast against all spawned objects, or a list of objects. The
+ * latter is recommended if there are many GameObjects in the world that don't
+ * matter for ray casting, as it reduces the amount of calculation that has to
+ * be done and increases performance.
+ *
+ *
+ * \section sec_camera Camera & Scrolling
+ *
+ * The engine knows the concept of a camera. This camera defines what part
+ * of the scene is actually drawn on the screen. The camera's position can be
+ * changed, which is useful for creating scrolling effects. The following shows
+ * how to implement side-scrolling using the left and right buttons:
+ *
+ * \code{.cpp}
+ *		if (game.input().isButtonPressed("left")) {
+ *			game.scroll(1, 0);
+ *		}
+ *		if (game.input().isButtonPressed("right")) {
+ *			game.scroll(-1, 0);
+ *		}
+ * \endcode
+ *
+ * Similarly, the position of the camera can also be directly set. The following
+ * code shows how to make the camera follow a player GameObject, such that the
+ * player always appears in the middle of the screen:
+ *
+ * \code{.cpp}
+ *		// Executed every frame, at the end of gameLoop():
+ *		Vec2 playerCenter = player.getCenterPosition();
+ *		game.setCameraOffset (
+ *				playerCenter.x() - screen.getWidth()/2,
+ *				playerCenter.y() - screen.getHeight()/2
+ *				);
+ * \endcode
+ *
+ *
+ * \section sec_gravity Gravity & Jumping
+ *
+ * While the engine does not include a physics engine, a simple helper class
+ * exists that can simulate a GameObject that has a velocity influenced by
+ * gravity.
+ *
+ * For an example of how to use this feature, take a look at
+ * [the DemoPlatformer](https://github.com/alemariusnexus/MINTGGGameEngine_Demos)
+ * demo on GitHub.
  */
+
+};
