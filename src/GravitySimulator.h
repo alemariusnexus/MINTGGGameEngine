@@ -10,6 +10,15 @@ namespace MINTGGGameEngine
 {
 
 
+/**
+ * \brief A class that simulates the velocity of a GameObject on which gravity
+ *      acts.
+ *
+ * Useful to implement simple falling or jumping objects.
+ *
+ * simulate() must be called every frame, with the time that passed since the
+ * previous frame.
+ */
 class GravitySimulator
 {
 public:

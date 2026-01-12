@@ -8,6 +8,7 @@
 namespace MINTGGGameEngine
 {
 
+class GameObject;
 class RayCastHit;
 class Screen;
 
@@ -39,6 +40,16 @@ public:
     /**
      * \brief Create a circular collider.
      *
+     * \param c The center coordinates of the circle.
+     * \param r The radius of the circle.
+     * \return The collider.
+     */
+    static Collider createCircle(const Vec2& c, float r)
+            { return createCircle(c.x(), c.y(), r); }
+    
+    /**
+     * \brief Create a circular collider.
+     *
      * \param cx The center x coordinate of the circle.
      * \param cy The center y coordinate of the circle.
      * \param r The radius of the circle.
@@ -52,6 +63,15 @@ public:
         c.circle.r = r;
         return c;
     }
+            
+    /**
+     * \brief Create a rectangular collider.
+     * 
+     * \param corner The coordinates of the top-left corner of the rectangle.
+     * \param size The width and height of the rectangle.
+     */
+    static Collider createRect(const Vec2& corner, const Vec2& size)
+            { return createRect(corner.x(), corner.y(), size.x(), size.y()); }
 
     /**
      * \brief Create a rectangular collider.
@@ -63,14 +83,6 @@ public:
      */
     static Collider createRect(float x, float y, float w, float h)
     {
-        if (w < 0) {
-            x = x+w;
-            w = -w;
-        }
-        if (h < 0) {
-            y = y+h;
-            h = -h;
-        }
         Collider c(Type::Rect);
         c.rect.x = x;
         c.rect.y = y;
@@ -102,6 +114,18 @@ public:
     Collider toWorld(float px, float py, FlipDir flip) const;
     
     /**
+     * \brief Convert all coordinates to the world coordinate system.
+     *
+     * This will apply translation and flip to the collider.
+     *
+     * \param pos The offset of the collider.
+     * \param flip The flip direction (does not matter for the currently
+     *      supported collider types).
+     */
+    Collider toWorld(const Vec2& pos, FlipDir flip) const
+            { return toWorld(pos.x(), pos.y(), flip); }
+    
+    /**
      * \brief Returns a copy of the collider shrunken by the given amount.
      */
     Collider shrunk(float shrink) const;
@@ -124,7 +148,16 @@ public:
      */
     operator bool() const { return type != Type::Null; }
     
-    size_t castRay(std::vector<RayCastHit>& hits, const Vec2& start, const Vec2& direction, float length) const;
+    /**
+     * \brief Calculate intersection of a ray with this collider.
+     *
+     * This is considered an internal method. Use Game::castRay() instead.
+     */
+    size_t castRay (
+            std::vector<RayCastHit>& hits,
+            const Vec2& start, const Vec2& direction, float length,
+            const GameObject& gameObject
+            ) const;
 
 private:
     Collider(Type type) : type(type) {}

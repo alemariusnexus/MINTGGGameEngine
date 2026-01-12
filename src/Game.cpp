@@ -144,6 +144,7 @@ bool Game::despawnObjects(const std::vector<GameObject>& objs)
 std::vector<GameObject> Game::getGameObjects() const
 {
     std::vector<GameObject> res;
+    res.reserve(gameObjs.size());
     for (const GameObject& go : gameObjs) {
         res.push_back(go);
     }
@@ -154,6 +155,7 @@ std::vector<GameObject> Game::getGameObjects() const
 std::vector<GameObject> Game::getGameObjectsWithTag(uint64_t tag) const
 {
     std::vector<GameObject> res;
+    res.reserve(gameObjs.size() > 10 ? 10 : gameObjs.size());
     for (const GameObject& go : gameObjs) {
         if (go.hasTag(tag)) {
             res.push_back(go);
@@ -186,32 +188,27 @@ RayCastResult Game::castRay (
         bool sort
 ) {
     Vec2 startToEnd = end-start;
-    Vec2 direction = startToEnd.normalized();
-    float length = startToEnd.length();
+    float length;
+    Vec2 direction = startToEnd.normalized(&length);
     
-    std::vector<RayCastHit> hits;
+    //std::vector<RayCastHit> hits;
+    //hits.reserve(8);
+    RayCastResult res;
+    res.getHits().reserve(10);
     
     for (const GameObject& go : gameObjects) {
-        size_t numIntersections = go.getWorldCollider().castRay(hits, start, direction, length);
-        for (size_t i = hits.size()-numIntersections ; i != hits.size() ; i++) {
-            hits[i].gameObject = go;
-        }
+        size_t numIntersections = go.getWorldCollider()
+                .castRay(res.getHits(), start, direction, length, go);
     }
     
     if (sort) {
-        std::sort(hits.begin(), hits.end(), [](const auto& a, const auto& b) {
+        std::sort(res.getHits().begin(), res.getHits().end(), [](const auto& a, const auto& b) {
             return a.rayOffset < b.rayOffset;
         });
     }
     
-    RayCastResult res(std::move(hits));
-    
     if (drawRayCasts) {
-        RayCastDrawInfo info;
-        info.rayStart = start;
-        info.rayEnd = end;
-        info.result = res;
-        rayCastDrawInfos.push_back(info);
+        rayCastDrawInfos.emplace_back(start, end, res);
     }
     
     return res;

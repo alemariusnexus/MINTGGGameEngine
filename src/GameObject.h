@@ -150,6 +150,16 @@ public:
 
 public:
     /**
+     * Create a null GameObject.
+     */
+    GameObject() {}
+    
+    /**
+     * Create a null GameObject.
+     */
+    GameObject(std::nullptr_t) {}
+
+    /**
      * \brief Create a new GameObject.
      *
      * The Sprite and Collider can later be changed with setSprite() and
@@ -167,7 +177,7 @@ public:
      * \see createRect()
      * \see createBitmap()
      */
-    GameObject(float x = 0.0f, float y = 0.0f, const Sprite& sprite = Sprite(), const Collider& collider = Collider());
+    GameObject(float x, float y, const Sprite& sprite = Sprite(), const Collider& collider = Collider());
     
     /**
      * \brief Copy constructor.
@@ -178,6 +188,16 @@ public:
      * \param other The object to copy.
      */
     GameObject(const GameObject& other) : d(other.d) {}
+    
+    
+    /**
+     * \brief Check if this is a null GameObject.
+     *
+     * Null GameObjects are created by the default constructor.
+     *
+     * \return true if null object, false otherwise.
+     */
+    bool isNull() const { return (bool) d; }
 
 
     /// \name Positioning
@@ -252,6 +272,13 @@ public:
      */
     void setPosition(const Vec2& p) { setPosition(p.x(), p.y()); }
     
+    /**
+     * \brief Calculate the center position of this GameObject.
+     *
+     * \param useSprite true to use the sprite's size, false to use the
+     *      collider's size.
+     * \return The center position.
+     */
     Vec2 getCenterPosition(bool useSprite = false) const;
     
     /**
@@ -320,13 +347,83 @@ public:
      */
     void move(float speed) { move(d->moveDir * speed); }
     
+    /**
+     * \brief Check whether this GameObject is to the left of another.
+     *
+     * This simply compares the center points of both objects, so it will report
+     * true **even if the objects overlap**.
+     *
+     * \param other The other GameObject.
+     * \param useSprite true to use the sprite for position checking, false to
+     *      use the collider.
+     * \return true if this GameObject is left of the other one.
+     */
     bool isLeftOf(const GameObject& other, bool useSprite = false) const;
+    
+    /**
+     * \brief Check whether this GameObject is to the right of another.
+     *
+     * This simply compares the center points of both objects, so it will report
+     * true **even if the objects overlap**.
+     *
+     * \param other The other GameObject.
+     * \param useSprite true to use the sprite for position checking, false to
+     *      use the collider.
+     * \return true if this GameObject is right of the other one.
+     */
     bool isRightOf(const GameObject& other, bool useSprite = false) const;
+    
+    /**
+     * \brief Check whether this GameObject is above another.
+     *
+     * This simply compares the center points of both objects, so it will report
+     * true **even if the objects overlap**.
+     *
+     * \param other The other GameObject.
+     * \param useSprite true to use the sprite for position checking, false to
+     *      use the collider.
+     * \return true if this GameObject is above the other one.
+     */
     bool isAbove(const GameObject& other, bool useSprite = false) const;
+    
+    /**
+     * \brief Check whether this GameObject is below another.
+     *
+     * This simply compares the center points of both objects, so it will report
+     * true **even if the objects overlap**.
+     *
+     * \param other The other GameObject.
+     * \param useSprite true to use the sprite for position checking, false to
+     *      use the collider.
+     * \return true if this GameObject is below the other one.
+     */
     bool isBelow(const GameObject& other, bool useSprite = false) const;
     
+    /**
+     * \brief Get the width of this GameObject.
+     *
+     * \param useSprite true to use the sprite's width, false to use the
+     *      collider's width.
+     * \return The width.
+     */
     float getWidth(bool useSprite = false) const;
+    
+    /**
+     * \brief Get the height of this GameObject.
+     *
+     * \param useSprite true to use the sprite's height, false to use the
+     *      collider's height.
+     * \return The height.
+     */
     float getHeight(bool useSprite = false) const;
+    
+    /**
+     * \brief Get the width and height of this GameObject.
+     *
+     * \param useSprite true to use the sprite's size, false to use the
+     *      collider's size.
+     * \return The size (width and height).
+     */
     Vec2 getSize(bool useSprite = false) const
             { return Vec2(getWidth(useSprite), getHeight(useSprite)); }
     

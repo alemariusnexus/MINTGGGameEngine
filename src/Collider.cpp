@@ -124,33 +124,32 @@ void Collider::debugDraw(Screen& screen, const Color& color, const Vec2& offset)
 
 size_t Collider::castRay (
         std::vector<RayCastHit>& hits,
-        const Vec2& start, const Vec2& direction, float length
+        const Vec2& start, const Vec2& direction, float length,
+        const GameObject& gameObject
 ) const {
     RayCastHit hit;
     size_t numHits = 0;
     
     if (type == Type::Circle) {
         
-        Vec2 startToCenter = Vec2(circle.cx, circle.cy) - start;
-        float distRayFromCenter = startToCenter.length() * sinf(direction.angle(startToCenter));
-        if (distRayFromCenter <= circle.r) {
-            float tCenter = startToCenter.dot(direction); // Project startToCenter onto direction
-            float tEnterExitHalfDist = sqrtf(circle.r*circle.r - distRayFromCenter*distRayFromCenter);
-            float tEnter = tCenter-tEnterExitHalfDist;
-            float tExit = tCenter+tEnterExitHalfDist;
+        const Vec2 startToCenter = Vec2(circle.cx, circle.cy) - start;
+        
+        const float distRayFromCenterSin = sinf(direction.angle(startToCenter));
+        const float distRayFromCenterSq = startToCenter.lengthSq() * distRayFromCenterSin*distRayFromCenterSin;
+        const float radiusSq = circle.r*circle.r;
+        
+        if (distRayFromCenterSq <= radiusSq) {
+            const float tCenter = startToCenter.dot(direction); // Project startToCenter onto direction
+            const float tEnterExitHalfDist = sqrtf(radiusSq - distRayFromCenterSq);
+            const float tEnter = tCenter-tEnterExitHalfDist;
+            const float tExit = tCenter+tEnterExitHalfDist;
             
             if (tEnter >= 0.0f  &&  tEnter <= length) {
-                hit.entering = true;
-                hit.hitPoint = start + direction*tEnter;
-                hit.rayOffset = tEnter;
-                hits.push_back(hit);
+                hits.emplace_back(gameObject, true, start + direction*tEnter, tEnter);
                 numHits++;
             }
             if (tExit >= 0.0f  &&  tExit <= length) {
-                hit.entering = false;
-                hit.hitPoint = start + direction*tExit;
-                hit.rayOffset = tExit;
-                hits.push_back(hit);
+                hits.emplace_back(gameObject, false, start + direction*tExit, tExit);
                 numHits++;
             }
         }
@@ -163,15 +162,15 @@ size_t Collider::castRay (
         int numIntersects = 0;
         float intersectTs[2];
         
-        int numHits;
+        int numIntersectsSingle;
         
         // Top
         intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
                 start, end,
                 Vec2(rect.x, rect.y), Vec2(rect.x+rect.w, rect.y),
-                &numHits
+                &numIntersectsSingle
                 );
-        if (numHits > 0) {
+        if (numIntersectsSingle > 0) {
             numIntersects++;
         }
         
@@ -179,9 +178,9 @@ size_t Collider::castRay (
         intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
                 start, end,
                 Vec2(rect.x, rect.y+rect.h), Vec2(rect.x+rect.w, rect.y+rect.h),
-                &numHits
+                &numIntersectsSingle
                 );
-        if (numHits > 0) {
+        if (numIntersectsSingle > 0) {
             numIntersects++;
         }
         
@@ -190,9 +189,9 @@ size_t Collider::castRay (
             intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
                     start, end,
                     Vec2(rect.x, rect.y), Vec2(rect.x, rect.y+rect.h),
-                    &numHits
+                    &numIntersectsSingle
                     );
-            if (numHits > 0) {
+            if (numIntersectsSingle > 0) {
                 numIntersects++;
             }
         }
@@ -202,9 +201,9 @@ size_t Collider::castRay (
             intersectTs[numIntersects] = IntersectLineSegLineSegSimple (
                     start, end,
                     Vec2(rect.x+rect.w, rect.y), Vec2(rect.x+rect.w, rect.y+rect.h),
-                    &numHits
+                    &numIntersectsSingle
                     );
-            if (numHits > 0) {
+            if (numIntersectsSingle > 0) {
                 numIntersects++;
             }
         }
@@ -218,28 +217,33 @@ size_t Collider::castRay (
                 intersectTs[1] = tmp;
             }
             
-            hit.entering = true;
-            hit.hitPoint = start + startToEnd*intersectTs[0];
-            hit.rayOffset = intersectTs[0]*length;
-            hits.push_back(hit);
+            hits.emplace_back (
+                    gameObject, true,
+                    start + startToEnd*intersectTs[0],
+                    intersectTs[0]*length
+                    );
             
-            hit.entering = false;
-            hit.hitPoint = start + startToEnd*intersectTs[1];
-            hit.rayOffset = intersectTs[1]*length;
-            hits.push_back(hit);
+            hits.emplace_back (
+                    gameObject, false,
+                    start + startToEnd*intersectTs[1],
+                    intersectTs[1]*length
+                    );
             
             numHits = 2;
         } else if (numIntersects == 1) {
             // Ray only enters or leaves
             
+            bool entering;
             if (PointLiesInsideAARect(start, rect.x, rect.y, rect.w, rect.h)) {
-                hit.entering = false;
+                entering = false;
             } else {
-                hit.entering = true;
+                entering = true;
             }
-            hit.hitPoint = start + startToEnd*intersectTs[0];
-            hit.rayOffset = intersectTs[0];
-            hits.push_back(hit);
+            hits.emplace_back (
+                    gameObject, entering,
+                    start + startToEnd*intersectTs[0],
+                    intersectTs[0]*length
+                    );
             
             numHits = 1;
         }

@@ -130,6 +130,11 @@ public:
      */
     void setDrawColliders(bool drawColliders) { this->drawColliders = drawColliders; }
     
+    /**
+     * \brief Enable or disable debug drawing of ray casts and results.
+     *
+     * \param drawRayCasts true to draw ray casts and results, false to disable.
+     */
     void setDrawRayCasts(bool drawRayCasts) { this->drawRayCasts = drawRayCasts; }
     
     /**
@@ -156,13 +161,10 @@ public:
      *
      * This will first clear the screen, then draw all GameObject and Text
      * instances that are visible. It can also optionally draw collider outlines
-     * for debugging purposes (see setDrawColliders()).
+     * and ray casts for debugging purposes (see setDrawColliders() and
+     * setDrawRayCasts()).
      */
     void draw();
-    
-    void drawBegin();
-    
-    void drawFinish();
     
     ///@}
     
@@ -204,6 +206,13 @@ public:
      */
     bool despawnObjects(const std::vector<GameObject>& objs);
     
+    /**
+     * \brief Get a list of all GameObjects.
+     *
+     * Only spawned objects will be considered.
+     *
+     * \return List of spawned GameObjects.
+     */
     std::vector<GameObject> getGameObjects() const;
     
     /**
@@ -213,6 +222,7 @@ public:
      * 
      * \param tag The tag to search for. Only a single tag is allowed here.
      * \param List of GameObjects with the tag.
+     * \return List of spawned GameObjects with the tag.
      */
     std::vector<GameObject> getGameObjectsWithTag(uint64_t tag) const;
     
@@ -243,11 +253,36 @@ public:
     /// \name Ray Casting
     ///@{
     
+    /**
+     * \brief Cast a ray against a set of GameObjects, calculating intersections
+     *      between them.
+     *
+     * The ray is taken as a line segment, with definite start and end points,
+     * i.e. it does NOT extend indefinitely in either direction.
+     *
+     * The ray is checked against the GameObjects' colliders, not their sprites.
+     *
+     * \param start Start point of the ray.
+     * \param end End point of the ray.
+     * \param gameObjects GameObjects against which to check intersection.
+     * \param sort true to sort the resulting hit points from ray start to ray
+     *      end. If false, the order is undefined.
+     * \return The result, containing all intersection points.
+     */
     RayCastResult castRay (
             const Vec2& start, const Vec2& end,
             const std::vector<GameObject>& gameObjects,
             bool sort = true
             );
+    
+    /**
+     * \brief Cast a ray against a set of GameObjects, calculating intersections
+     *      between them.
+     *
+     * See castRay(const Vec2&, const Vec2&, const std::vector<GameObject>&, bool)
+     * for details. This method checks the ray against all spawned GameObjects
+     * (which might be slow!)
+     */
     RayCastResult castRay (
             const Vec2& start, const Vec2& end,
             bool sort = true
@@ -256,13 +291,56 @@ public:
     ///@}
     
     
-    /// \name Camera
+    /// \name Camera & Scrolling
     ///@{
     
+    /**
+     * \brief Set the positional offset of the camera through which the world is
+     *      viewed.
+     *
+     * This can be used to change the part of the world that's visible on
+     * screen. It is useful e.g. for implementing scrolling games, or games
+     * where the camera follows the player.
+     *
+     * \param offset The camera offset.
+     * \see scroll(const Vec2&)
+     */
     void setCameraOffset(const Vec2& offset) { cameraOffset = offset; }
+    
+    /**
+     * \brief Set the positional offset of the camera through which the world is
+     *      viewed.
+     *
+     * \see setCameraOffset(const Vec2&)
+     */
     void setCameraOffset(float ox, float oy) { setCameraOffset(Vec2(ox, oy)); }
+    
+    /**
+     * \brief Get the positional offset of the camera through which the world is
+     *      viewed.
+     * 
+     * \return The camera offset.
+     * \see setCameraOffset(const Vec2&)
+     */
     Vec2 getCameraOffset() const { return cameraOffset; }
+    
+    /**
+     * \brief Scroll the world (actually the camera) by the given amount.
+     *
+     * This simply uses setCameraOffset(const Vec2&).
+     *
+     * \param delta The scroll delta.
+     */
     void scroll(const Vec2& delta) { setCameraOffset(getCameraOffset() + delta); }
+    
+    /**
+     * \brief Scroll the world (actually the camera) by the given amount.
+     *
+     * This simply uses setCameraOffset(const Vec2&).
+     *
+     * \param dx The scroll delta in x direction.
+     * \param dy The scroll delta in y direction.
+     */
     void scroll(float dx, float dy) { scroll(Vec2(dx, dy)); }
     
     ///@}
@@ -314,6 +392,9 @@ public:
     ///@}
 
 private:
+    void drawBegin();
+    void drawFinish();
+
     void onCollision(const GameObject& a, const GameObject& b, float shrink);
 
 private:

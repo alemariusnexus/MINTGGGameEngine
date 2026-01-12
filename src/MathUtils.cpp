@@ -37,9 +37,6 @@ float IntersectLineSegLineSegSimple (
     const float dyA1A2 = a1.y() - a2.y();
     const float dyB1B2 = b1.y() - b2.y();
     
-    const float dxA1B1 = a1.x() - b1.x();
-    const float dyA1B1 = a1.y() - b1.y();
-    
     const float tuDenom = dxA1A2*dyB1B2 - dyA1A2*dxB1B2;
     
     if (fabsf(tuDenom) < 1e-8f) {
@@ -54,21 +51,25 @@ float IntersectLineSegLineSegSimple (
         return -1.0f;
     }
     
+    const float dxA1B1 = a1.x() - b1.x();
+    const float dyA1B1 = a1.y() - b1.y();
+    
     const float tNum = dxA1B1*dyB1B2 - dyA1B1*dxB1B2;
-    const float t = tNum / tuDenom;
-    if (t < 0.0f  ||  t > 1.0f) {
+    if (signbit(tNum) != signbit(tuDenom)  ||  fabsf(tNum) > fabsf(tuDenom)) {
         // No intersection on A
         if (numHits) *numHits = 0;
         return -1.0f;
     }
     
     const float uNum = dxA1A2*dyA1B1 - dyA1A2*dxA1B1;
-    const float u = -uNum / tuDenom;
-    if (u < 0.0f  ||  u > 1.0f) {
+    if (signbit(uNum) == signbit(tuDenom)  ||  fabsf(uNum) > fabsf(tuDenom)) {
         // No intersection on B
         if (numHits) *numHits = 0;
         return -1.0f;
     }
+    
+    const float t = tNum / tuDenom;
+    //const float u = -uNum / tuDenom;
     
     if (numHits) *numHits = 1;
     return t;

@@ -76,7 +76,8 @@ public:
      * \return The vector's length prior to normalization.
      * \see normalized()
      */
-    float normalize() { float l = length(); if (l < 1e-6f) return l; float il = 1.0f/l; px *= il; py *= il; return l; }
+    float normalize()
+            { float l = length(); if (l < 1e-6f) return l; float il = 1.0f/l; px *= il; py *= il; return l; }
     
     /**
      * \brief Return a normalized version of this vector, i.e. one with length
@@ -85,11 +86,20 @@ public:
      * Note that this method does not change the original vector, but returns
      * the normalized version as a copy.
      *
-     * \return The normalized veftor.
+     * \param outLen If not null, this will be set to the vector's length prior
+     *      to normalization
+     * \return The normalized vector.
      * \see normalize()
      */
-    const Vec2 normalized() const { Vec2 r(*this); r.normalize(); return r; }
+    const Vec2 normalized(float* outLen = nullptr) const
+            { Vec2 r(*this); float l = r.normalize(); if (outLen) *outLen = l; return r; }
     
+    /**
+     * \brief Calculate the angle between this vector and another.
+     *
+     * \param o The other vector.
+     * \return The angle between the vectors. Radians in range [0, pi]
+     */
     float angle(const Vec2& o) const;
     
     ///@}
