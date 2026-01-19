@@ -14,7 +14,7 @@ namespace MINTGGGameEngine
 Game::Game()
     : screen(nullptr), randGen(randDev()),
       drawColliders(false), drawRayCasts(false),
-      lastFrameTime(-1), frameTime(1000/50)
+      lastFrameTime(-1), frameTime(1000/40)
 {
 }
 

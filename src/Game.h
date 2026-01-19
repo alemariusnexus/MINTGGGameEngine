@@ -68,7 +68,7 @@ public:
      * \param fps The targeted value for frames per second. This influences the
      *      wait time in sleepNextFrame().
      */
-    void begin(Screen& screen, uint16_t fps = 50);
+    void begin(Screen& screen, uint16_t fps = 40);
     
     
     /// \name Engine Components

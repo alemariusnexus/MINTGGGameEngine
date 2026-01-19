@@ -7,7 +7,7 @@ namespace MINTGGGameEngine
 void ScreenST7735::begin(int rotation)
 {
     tft->initR(INITR_BLACKTAB);
-    tft->setSPISpeed(40000000);
+    tft->setSPISpeed(20000000);
     tft->setRotation(rotation);
 
     tft->fillScreen(ST77XX_WHITE);
