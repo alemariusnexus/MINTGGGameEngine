@@ -9,6 +9,9 @@
 
 #include <MCP23008.h>
 
+#include "GPIODevice.h"
+#include "GPIODeviceNative.h"
+
 
 namespace MINTGGGameEngine
 {
@@ -28,7 +31,8 @@ namespace MINTGGGameEngine
  * Regular buttons are defined by defineButton(). They are directly connected
  * to the microcontroller running the game code.
  *
- * MCP23009 buttons are connected to an external MCP23009 IO expander via I2C.
+ * MCP2300X buttons are connected to an external MCP23008/MCP23009 IO expander
+ * via I2C.
  *
  * Each button is identified by a unique string ID.
  *
@@ -70,39 +74,18 @@ public:
     typedef void (*ButtonComboCb)();
     
 private:
-    enum class ButtonType
-    {
-        Regular,
-        MCP23009
-    };
-
-    struct MCP23009Device
-    {
-        MCP23009Device(uint8_t i2cAddr) : mcp(i2cAddr) {}
-        MCP23008 mcp;
-        uint8_t lastState;
-    };
-    
     struct ButtonDef
     {
-        ButtonDef(const std::string& id, ButtonType type, int flags) : id(id), type(type), flags(flags), pressed(false), debounceCount(0) {}
+        ButtonDef(const std::string& id, unsigned int pin, GPIODevice* dev, int flags) : id(id), pin(pin), dev(dev), flags(flags), rawState(0), pressed(false), debounceCount(0) {}
         
         std::string id;
-        ButtonType type;
+		unsigned int pin;
+        GPIODevice* dev;
         int flags;
         
+		uint8_t rawState;
         bool pressed;
         uint8_t debounceCount;
-        
-        union {
-            struct {
-                uint8_t pin;
-            } regular;
-            struct {
-                MCP23009Device* dev;
-                uint8_t pin;
-            } mcp23009;
-        };
     };
     
     struct AxisDef
@@ -152,33 +135,22 @@ public:
     ///@{
     
     /**
-     * \brief Define a button that's directly connected to the microcontroller.
+     * \brief Define a button.
      *
      * \param id An arbitrary unique ID for the button. This is used later to
      *      identify this button.
      * \param pin The pin to which the button is connected.
-     * \param flags Configuration flags. Default is active-low with pull-up.
+	 * \param gpioDevice The GPIO device on which the button is connected. Uses
+	 *		the default on-board GPIOs by default.
+	 * \param flags Configuration flags. Default is active-low with pull-up.
      * \return true if successful, false otherwise.
      */
-    bool defineButton(const std::string& id, uint8_t pin, int flags = PinFlagsActiveLow | PinFlagsPullup);
-    
-    /**
-     * \brief Define a button that's connected to an external MCP23009 via I2C.
-     *
-     * Multiple buttons can be defined on the same MCP23009, and multiple
-     * MCP23009 devices can be used as long as they have different I2C addresses
-     * and are on the same default I2C bus.
-     *
-     * \param id An arbitrary unique ID for the button. This is used later to
-     *      identify this button.
-     * \param pin The pin to which the button is connected. For the MCP23009,
-     *      this is a number between 0 and 7.
-     * \param flags Configuration flags. Default is active-low with pull-up.
-     * \param i2cAddr The I2C address of the MCP23009 device. The default value
-     *      assumes the ADDR pin to be connected directly to GND.
-     * \return true if successful, false otherwise.
-     */
-    bool defineButtonMCP23009(const std::string& id, uint8_t pin, int flags = PinFlagsActiveLow | PinFlagsPullup, uint8_t i2cAddr = 0x20);
+    bool defineButton (
+			const std::string& id,
+			unsigned int pin,
+			GPIODevice& gpioDevice = GPIODeviceNative::getInstance(),
+			int flags = PinFlagsActiveLow | PinFlagsPullup
+			);
     
     /**
      * \brief Remove a previously defined button.
@@ -187,6 +159,13 @@ public:
      * \return true if successfully undefined, false if button not found.
      */
     bool undefineButton(const std::string& id);
+	
+	/**
+	 * \brief Return a list of all defined button IDs.
+	 *
+	 * \return List of button IDs.
+	 */
+	std::vector<std::string> getButtonIDs() const;
     
     ///@}
     
@@ -235,6 +214,13 @@ public:
      * \return true if successfully undefined, false if axis not found.
      */
     bool undefineAxis(const std::string& id);
+	
+	/**
+	 * \brief Return a list of all defined axis IDs.
+	 *
+	 * \return List of axis IDs.
+	 */
+	std::vector<std::string> getAxisIDs() const;
     
     ///@}
     
@@ -313,8 +299,6 @@ public:
 private:
     void inputTaskMain();
     
-    MCP23009Device* registerMCP23009(uint8_t addr);
-    
     ButtonDef* getButtonDef(const std::string& id);
     AxisDef* getAxisDef(const std::string& id);
     
@@ -326,9 +310,11 @@ private:
     TaskHandle_t inputTask;
     SemaphoreHandle_t inputMtx;
     
-    std::vector<MCP23009Device*> mcp23009Devices;
-    
+	std::vector<std::string> buttonIDs;
     std::unordered_map<std::string, ButtonDef*> buttons;
+	std::unordered_map<GPIODevice*, std::vector<ButtonDef*>> buttonsByDevice;
+	
+	std::vector<std::string> axisIDs;
     std::unordered_map<std::string, AxisDef*> axes;
     
     std::vector<ButtonCombo*> buttonCombos;

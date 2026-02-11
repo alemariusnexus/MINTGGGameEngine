@@ -1,5 +1,7 @@
 #include "InputEngine.h"
 
+#include <set>
+
 
 namespace MINTGGGameEngine
 {
@@ -29,31 +31,47 @@ bool InputEngine::begin(uint8_t debounceCount)
 void InputEngine::inputTaskMain()
 {
     std::vector<ButtonDef*> stateChangedButtons;
+	
+	std::vector<unsigned int> pinNums;
+	std::vector<uint8_t> pinValues;
     
     while (true) {
-        // Fetch all MCP23009 states from I2C
-        for (MCP23009Device* dev : mcp23009Devices) {
-            dev->lastState = dev->mcp.read8();
-        }
+		xSemaphoreTake(inputMtx, portMAX_DELAY);
+		
+		for (auto& pair : buttonsByDevice) {
+			GPIODevice* dev = pair.first;
+			
+			// Collect pin numbers for buttons
+			pinNums.clear();
+			for (ButtonDef* def : pair.second) {
+				pinNums.push_back(def->pin);
+			}
+			pinValues.resize(pinNums.size());
+			
+			// Read all at once
+			dev->readPins(pinNums.data(), pinValues.data(), pinNums.size());
+			
+			// Store raw state
+			size_t pinIdx = 0;
+			for (ButtonDef* def : pair.second) {
+				def->rawState = pinValues[pinIdx];
+				pinIdx++;
+			}
+		}
         
-        xSemaphoreTake(inputMtx, portMAX_DELAY);
-        
-        // Apply all button press states (including debouncing)
+        // Apply all button states (including debouncing)
         for (auto it = buttons.begin() ; it != buttons.end() ; ++it) {
             ButtonDef* def = it->second;
-            
-            if (def->type == ButtonType::Regular) {
-                bool pressed = (digitalRead(def->regular.pin) == ((def->flags & PinFlagsActiveLow) != 0 ? LOW : HIGH));
-                if (debounceButton(def, pressed)) {
-                    stateChangedButtons.push_back(def);
-                }
-            } else if (def->type == ButtonType::MCP23009) {
-                uint8_t singleState = def->mcp23009.dev->lastState & (1 << def->mcp23009.pin);
-                bool pressed = ((def->flags & PinFlagsActiveLow) != 0) ? (singleState == 0) : (singleState != 0);
-                if (debounceButton(def, pressed)) {
-                    stateChangedButtons.push_back(def);
-                }
-            }
+			
+			bool pressed;
+			if ((def->flags & PinFlagsActiveLow) != 0) {
+				pressed = (def->rawState == 0);
+			} else {
+				pressed = (def->rawState != 0);
+			}
+			if (debounceButton(def, pressed)) {
+				stateChangedButtons.push_back(def);
+			}
         }
         
         // Read all axis values
@@ -125,17 +143,22 @@ void InputEngine::inputTaskMain()
     }
 }
 
-bool InputEngine::defineButton(const std::string& id, uint8_t pin, int flags)
-{
+bool InputEngine::defineButton (
+		const std::string& id,
+		unsigned int pin,
+		GPIODevice& gpioDevice,
+		int flags
+) {
     if (getButtonDef(id)) {
         return false;
     }
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
     
-    ButtonDef* def = new ButtonDef(id, ButtonType::Regular, flags);
-    def->regular.pin = pin;
+    ButtonDef* def = new ButtonDef(id, pin, &gpioDevice, flags);
+	buttonIDs.push_back(id);
     buttons[id] = def;
+	buttonsByDevice[&gpioDevice].push_back(def);
     
     int pmFlags = INPUT;
     if ((flags & PinFlagsPullup) != 0) {
@@ -144,37 +167,8 @@ bool InputEngine::defineButton(const std::string& id, uint8_t pin, int flags)
     if ((flags & PinFlagsPulldown) != 0) {
         pmFlags = INPUT_PULLDOWN;
     }
-    pinMode(pin, pmFlags);
-    
-    xSemaphoreGive(inputMtx);
-    
-    return true;
-}
-
-bool InputEngine::defineButtonMCP23009(const std::string& id, uint8_t pin, int flags, uint8_t i2cAddr)
-{
-    if (getButtonDef(id)) {
-        return false;
-    }
-    
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
-    
-    MCP23009Device* dev = registerMCP23009(i2cAddr);
-    
-    ButtonDef* def = new ButtonDef(id, ButtonType::MCP23009, flags);
-    def->mcp23009.dev = dev;
-    def->mcp23009.pin = pin;
-    buttons[id] = def;
-    
-    int pmFlags = INPUT;
-    if ((flags & PinFlagsPullup) != 0) {
-        pmFlags = INPUT_PULLUP;
-    }
-    if ((flags & PinFlagsPulldown) != 0) {
-        pmFlags = INPUT_PULLDOWN;
-    }
-    
-    dev->mcp.pinMode1(pin, pmFlags);
+	
+	gpioDevice.setPinMode(pin, pmFlags);
     
     xSemaphoreGive(inputMtx);
     
@@ -187,13 +181,25 @@ bool InputEngine::undefineButton(const std::string& id)
     if (it == buttons.end()) {
         return false;
     }
+	
+	ButtonDef* def = it->second;
+	auto& devButtons = buttonsByDevice[def->dev];
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
-    delete it->second;
+	buttonIDs.erase (
+			std::find(buttonIDs.begin(), buttonIDs.end(), id));
+	devButtons.erase (
+			std::find(devButtons.begin(), devButtons.end(), def));
+    delete def;
     buttons.erase(it);
     xSemaphoreGive(inputMtx);
     
     return true;
+}
+
+std::vector<std::string> InputEngine::getButtonIDs() const
+{
+	return buttonIDs;
 }
 
 bool InputEngine::defineAxis (
@@ -206,6 +212,8 @@ bool InputEngine::defineAxis (
     }
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
+	
+	axisIDs.push_back(id);
     
     AxisDef* def = new AxisDef(id, pin);
     def->minValue = minValue;
@@ -227,11 +235,18 @@ bool InputEngine::undefineAxis(const std::string& id)
     }
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
+	axisIDs.erase (
+			std::find(axisIDs.begin(), axisIDs.end(), id));
     delete it->second;
     axes.erase(it);
     xSemaphoreGive(inputMtx);
     
     return true;
+}
+
+std::vector<std::string> InputEngine::getAxisIDs() const
+{
+	return axisIDs;
 }
 
 bool InputEngine::hasButton(const std::string& id)
@@ -273,19 +288,6 @@ float InputEngine::getAxisRaw(const std::string& id)
 {
     AxisDef* def = getAxisDef(id);
     return def ? def->rawValue : 0.0f;
-}
-
-InputEngine::MCP23009Device* InputEngine::registerMCP23009(uint8_t addr)
-{
-    for (MCP23009Device* dev : mcp23009Devices) {
-        if (dev->mcp.getAddress() == addr) {
-            return dev;
-        }
-    }
-    MCP23009Device* dev = new MCP23009Device(addr);
-    mcp23009Devices.push_back(dev);
-    dev->mcp.begin();
-    return dev;
 }
 
 InputEngine::ButtonDef* InputEngine::getButtonDef(const std::string& id)

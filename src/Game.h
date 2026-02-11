@@ -43,6 +43,13 @@ private:
         Vec2 rayEnd;
         RayCastResult result;
     };
+	
+	struct MCP2300XDevice
+    {
+        MCP2300XDevice(uint8_t i2cAddr) : mcp(i2cAddr) {}
+        MCP23008 mcp;
+        uint8_t lastState;
+    };
     
 public:
     /**
