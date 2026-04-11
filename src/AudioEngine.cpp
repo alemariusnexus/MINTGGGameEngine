@@ -42,6 +42,9 @@ bool AudioEngine::stopClip(const AudioClip& clip)
 
 void AudioEngine::setMute(bool mute)
 {
+	if (mute == this->mute) {
+		return;
+	}
     this->mute = mute;
     curSpeakerFreq = 0;
 }
