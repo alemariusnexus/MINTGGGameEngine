@@ -1,6 +1,14 @@
 #include "InputEngine.h"
 
+#include <algorithm>
+#include <cmath>
 #include <set>
+
+#include "ADCManager.h"
+#include "Log.h"
+
+
+LOG_USE_TAG("InputEngine")
 
 
 namespace MINTGGGameEngine
@@ -21,7 +29,7 @@ bool InputEngine::begin(uint8_t debounceCount)
     BaseType_t res = xTaskCreate(&_InputEngineTaskMain, "InputTask", 4096,
             this, 1, &inputTask);
     if (res != pdPASS) {
-        Serial.println("ERROR: Unable to create InputTask.");
+        LogError(TAG, "Unable to create InputTask.");
         return false;
     }
     
@@ -75,10 +83,10 @@ void InputEngine::inputTaskMain()
         }
         
         // Read all axis values
-        float analogMaxValueFloat = getAnalogReadMaxValue();
+        float analogMaxValueFloat = ADCManager::getInstance().getMaxRawValue();
         for (auto it = axes.begin() ; it != axes.end() ; ++it) {
             AxisDef* def = it->second;
-            float adcT = analogRead(def->pin) / analogMaxValueFloat;
+            float adcT = ADCManager::getInstance().readRaw(def->pin) / analogMaxValueFloat;
             
             float minVal;
             float maxVal;
@@ -210,6 +218,10 @@ bool InputEngine::defineAxis (
     if (getAxisDef(id)) {
         return false;
     }
+
+    if (!ADCManager::getInstance().setupAnalogPin(pin)) {
+        return false;
+    }
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
 	
@@ -233,6 +245,8 @@ bool InputEngine::undefineAxis(const std::string& id)
     if (it == axes.end()) {
         return false;
     }
+
+    uint8_t pin = it->second->pin;
     
     xSemaphoreTake(inputMtx, portMAX_DELAY);
 	axisIDs.erase (
@@ -240,6 +254,8 @@ bool InputEngine::undefineAxis(const std::string& id)
     delete it->second;
     axes.erase(it);
     xSemaphoreGive(inputMtx);
+
+    ADCManager::getInstance().destroyAnalogPin(pin);
     
     return true;
 }
@@ -313,13 +329,6 @@ bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
         return true;
     }
     return false;
-}
-
-uint16_t InputEngine::getAnalogReadMaxValue() const
-{
-    // TODO: This assumes the ESP32 ADC resolution of 12 bits. Arduino doesn't
-    //  have a function to query it...
-    return 4095;
 }
 
 }

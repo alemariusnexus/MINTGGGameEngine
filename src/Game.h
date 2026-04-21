@@ -14,6 +14,8 @@
 #include <set>
 #include <vector>
 
+#include "Util.h"
+
 
 namespace MINTGGGameEngine
 {
@@ -42,13 +44,6 @@ private:
         Vec2 rayStart;
         Vec2 rayEnd;
         RayCastResult result;
-    };
-	
-	struct MCP2300XDevice
-    {
-        MCP2300XDevice(uint8_t i2cAddr) : mcp(i2cAddr) {}
-        MCP23008 mcp;
-        uint8_t lastState;
     };
     
 public:
@@ -421,7 +416,7 @@ private:
     bool drawRayCasts;
     
     uint16_t frameTime;
-    long lastFrameTime;
+    timer_mstick_t lastFrameTime;
     
     std::vector<RayCastDrawInfo> rayCastDrawInfos;
     

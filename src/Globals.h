@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#endif
 
 #include <cstdlib>
 #include <cstring>
@@ -35,5 +37,27 @@ enum ZOrder
     ZOrderForeground    = 6000, ///< Rendered as a foreground object (e.g. for HUD icons)
     ZOrderOverlay       = 7000  ///< Rendered as an overlay object (e.g. for "game over" screens)
 };
+
+
+#ifndef ARDUINO
+enum
+{
+    LOW = 0,
+    HIGH = 1
+};
+
+
+enum
+{
+    INPUT           = 0x00,
+    OUTPUT          = 0x01,
+
+    INPUT_PULLDOWN  = 0x02,
+    INPUT_PULLUP    = 0x04,
+
+    OUTPUT_PULLDOWN = 0x03,
+    OUTPUT_PULLUP   = 0x05
+};
+#endif
 
 }

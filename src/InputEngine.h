@@ -2,12 +2,15 @@
 
 #include "Globals.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <freertos/task.h>
+
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <MCP23008.h>
 
 #include "GPIODevice.h"
 #include "GPIODeviceNative.h"
@@ -71,7 +74,8 @@ public:
     /**
      * \brief Callback function for when a button combination is pressed.
      */
-    typedef void (*ButtonComboCb)();
+    typedef std::function<void()> ButtonComboCb;
+    //typedef void (*ButtonComboCb)();
     
 private:
     struct ButtonDef
@@ -91,7 +95,7 @@ private:
     struct AxisDef
     {
         AxisDef(const std::string& id, uint8_t pin) : id(id), pin(pin), minValue(0.0f), maxValue(1.0f),
-                neutralValue(0.5f), neutralWidth(0.1f), value(0.5f), rawValue(0.5f) {}
+                neutralValue(0.5f), neutralWidth(0.1f), rawValue(0.5f), value(0.5f) {}
         
         std::string id;
         uint8_t pin;
@@ -303,8 +307,6 @@ private:
     AxisDef* getAxisDef(const std::string& id);
     
     bool debounceButton(ButtonDef* def, bool pressed);
-    
-    uint16_t getAnalogReadMaxValue() const;
 
 private:
     TaskHandle_t inputTask;

@@ -3,6 +3,11 @@
 #include "Globals.h"
 #include "AudioClip.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <driver/ledc.h>
+
 #include <set>
 
 
@@ -118,6 +123,9 @@ private:
     
     void audioTaskMain();
 
+    void tone(uint16_t freq);
+    void noTone();
+
 private:
     int16_t speakerPin;
     uint16_t curSpeakerFreq;
@@ -126,6 +134,11 @@ private:
     std::set<AudioState> states;
     
     TaskHandle_t audioTask;
+
+#ifdef ESP_PLATFORM
+    ledc_timer_t ledcTimer;
+    ledc_channel_t ledcChannel;
+#endif
 };
 
 }

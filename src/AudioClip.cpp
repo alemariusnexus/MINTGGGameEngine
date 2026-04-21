@@ -1,5 +1,7 @@
 #include "AudioClip.h"
 
+#include <cmath>
+
 #include <algorithm>
 
 

@@ -4,10 +4,12 @@
 
 #include <unordered_map>
 
+#ifdef ARDUINO
 #include <Wire.h>
-#include <MCP23008.h>
+#endif
 
 #include "GPIODevice.h"
+#include "MCP2300XDevice.h"
 
 
 namespace MINTGGGameEngine
@@ -29,6 +31,7 @@ namespace MINTGGGameEngine
 class GPIODeviceMCP2300X : public GPIODevice
 {
 public:
+#ifdef ARDUINO
 	/**
 	 * \brief Create a new MCP2300X instance.
 	 *
@@ -37,6 +40,10 @@ public:
 	 * \param wire The Arduino Wire instance to use for the I2C bus.
 	 */
 	GPIODeviceMCP2300X(uint8_t i2cAddr = 0x20, TwoWire* wire = &Wire);
+#elif defined(ESP_PLATFORM)
+    GPIODeviceMCP2300X(gpio_num_t sclPin, gpio_num_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
+    GPIODeviceMCP2300X(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev);
+#endif
 	
 	/**
 	 * \brief Initializes the MCP2300X.
@@ -51,7 +58,7 @@ public:
 	void readPins(const unsigned int* pins, uint8_t* values, size_t numPins) override;
 	
 private:
-	MCP23008 mcp;
+	MCP2300XDevice mcp;
 };
 
 

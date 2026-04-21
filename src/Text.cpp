@@ -4,7 +4,7 @@
 namespace MINTGGGameEngine
 {
 
-Text::Text(int16_t x, int16_t y, int size, Color color, String text)
+Text::Text(int16_t x, int16_t y, int size, Color color, const std::string& text)
     : d(std::make_shared<Data>())
 {
     d->x = x;

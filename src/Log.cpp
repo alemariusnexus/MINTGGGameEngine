@@ -1,0 +1,32 @@
+#include "Log.h"
+
+#include <esp_log.h>
+
+
+namespace MINTGGGameEngine
+{
+
+
+#ifndef ESP_PLATFORM
+
+bool LogMessageBegin(const char* tag, int level)
+{
+    const char* levelStr;
+    switch (level) {
+    case LOG_LEVEL_ERROR: levelStr = "ERR"; break;
+    case LOG_LEVEL_WARNING: levelStr = "WRN"; break;
+    case LOG_LEVEL_INFO: levelStr = "INF"; break;
+    case LOG_LEVEL_DEBUG: levelStr = "DBG"; break;
+    case LOG_LEVEL_VERBOSE: levelStr = "VRB"; break;
+    }
+    Serial.print("[");
+    Serial.print(levelStr);
+    Serial.print("] ");
+    Serial.print(tag);
+    Serial.print(" - ");
+}
+
+#endif
+
+
+}

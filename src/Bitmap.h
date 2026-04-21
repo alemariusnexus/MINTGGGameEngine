@@ -4,7 +4,9 @@
 
 #include <memory>
 
+#ifdef ARDUINO
 #include <SD.h>
+#endif
 
 
 namespace MINTGGGameEngine
@@ -79,8 +81,8 @@ public:
         }
         return Bitmap(w, h, cd, cm, true);
     }
-    
-    
+
+#ifdef ARDUINO
     /**
      * \brief Create a bitmap from a BMP file at the given File object.
      *
@@ -96,6 +98,7 @@ public:
      * \see loadBMP(const char*, const char**)
      */
     static Bitmap loadBMP(File& file, const char** outErrmsg = nullptr);
+#endif
     
     /**
      * \brief Create a bitmap from a BMP file at the given File object.

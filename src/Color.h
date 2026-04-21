@@ -56,6 +56,14 @@ public:
      */
     operator uint16_t() const { return toRGB565(); }
 
+    Color & operator=(const Color &other)
+    {
+        if (this == &other)
+            return *this;
+        rgb565 = other.rgb565;
+        return *this;
+    }
+
 private:
     uint16_t rgb565;
 };

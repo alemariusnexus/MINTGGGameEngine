@@ -4,6 +4,7 @@
 #include "Color.h"
 
 #include <memory>
+#include <string>
 
 
 namespace MINTGGGameEngine
@@ -26,7 +27,7 @@ private:
         int16_t y;
         int size;
         Color color;
-        String text;
+        std::string text;
         bool visible;
         bool worldSpace;
     };
@@ -43,21 +44,21 @@ public:
      * \param color The text color.
      * \param text The text content.
      */
-    Text(int16_t x = 0, int16_t y = 0, int size = 1, Color color = Color::BLACK, String text = "");
+    Text(int16_t x = 0, int16_t y = 0, int size = 1, Color color = Color::BLACK, const std::string& text = "");
     Text(const Text& other) : d(other.d) {}
     
     int16_t getX() const { return d->x; }
     int16_t getY() const { return d->y; }
     int getSize() const { return d->size; }
     Color getColor() const { return d->color; }
-    String getText() const { return d->text; }
+    std::string getText() const { return d->text; }
     bool isVisible() const { return d->visible; }
     bool isWorldSpace() const { return d->worldSpace; }
     
     void setPosition(int16_t x, int16_t y) { d->x = x; d->y = y; }
     void setSize(int size) { d->size = size; }
     void setColor(const Color& color) { d->color = color; }
-    void setText(const String& text) { d->text = text; }
+    void setText(const std::string& text) { d->text = text; }
     void setVisible(bool visible) { d->visible = visible; }
     void setWorldSpace(bool worldSpace) { d->worldSpace = worldSpace; }
     

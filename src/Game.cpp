@@ -1,8 +1,12 @@
 #include "Game.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include <algorithm>
 #include <cmath>
+
+#include "Util.h"
 
 
 
@@ -14,16 +18,18 @@ namespace MINTGGGameEngine
 Game::Game()
     : screen(nullptr), randGen(randDev()),
       drawColliders(false), drawRayCasts(false),
-      lastFrameTime(-1), frameTime(1000/40)
+      frameTime(1000/40), lastFrameTime(0)
 {
 }
 
 
 void Game::begin(Screen& screen, uint16_t fps)
 {
+    TimerInit();
+
     this->screen = &screen;
     frameTime = 1000 / fps;
-    lastFrameTime = millis();
+    lastFrameTime = TimerGetTickcountMs();
 }
 
 
@@ -225,11 +231,11 @@ RayCastResult Game::castRay (
 
 void Game::sleepNextFrame()
 {
-    long now = millis();
+    long now = TimerGetTickcountMs();
     
     uint32_t delayTimeMs = 0;
     
-    if (lastFrameTime < 0) {
+    if (lastFrameTime == 0) {
         delayTimeMs = frameTime;
     } else if (now-lastFrameTime < frameTime) {
         delayTimeMs = frameTime - (now-lastFrameTime);
@@ -238,7 +244,7 @@ void Game::sleepNextFrame()
     vTaskDelay(delayTimeMs / portTICK_PERIOD_MS);
     // delay(delayTimeMs);
     
-    lastFrameTime = millis();
+    lastFrameTime = TimerGetTickcountMs();
 }
 
 

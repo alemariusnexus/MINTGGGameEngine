@@ -1,6 +1,8 @@
 #include "ScreenST7735.h"
 
 
+#ifdef ARDUINO
+
 namespace MINTGGGameEngine
 {
 
@@ -152,3 +154,5 @@ bool ScreenST7735::saveScreenshot(const char* path)
 }
 
 }
+
+#endif

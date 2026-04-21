@@ -1,5 +1,14 @@
 #include "AudioEngine.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include "Log.h"
+#include "util.h"
+
+
+LOG_USE_TAG("AudioEngine")
+
 
 namespace MINTGGGameEngine
 {
@@ -13,11 +22,41 @@ void _AudioEngineTaskMain(void* params)
 bool AudioEngine::begin(uint8_t speakerPin)
 {
     this->speakerPin = speakerPin;
+
+#ifdef ESP_PLATFORM
+    // Configure LEDC for the audio PWM signal
+
+    ledcTimer = LEDC_TIMER_0;
+    ledcChannel = LEDC_CHANNEL_0;
+
+    ledc_timer_config_t timerCfg = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_10_BIT,
+        .timer_num = ledcTimer,
+        .freq_hz = 440,
+        .clk_cfg = LEDC_AUTO_CLK,
+        .deconfigure = false
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&timerCfg));
+
+    ledc_channel_config_t channelCfg = {
+        .gpio_num = speakerPin,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = ledcChannel,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = ledcTimer,
+        .duty = 0,
+        .hpoint = 0,
+        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
+        .flags = {}
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&channelCfg));
+#endif
     
-    BaseType_t res = xTaskCreate(&_AudioEngineTaskMain, "AudioTask", 4096,
+    BaseType_t bres = xTaskCreate(&_AudioEngineTaskMain, "AudioTask", 4096,
             this, 1, &audioTask);
-    if (res != pdPASS) {
-        Serial.println("ERROR: Unable to create AudioTask.");
+    if (bres != pdPASS) {
+        LogError(TAG, "ERROR: Unable to create AudioTask.");
         return false;
     }
     
@@ -122,9 +161,9 @@ bool AudioEngine::advanceAudioState(std::set<AudioState>::iterator stateIt, floa
 
 void AudioEngine::audioTaskMain()
 {
-    unsigned long lastTimeUs = 0;
+    timer_ustick_t lastTimeUs = 0;
     while (true) {
-        unsigned long now = micros();
+        timer_ustick_t now = TimerGetTickcountUs();
         float deltaTime = 0.0f;
         
         if (lastTimeUs != 0  &&  now > lastTimeUs) {
@@ -149,7 +188,7 @@ void AudioEngine::setTone(uint16_t freq)
         return;
     }
     if (mute) {
-        noTone(speakerPin);
+        this->noTone();
         return;
     }
     if (curSpeakerFreq == freq) {
@@ -158,10 +197,31 @@ void AudioEngine::setTone(uint16_t freq)
     
     curSpeakerFreq = freq;
     if (freq == 0) {
-        noTone(speakerPin);
+        this->noTone();
     } else {
-        tone(speakerPin, freq);
+        this->tone(freq);
     }
+}
+
+void AudioEngine::tone(uint16_t freq)
+{
+#ifdef ARDUINO
+    ::tone(speakerPin, freq);
+#elif defined(ESP_PLATFORM)
+    ledc_set_freq(LEDC_LOW_SPEED_MODE, ledcTimer, freq);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, ledcChannel, 511);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, ledcChannel);
+#endif
+}
+
+void AudioEngine::noTone()
+{
+#ifdef ARDUINO
+    ::noTone(speakerPin);
+#elif defined(ESP_PLATFORM)
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, ledcChannel, 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, ledcChannel);
+#endif
 }
 
 }

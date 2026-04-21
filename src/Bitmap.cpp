@@ -29,6 +29,7 @@ struct BMPInfoHeader
 } __attribute__((packed));
 
 
+#ifdef ARDUINO
 Bitmap Bitmap::loadBMP(File& file, const char** outErrmsg)
 {
     BMPFileHeader fileHeader;
@@ -128,9 +129,11 @@ Bitmap Bitmap::loadBMP(File& file, const char** outErrmsg)
     
     return Bitmap::takeOwnership(infoHeader.width, infoHeader.height, data16, mask);
 }
+#endif
 
 Bitmap Bitmap::loadBMP(const char* file, const char** outErrmsg)
 {
+#ifdef ARDUINO
     File f = SD.open(file);
     if (!f) {
         if (outErrmsg) *outErrmsg = "failed to open file";
@@ -139,6 +142,10 @@ Bitmap Bitmap::loadBMP(const char* file, const char** outErrmsg)
     Bitmap bitmap = Bitmap::loadBMP(f, outErrmsg);
     f.close();
     return bitmap;
+#else
+    // TODO: Implement for ESP-IDF
+    return Bitmap();
+#endif
 }
 
 Bitmap Bitmap::scaled(int16_t factor) const

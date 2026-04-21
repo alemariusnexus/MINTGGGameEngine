@@ -10,7 +10,7 @@ namespace MINTGGGameEngine
 
 
 /**
- * \brief Test whether a point lies within an alix-aligned rectangle.
+ * \brief Test whether a point lies within an axis-aligned rectangle.
  *
  * \param p The point in question.
  * \param rx Top-left corner x coordinate of rectangle.

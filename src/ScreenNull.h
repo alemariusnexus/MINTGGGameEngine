@@ -3,26 +3,17 @@
 #include "Globals.h"
 #include "Screen.h"
 
-#ifdef ARDUINO
-#include <Adafruit_GFX.h>
-#include <Adafruit_ST7735.h>
-#endif
-
 
 namespace MINTGGGameEngine
 {
 
-class ScreenST7735 : public Screen
+class ScreenNull : public Screen
 {
 public:
-#ifdef ARDUINO
-    ScreenST7735(Adafruit_ST7735* tft) : tft(tft), canvas(getWidth(), getHeight()) {}
-#endif
+    ScreenNull(uint16_t width = 160, uint16_t height = 128);
 
-    void begin(int rotation = 3);
-
-    uint16_t getWidth() const override { return 160; }
-    uint16_t getHeight() const override { return 128; }
+    uint16_t getWidth() const override { return width; }
+    uint16_t getHeight() const override { return height; }
 
     void fillScreen(const Color& color) override;
     void drawPixel(int16_t x, int16_t y, const Color& color) override;
@@ -32,15 +23,11 @@ public:
     void drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir flipDir = FlipDir::None) override;
     void drawText(const Text& text, int16_t ox = 0, int16_t oy = 0) override;
     
-    bool saveScreenshot(const char* path) override;
-    
     void commit() override;
 
-public:
-#ifdef ARDUINO
-    Adafruit_ST7735* tft;
-    GFXcanvas16 canvas;
-#endif
+private:
+    uint16_t width;
+    uint16_t height;
 };
 
 }

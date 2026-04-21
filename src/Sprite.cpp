@@ -1,5 +1,7 @@
 #include "Sprite.h"
 
+#include <cmath>
+
 
 namespace MINTGGGameEngine
 {

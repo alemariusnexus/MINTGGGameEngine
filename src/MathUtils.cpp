@@ -55,14 +55,14 @@ float IntersectLineSegLineSegSimple (
     const float dyA1B1 = a1.y() - b1.y();
     
     const float tNum = dxA1B1*dyB1B2 - dyA1B1*dxB1B2;
-    if (signbit(tNum) != signbit(tuDenom)  ||  fabsf(tNum) > fabsf(tuDenom)) {
+    if (std::signbit(tNum) != std::signbit(tuDenom)  ||  fabsf(tNum) > fabsf(tuDenom)) {
         // No intersection on A
         if (numHits) *numHits = 0;
         return -1.0f;
     }
     
     const float uNum = dxA1A2*dyA1B1 - dyA1A2*dxA1B1;
-    if (signbit(uNum) == signbit(tuDenom)  ||  fabsf(uNum) > fabsf(tuDenom)) {
+    if (std::signbit(uNum) == std::signbit(tuDenom)  ||  fabsf(uNum) > fabsf(tuDenom)) {
         // No intersection on B
         if (numHits) *numHits = 0;
         return -1.0f;

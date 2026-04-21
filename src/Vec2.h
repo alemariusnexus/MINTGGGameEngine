@@ -2,6 +2,8 @@
 
 #include "Globals.h"
 
+#include <cmath>
+
 
 namespace MINTGGGameEngine
 {
