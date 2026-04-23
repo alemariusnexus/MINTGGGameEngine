@@ -1,31 +1,40 @@
 list(APPEND SRCS
 
-	ADCManager.cpp
-	AudioClip.cpp
-	AudioEngine.cpp
-	Bitmap.cpp
-	Collider.cpp
-	Color.cpp
-	GPIODevice.cpp
-	GPIODeviceMCP2300X.cpp
-	GPIODeviceNative.cpp
-	Game.cpp
-	GameObject.cpp
-	GameObjectCollision.cpp
-	GravitySimulator.cpp
-	InputEngine.cpp
-	Log.cpp
-	MathUtils.cpp
-    MCP2300XDevice.cpp
-	RayCastResult.cpp
-	Screen.cpp
-	ScreenNull.cpp
-	ScreenST7735_Arduino.cpp
-    ScreenST7735_ESPIDF.cpp
-	Sprite.cpp
-	Text.cpp
-    Util.cpp
-	Vec2.cpp
+	audio/AudioClip.cpp
+	audio/AudioEngine.cpp
+
+	core/Game.cpp
+	core/GameObject.cpp
+
+	graphics/Bitmap.cpp
+	graphics/Color.cpp
+	graphics/Screen.cpp
+	graphics/ScreenHAGL.cpp
+	graphics/ScreenNull.cpp
+	graphics/ScreenST7735.cpp
+	graphics/Sprite.cpp
+	graphics/Text.cpp
+
+	input/InputEngine.cpp
+
+	physics/Collider.cpp
+	physics/GameObjectCollision.cpp
+	physics/GravitySimulator.cpp
+
+	platform/ADCManager.cpp
+	platform/GPIODevice.cpp
+	platform/GPIODeviceMCP2300X.cpp
+	platform/GPIODeviceNative.cpp
+	platform/MCP2300XDevice.cpp
+
+	storage/File.cpp
+	storage/StorageEngine.cpp
+
+	util/Log.cpp
+	util/MathUtils.cpp
+	util/RayCastResult.cpp
+    util/Util.cpp
+	util/Vec2.cpp
 	)
 
 foreach(_SRCFILE ${SRCS})
@@ -40,4 +49,7 @@ idf_component_register(
     REQUIRES
 		driver
 		esp_adc
+		fatfs
+		hagl
+		hagl_hal
 )

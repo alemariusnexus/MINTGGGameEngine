@@ -2,29 +2,40 @@
 
 #include "Globals.h"
 
-#include "AudioClip.h"
-#include "AudioEngine.h"
-#include "Bitmap.h"
-#include "Collider.h"
-#include "Color.h"
-#include "Game.h"
-#include "GameObject.h"
-#include "GameObjectCollision.h"
-#include "GPIODevice.h"
-#include "GPIODeviceMCP2300X.h"
-#include "GPIODeviceNative.h"
-#include "GravitySimulator.h"
-#include "InputEngine.h"
-#include "Log.h"
-#include "MathUtils.h"
-#include "RayCastResult.h"
-#include "Screen.h"
-#include "ScreenNull.h"
-#include "ScreenST7735.h"
-#include "Sprite.h"
-#include "Text.h"
-#include "Util.h"
-#include "Vec2.h"
+#include "audio/AudioClip.h"
+#include "audio/AudioEngine.h"
+
+#include "core/Game.h"
+#include "core/GameObject.h"
+
+#include "graphics/Bitmap.h"
+#include "graphics/Color.h"
+#include "graphics/Screen.h"
+#include "graphics/ScreenHAGL.h"
+#include "graphics/ScreenNull.h"
+#include "graphics/ScreenST7735.h"
+#include "graphics/Sprite.h"
+#include "graphics/Text.h"
+
+#include "input/InputEngine.h"
+
+#include "physics/Collider.h"
+#include "physics/GameObjectCollision.h"
+
+#include "platform/GPIODevice.h"
+#include "platform/GPIODeviceMCP2300X.h"
+#include "platform/GPIODeviceNative.h"
+
+#include "physics/GravitySimulator.h"
+
+#include "storage/File.h"
+#include "storage/StorageEngine.h"
+
+#include "util/Log.h"
+#include "util/MathUtils.h"
+#include "util/RayCastResult.h"
+#include "util/Util.h"
+#include "util/Vec2.h"
 
 
 namespace MINTGGGameEngine
