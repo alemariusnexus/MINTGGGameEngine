@@ -6,7 +6,11 @@
 #include <algorithm>
 #include <cmath>
 
+#include "../util/Log.h"
 #include "../util/Util.h"
+
+
+LOG_USE_TAG("Game")
 
 
 
@@ -17,6 +21,7 @@ namespace MINTGGGameEngine
 
 Game::Game()
     : screen(nullptr), randGen(randDev()),
+      collisionCb(nullptr),
       drawColliders(false), drawRayCasts(false),
       frameTime(1000/40), lastFrameTime(0),
       backgroundColor(Color::WHITE)
@@ -66,27 +71,34 @@ void Game::checkCollisions(float shrink)
 }
 
 
-void Game::draw()
+void Game::draw(DrawStats* stats)
 {
-    drawBegin();
-    drawFinish();
+    drawBegin(stats);
+    drawFinish(stats);
 }
 
 
-void Game::drawBegin()
+void Game::drawBegin(DrawStats* stats)
 {
     if (!screen) {
         return;
     }
     
     Vec2 drawOffset = -cameraOffset;
-    
-    screen->fillScreen(backgroundColor);
 
+    timer_ustick_t timeFill = TimerGetTickcountUs();
+    if (backgroundBmp) {
+        screen->drawBitmap(0, 0, backgroundBmp);
+    } else {
+        screen->fillScreen(backgroundColor);
+    }
+
+    timer_ustick_t timeObjects = TimerGetTickcountUs();
     for (const GameObject& obj : gameObjs) {
         obj.draw(*screen, drawOffset);
     }
 
+    timer_ustick_t timeColliders = TimerGetTickcountUs();
     if (drawColliders) {
         for (const GameObject& obj : gameObjs) {
             obj.getWorldCollider().debugDraw(*screen, 0xF81D, drawOffset);
@@ -95,21 +107,32 @@ void Game::drawBegin()
     
     // Always draw the infos in the list, so setDrawRayCasts() can be used to
     // selectively enable/disable it for individual ray casts.
+    timer_ustick_t timeRays = TimerGetTickcountUs();
     for (const auto& info : rayCastDrawInfos) {
         RayCastResult::drawDebugRay(*screen, info.rayStart, info.rayEnd, drawOffset);
         info.result.drawDebug(*screen, drawOffset);
     }
     rayCastDrawInfos.clear();
+
+    timer_ustick_t timeEnd = TimerGetTickcountUs();
+
+    if (stats) {
+        stats->timeFillUs = (uint32_t) (timeObjects-timeFill);
+        stats->timeObjectsUs = (uint32_t) (timeColliders-timeObjects);
+        stats->timeCollidersUs = (uint32_t) (timeRays-timeColliders);
+        stats->timeRaysUs = (uint32_t) (timeEnd-timeRays);
+    }
 }
 
-void Game::drawFinish()
+void Game::drawFinish(DrawStats* stats)
 {
     if (!screen) {
         return;
     }
     
     Vec2 drawOffset = -cameraOffset;
-    
+
+    timer_ustick_t timeTexts = TimerGetTickcountUs();
     for (const Text& text : texts) {
         if (text.isVisible()) {
             if (text.isWorldSpace()) {
@@ -119,8 +142,16 @@ void Game::drawFinish()
             }
         }
     }
-    
+
+    timer_ustick_t timeCommit = TimerGetTickcountUs();
     screen->commit();
+
+    timer_ustick_t timeEnd = TimerGetTickcountUs();
+
+    if (stats) {
+        stats->timeTextsUs = (uint32_t) (timeCommit-timeTexts);
+        stats->timeCommitUs = (uint32_t) (timeEnd-timeCommit);
+    }
 }
 
 
@@ -247,9 +278,8 @@ void Game::sleepNextFrame()
     } else if (now-lastFrameTime < frameTime) {
         delayTimeMs = frameTime - (now-lastFrameTime);
     }
-    
+
     vTaskDelay(delayTimeMs / portTICK_PERIOD_MS);
-    // delay(delayTimeMs);
     
     lastFrameTime = TimerGetTickcountMs();
 }

@@ -55,6 +55,16 @@ public:
      */
     typedef void (*CollisionCb)(const GameObjectCollision& coll);
 
+    struct DrawStats
+    {
+        uint32_t timeFillUs;
+        uint32_t timeObjectsUs;
+        uint32_t timeCollidersUs;
+        uint32_t timeRaysUs;
+        uint32_t timeTextsUs;
+        uint32_t timeCommitUs;
+    };
+
 public:
     /**
      * \brief Create a new game.
@@ -174,11 +184,15 @@ public:
      * and ray casts for debugging purposes (see setDrawColliders() and
      * setDrawRayCasts()).
      */
-    void draw();
+    void draw(DrawStats* stats = nullptr);
 
-    void setBackgroundColor(const Color& color) { backgroundColor = color; }
+    void setBackgroundColor(const Color& color) { backgroundColor = color; backgroundBmp = Bitmap(); }
 
     Color getBackgroundColor() const { return backgroundColor; }
+
+    void setBackgroundBitmap(const Bitmap& bmp) { backgroundBmp = bmp; }
+
+    Bitmap getBackgroundBitmap() const { return backgroundBmp; }
     
     ///@}
     
@@ -406,8 +420,8 @@ public:
     ///@}
 
 private:
-    void drawBegin();
-    void drawFinish();
+    void drawBegin(DrawStats* stats);
+    void drawFinish(DrawStats* stats);
 
     void onCollision(const GameObject& a, const GameObject& b, float shrink);
 
@@ -436,6 +450,7 @@ private:
     Vec2 cameraOffset;
 
     Color backgroundColor;
+    Bitmap backgroundBmp;
 };
 
 }

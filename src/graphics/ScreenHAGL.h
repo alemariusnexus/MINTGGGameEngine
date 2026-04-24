@@ -9,6 +9,11 @@
 #include <hagl_hal.h>
 
 
+extern "C" {
+extern hagl_bitmap_t bb;
+}
+
+
 namespace MINTGGGameEngine
 {
 
@@ -43,6 +48,17 @@ private:
         const wchar_t *str, int16_t x0, int16_t y0, hagl_color_t color,
         const unsigned char *font
         );
+
+    static void drawBitmapHelper_drawPixel(hagl_backend_t* d, int16_t x, int16_t y, hagl_color_t c)
+    {
+        hagl_color_t* ptr = reinterpret_cast<hagl_color_t*>(bb.buffer) + x + y*d->width;
+        *ptr = c;
+    }
+
+    static void drawBitmapHelper_drawPixels(hagl_backend_t* d, int16_t x, int16_t y, const hagl_color_t* c, uint16_t w)
+    {
+        memcpy(reinterpret_cast<hagl_color_t*>(bb.buffer) + y*d->width + x, c, w*sizeof(hagl_color_t));
+    }
 
 private:
     hagl_backend_t* display;

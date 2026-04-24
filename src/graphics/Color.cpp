@@ -3,11 +3,16 @@
 namespace MINTGGGameEngine
 {
 
-const Color Color::BLACK(0, 0, 0);
-const Color Color::WHITE(255, 255, 255);
-const Color Color::RED(255, 0, 0);
-const Color Color::GREEN(0, 255, 0);
-const Color Color::BLUE(0, 0, 255);
+const Color Color::BLACK(0x0000);
+const Color Color::WHITE(0xFFFF);
+
+const Color Color::RED(0xF800);
+const Color Color::GREEN(0x07E0);
+const Color Color::BLUE(0x001F);
+
+const Color Color::YELLOW(0xFFE0);
+const Color Color::MAGENTA(0xF81F);
+const Color Color::CYAN(0x07FF);
 
 
 Color::Color(uint8_t r, uint8_t g, uint8_t b)

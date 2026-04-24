@@ -29,8 +29,9 @@ public:
     static const Color GREEN;
     static const Color BLUE;
 
-public:
-    static uint16_t swapEndianness565(uint16_t rgb565) { return (rgb565 << 8) | (rgb565 >> 8); }
+    static const Color YELLOW;
+    static const Color MAGENTA;
+    static const Color CYAN;
 
 public:
     /**
@@ -57,11 +58,6 @@ public:
      * Return the color in RGB565 format.
      */
     uint16_t toRGB565() const { return rgb565; }
-
-    /**
-     * Return the color in RGB565 format.
-     */
-    uint16_t toRGB565SwappedEndianness() const { return swapEndianness565(rgb565); }
     
     /**
      * Return the color in RGB565 format.

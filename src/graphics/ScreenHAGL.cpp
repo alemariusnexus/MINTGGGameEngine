@@ -5,10 +5,13 @@
 #include <fontx.h>
 #include <font6x9.h>
 
+#include "driver/spi_master.h"
+#include "util/Log.h"
+#include "util/Util.h"
+
+
 namespace MINTGGGameEngine
 {
-
-// TODO: Figure out why exactly we need to swap endianness for all colors. hagl_color() does it as well, but why?
 
 ScreenHAGL::ScreenHAGL()
     : display(nullptr)
@@ -25,7 +28,14 @@ void ScreenHAGL::fillScreen(const Color& color)
     if (!display) {
         return;
     }
-    hagl_fill_rectangle(display, 0, 0, display->width-1, display->height-1, color.toRGB565SwappedEndianness());
+    const hagl_color_t hcolor = color.toRGB565();
+    hagl_color_t* bptr = reinterpret_cast<hagl_color_t*>(bb.buffer);
+    hagl_color_t* bptrEnd = bptr + getWidth()*getHeight();
+    while (bptr != bptrEnd) {
+        *bptr = hcolor;
+        bptr++;
+    }
+    //hagl_fill_rectangle(display, 0, 0, display->width-1, display->height-1, color.toRGB565());
 }
 
 void ScreenHAGL::drawPixel(int16_t x, int16_t y, const Color& color)
@@ -33,7 +43,7 @@ void ScreenHAGL::drawPixel(int16_t x, int16_t y, const Color& color)
     if (!display) {
         return;
     }
-    hagl_put_pixel(display, x, y, color.toRGB565SwappedEndianness());
+    hagl_put_pixel(display, x, y, color.toRGB565());
 }
 
 void ScreenHAGL::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const Color& color)
@@ -41,7 +51,7 @@ void ScreenHAGL::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const 
     if (!display) {
         return;
     }
-    hagl_draw_line(display, x0, y0, x1, y1, color.toRGB565SwappedEndianness());
+    hagl_draw_line(display, x0, y0, x1, y1, color.toRGB565());
 }
 
 void ScreenHAGL::drawRect(int16_t x, int16_t y, int16_t w, int16_t h, const Color& color, bool filled)
@@ -50,9 +60,9 @@ void ScreenHAGL::drawRect(int16_t x, int16_t y, int16_t w, int16_t h, const Colo
         return;
     }
     if (filled) {
-        hagl_fill_rectangle_xywh(display, x, y, w, h, color.toRGB565SwappedEndianness());
+        hagl_fill_rectangle_xywh(display, x, y, w, h, color.toRGB565());
     } else {
-        hagl_draw_rectangle_xywh(display, x, y, w, h, color.toRGB565SwappedEndianness());
+        hagl_draw_rectangle_xywh(display, x, y, w, h, color.toRGB565());
     }
 }
 
@@ -62,9 +72,9 @@ void ScreenHAGL::drawCircle(int16_t cx, int16_t cy, int16_t r, const Color& colo
         return;
     }
     if (filled) {
-        hagl_fill_circle(display, cx, cy, r, color.toRGB565SwappedEndianness());
+        hagl_fill_circle(display, cx, cy, r, color.toRGB565());
     } else {
-        hagl_draw_circle(display, cx, cy, r, color.toRGB565SwappedEndianness());
+        hagl_draw_circle(display, cx, cy, r, color.toRGB565());
     }
 }
 
@@ -73,9 +83,7 @@ void ScreenHAGL::drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir 
     if (!display) {
         return;
     }
-    drawBitmapHelper(x, y, bitmap, flipDir, [this](int16_t x, int16_t y, uint16_t c) {
-        hagl_put_pixel(display, x, y, Color::swapEndianness565(c));
-    });
+    drawBitmapHelper(x, y, bitmap, flipDir, &ScreenHAGL::drawBitmapHelper_drawPixel, &ScreenHAGL::drawBitmapHelper_drawPixels, display);
 }
 
 void ScreenHAGL::drawText(const Text& text, int16_t ox, int16_t oy)
@@ -92,13 +100,25 @@ void ScreenHAGL::drawText(const Text& text, int16_t ox, int16_t oy)
 
     // TODO: Support text size setting and transparent background
 
-    putText(wcontent, text.getX()+ox, text.getY()+oy, text.getColor().toRGB565SwappedEndianness(), font6x9);
+    putText(wcontent, text.getX()+ox, text.getY()+oy, text.getColor().toRGB565(), font6x9);
 }
 
 void ScreenHAGL::commit()
 {
     if (!display) {
         return;
+    }
+
+    // Swap endianness for pixels. This is needed at least for ST7735, and probably for all MIPI compatible displays,
+    // because they expect pixels in big-endian format, while ESP32 is little-endian.
+    // TODO: Find a better way. It doesn't seem possible to have the hardware do this for SPI. Another option would be
+    //  to just store RGB565 values in big-endian order all the time, or maybe make this configurable. But is that a
+    //  good idea?
+    hagl_color_t* bptr = reinterpret_cast<hagl_color_t*>(bb.buffer);
+    hagl_color_t* bptrEnd = bptr + getWidth()*getHeight();
+    while (bptr != bptrEnd) {
+        *bptr = __builtin_bswap16(*bptr);
+        bptr++;
     }
 
     hagl_flush(display);
