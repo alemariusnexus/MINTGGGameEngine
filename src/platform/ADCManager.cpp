@@ -1,5 +1,7 @@
 #include "ADCManager.h"
 
+#include "util/Log.h"
+
 
 namespace MINTGGGameEngine
 {
@@ -17,9 +19,9 @@ ADCManager::ADCManager()
 
 bool ADCManager::setupAnalogPin(uint8_t pin)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     // Nothing to do
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     auto it = adcPinConfigs.find(pin);
     if (it != adcPinConfigs.end()) {
         return true;
@@ -45,6 +47,8 @@ bool ADCManager::setupAnalogPin(uint8_t pin)
     pinCfg.adcHandle = adcUnitHandle;
     pinCfg.adcChannel = adcChannel;
     adcPinConfigs[pin] = pinCfg;
+#else
+    return false;
 #endif
 
     return true;
@@ -57,9 +61,9 @@ void ADCManager::destroyAnalogPin(uint8_t pin)
 
 uint32_t ADCManager::readRaw(uint8_t pin)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     return analogRead(pin);
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     auto it = adcPinConfigs.find(pin);
     if (it == adcPinConfigs.end()) {
         return 0;
@@ -70,11 +74,13 @@ uint32_t ADCManager::readRaw(uint8_t pin)
         return 0;
     }
     return rawValue;
+#else
+    return 0;
 #endif
 }
 
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 adc_oneshot_unit_handle_t ADCManager::setupADCInst(adc_unit_t unit)
 {

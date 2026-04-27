@@ -1,6 +1,6 @@
 #include "ScreenHAGL.h"
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 #include <fontx.h>
 #include <font6x9.h>

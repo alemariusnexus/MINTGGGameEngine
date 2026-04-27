@@ -2,7 +2,7 @@
 
 #include "../Globals.h"
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_adc/adc_oneshot.h>
 #endif
 
@@ -16,7 +16,7 @@ namespace MINTGGGameEngine
 class ADCManager
 {
 private:
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     struct ADCUnitConfig
     {
         adc_oneshot_unit_handle_t adcHandle;
@@ -40,12 +40,12 @@ public:
 private:
     ADCManager();
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     adc_oneshot_unit_handle_t setupADCInst(adc_unit_t unit);
 #endif
 
 private:
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     std::unordered_map<adc_unit_t, ADCUnitConfig> adcUnitConfigs;
     std::unordered_map<uint8_t, ADCPinConfig> adcPinConfigs;
 #endif

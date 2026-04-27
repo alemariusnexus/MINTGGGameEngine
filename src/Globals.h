@@ -10,8 +10,18 @@
 #include <string>
 
 
+#ifdef ARDUINO
+#define MINTGGGAMEENGINE_PORT_ARDUINO
+#elif defined(ESP_PLATFORM)
+#define MINTGGGAMEENGINE_PORT_ESPIDF
+#endif
+
+
 namespace MINTGGGameEngine
 {
+
+
+typedef int16_t gpionum_t; // Must be signed, because it accepts -1 for "invalid pin"!
 
 /**
  * \brief The direction to flip an object.

@@ -61,8 +61,10 @@ private:
 private:
     std::string path;
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     FILE* fhandle;
+#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+    ::File fhandle;
 #endif
 };
 

@@ -1,7 +1,7 @@
 #include "ScreenST7735.h"
 
 
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
 namespace MINTGGGameEngine
 {

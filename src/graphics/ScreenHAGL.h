@@ -3,7 +3,7 @@
 #include "../Globals.h"
 #include "Screen.h"
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 #include <hagl.h>
 #include <hagl_hal.h>

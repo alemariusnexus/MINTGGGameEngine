@@ -8,14 +8,14 @@ namespace MINTGGGameEngine
 {
 
 
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
 GPIODeviceMCP2300X::GPIODeviceMCP2300X(uint8_t i2cAddr, TwoWire* wire)
 		: mcp(i2cAddr, wire)
 {
 }
 
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 
 GPIODeviceMCP2300X::GPIODeviceMCP2300X(gpio_num_t sclPin, gpio_num_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
     : mcp(sclPin, sdaPin, clockFreq, i2cAddr)

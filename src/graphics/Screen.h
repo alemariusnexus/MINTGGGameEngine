@@ -5,8 +5,6 @@
 #include "Color.h"
 #include "Text.h"
 
-#include <functional>
-
 
 namespace MINTGGGameEngine
 {

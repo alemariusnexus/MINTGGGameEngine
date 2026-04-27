@@ -59,7 +59,7 @@ public:
     void setSize(int size) { d->size = size; }
     void setColor(const Color& color) { d->color = color; }
     void setText(const std::string& text) { d->text = text; }
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     void setText(const String& text) { setText(std::string(text.c_str())); }
 #endif
     void setVisible(bool visible) { d->visible = visible; }

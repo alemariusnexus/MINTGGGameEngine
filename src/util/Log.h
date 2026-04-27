@@ -2,7 +2,7 @@
 
 #include "../Globals.h"
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_log.h>
 #endif
 
@@ -23,7 +23,7 @@ enum LogLevel
     LOG_LEVEL_VERBOSE
 };
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 #define LogError(tag, format, ...) ESP_LOGE(tag, format, ## __VA_ARGS__)
 #define LogWarning(tag, format, ...) ESP_LOGW(tag, format, ## __VA_ARGS__)

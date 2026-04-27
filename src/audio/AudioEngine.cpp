@@ -19,11 +19,11 @@ void _AudioEngineTaskMain(void* params)
 }
 
 
-bool AudioEngine::begin(uint8_t speakerPin)
+bool AudioEngine::begin(gpionum_t speakerPin)
 {
     this->speakerPin = speakerPin;
 
-#ifdef ESP_PLATFORM
+#if defined(ESP_PLATFORM)  &&  !defined(ARDUINO)
     // Configure LEDC for the audio PWM signal
 
     ledcTimer = LEDC_TIMER_0;
@@ -205,9 +205,9 @@ void AudioEngine::setTone(uint16_t freq)
 
 void AudioEngine::tone(uint16_t freq)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     ::tone(speakerPin, freq);
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     ledc_set_freq(LEDC_LOW_SPEED_MODE, ledcTimer, freq);
     ledc_set_duty(LEDC_LOW_SPEED_MODE, ledcChannel, 511);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, ledcChannel);
@@ -216,9 +216,9 @@ void AudioEngine::tone(uint16_t freq)
 
 void AudioEngine::noTone()
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     ::noTone(speakerPin);
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     ledc_set_duty(LEDC_LOW_SPEED_MODE, ledcChannel, 0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, ledcChannel);
 #endif

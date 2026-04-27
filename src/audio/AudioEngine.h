@@ -81,7 +81,7 @@ public:
      * \param speakerPin The audio output pin.
      * \return true if successful, false otherwise
      */
-    bool begin(uint8_t speakerPin);
+    bool begin(gpionum_t speakerPin);
     
     /**
      * \brief Play the given audio clip.
@@ -127,7 +127,7 @@ private:
     void noTone();
 
 private:
-    int16_t speakerPin;
+    gpionum_t speakerPin;
     uint16_t curSpeakerFreq;
     bool mute;
     
@@ -135,7 +135,7 @@ private:
     
     TaskHandle_t audioTask;
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     ledc_timer_t ledcTimer;
     ledc_channel_t ledcChannel;
 #endif

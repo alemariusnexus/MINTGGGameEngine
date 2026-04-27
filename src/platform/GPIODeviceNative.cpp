@@ -18,10 +18,10 @@ GPIODeviceNative& GPIODeviceNative::getInstance()
 
 bool GPIODeviceNative::setPinMode(unsigned int pin, uint8_t mode)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 	::pinMode(static_cast<uint8_t>(pin), mode);
     return true;
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     bool output, puEnabled, pdEnabled;
     ExtractArduinoPinMode(mode, &output, &puEnabled, &pdEnabled);
     if (output) {
@@ -46,18 +46,18 @@ bool GPIODeviceNative::setPinMode(unsigned int pin, uint8_t mode)
 
 uint8_t GPIODeviceNative::readPin(unsigned int pin)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 	return ::digitalRead(pin);
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     return gpio_get_level(static_cast<gpio_num_t>(pin));
 #endif
 }
 
 void GPIODeviceNative::writePin(unsigned int pin, uint8_t val)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     ::digitalWrite(pin, val);
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 	gpio_set_level(static_cast<gpio_num_t>(pin), val);
 #endif
 }

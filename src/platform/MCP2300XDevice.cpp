@@ -23,9 +23,12 @@ namespace MINTGGGameEngine
 {
 
 
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+
     // TODO: Implement
-#elif defined(ESP_PLATFORM)
+
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
+
 MCP2300XDevice::MCP2300XDevice(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev)
     : i2cBus(bus), i2cDev(dev)
 {
@@ -56,6 +59,7 @@ MCP2300XDevice::MCP2300XDevice(gpio_num_t sclPin, gpio_num_t sdaPin, uint32_t cl
         return;
     }
 }
+
 #endif
 
 bool MCP2300XDevice::setIODirection(uint8_t ioDir)
@@ -90,10 +94,10 @@ bool MCP2300XDevice::readPins(uint8_t* pinStates)
 
 bool MCP2300XDevice::readRegister(uint8_t addr, uint8_t* value)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     // TODO: Implement
     return false;
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     if (i2c_master_transmit_receive(i2cDev, &addr, 1, value, 1, -1) != ESP_OK) {
         return false;
     }
@@ -103,10 +107,10 @@ bool MCP2300XDevice::readRegister(uint8_t addr, uint8_t* value)
 
 bool MCP2300XDevice::writeRegister(uint8_t addr, uint8_t value)
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     // TODO: Implement
     return false;
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     uint8_t writeBuf[] = {addr, value};
     if (i2c_master_transmit(i2cDev, writeBuf, sizeof(writeBuf), -1) != ESP_OK) {
         return false;

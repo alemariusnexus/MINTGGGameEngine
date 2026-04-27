@@ -3,7 +3,7 @@
 #include "../Globals.h"
 #include "Screen.h"
 
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>

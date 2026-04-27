@@ -11,7 +11,7 @@ namespace MINTGGGameEngine
 
 static bool TimerInitialized = false;
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 static gptimer_handle_t TimerHandle;
 #endif
 
@@ -22,7 +22,7 @@ void TimerInit()
         return;
     }
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     gptimer_config_t cfg = {
         .clk_src = GPTIMER_CLK_SRC_DEFAULT,
         .direction = GPTIMER_COUNT_UP,
@@ -44,7 +44,7 @@ void TimerShutdown()
         return;
     }
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     gptimer_stop(TimerHandle);
     gptimer_disable(TimerHandle);
     gptimer_del_timer(TimerHandle);
@@ -55,7 +55,7 @@ void TimerShutdown()
 
 timer_mstick_t TimerGetTickcountMs()
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     return millis();
 #else
     return TimerGetTickcountUs() / 1000;
@@ -64,14 +64,14 @@ timer_mstick_t TimerGetTickcountMs()
 
 timer_ustick_t TimerGetTickcountUs()
 {
-#ifdef ARDUINO
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     return micros();
-#elif defined(ESP_PLATFORM)
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     uint64_t tc;
     ESP_ERROR_CHECK(gptimer_get_raw_count(TimerHandle, &tc));
     return tc;
 #else
-#   error Not implemented!
+    return 0;
 #endif
 }
 

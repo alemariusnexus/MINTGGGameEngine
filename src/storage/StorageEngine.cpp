@@ -2,7 +2,7 @@
 
 #include "../util/Log.h"
 
-#ifdef ESP_PLATFORM
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_err.h>
 #include <esp_vfs_fat.h>
 #endif
@@ -24,6 +24,9 @@ bool StorageEngine::begin()
     return true;
 }
 
+
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+
 bool StorageEngine::mountSDCard (
     const char* mountPoint,
     spi_host_device_t spiHost,
@@ -37,7 +40,6 @@ bool StorageEngine::mountSDCard (
         return false;
     }
 
-#ifdef ESP_PLATFORM
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
     host.slot = spiHost;
     host.max_freq_khz = static_cast<int>(clkFreq/1000);
@@ -68,11 +70,40 @@ bool StorageEngine::mountSDCard (
     }
 
     return true;
-#else
-    LogError(TAG, "SD card mounting not supported on platform.");
-    return false;
-#endif
 }
+
+//#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+
+bool StorageEngine::mountSDCard (
+    const char* mountPoint
+) {
+    sdMountPath = mountPoint;
+
+    return false;
+}
+
+bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRelPath)
+{
+    if (!path.starts_with(sdMountPath)) {
+        return false;
+    }
+    if (path.length() == sdMountPath.length()) {
+        // Exact mount point
+    }
+
+    if (outRelPath) {
+        if (path.length() == sdMountPath.length()) {
+            // Root directory
+            *outRelPath = "/";
+        } else {
+            *outRelPath = ;
+        }
+    }
+
+    return true;
+}
+
+#endif
 
 
 }

@@ -1,13 +1,11 @@
 #include "Log.h"
 
-#include <esp_log.h>
-
 
 namespace MINTGGGameEngine
 {
 
 
-#ifndef ESP_PLATFORM
+#ifndef MINTGGGAMEENGINE_PORT_ESPIDF
 
 bool LogMessageBegin(const char* tag, int level)
 {
