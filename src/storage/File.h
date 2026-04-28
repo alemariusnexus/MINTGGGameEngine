@@ -6,6 +6,10 @@
 #include <string>
 #include <vector>
 
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#include <SD.h>
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -56,7 +60,11 @@ public:
 private:
     void normalizePath();
 
-    void listChildren(std::vector<File>& res, bool recursive) const;
+    bool listChildren(std::vector<File>& res, bool recursive) const;
+
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    bool openSDFile(::File* outFile) const;
+#endif
 
 private:
     std::string path;

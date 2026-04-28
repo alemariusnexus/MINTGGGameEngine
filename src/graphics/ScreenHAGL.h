@@ -22,6 +22,7 @@ class ScreenHAGL : public Screen
 public:
     ScreenHAGL();
 
+    void begin();
     void begin(hagl_backend_t* display);
 
     uint16_t getWidth() const override { return display->width; }
@@ -34,8 +35,8 @@ public:
     void drawCircle(int16_t cx, int16_t cy, int16_t r, const Color& color, bool filled = false) override;
     void drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir flipDir = FlipDir::None) override;
     void drawText(const Text& text, int16_t ox = 0, int16_t oy = 0) override;
-    
-    bool saveScreenshot(const char* path) override;
+
+    Color readPixel(int16_t x, int16_t y) override;
     
     void commit() override;
 

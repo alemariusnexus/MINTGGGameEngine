@@ -51,12 +51,6 @@ InputEngine& Game::input()
 }
 
 
-StorageEngine& Game::storage()
-{
-    return storageEng;
-}
-
-
 void Game::checkCollisions(float shrink)
 {
     auto gameObjsLocal = gameObjs;

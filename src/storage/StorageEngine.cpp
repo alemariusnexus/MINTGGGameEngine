@@ -15,6 +15,13 @@ namespace MINTGGGameEngine
 {
 
 
+StorageEngine& StorageEngine::getInstance()
+{
+    static StorageEngine inst;
+    return inst;
+}
+
+
 StorageEngine::StorageEngine()
 {
 }
@@ -30,7 +37,7 @@ bool StorageEngine::begin()
 bool StorageEngine::mountSDCard (
     const char* mountPoint,
     spi_host_device_t spiHost,
-    int csPin,
+    gpionum_t csPin,
     uint32_t clkFreq
 ) {
     if (!mountPoint) {
@@ -72,14 +79,26 @@ bool StorageEngine::mountSDCard (
     return true;
 }
 
-//#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 bool StorageEngine::mountSDCard (
-    const char* mountPoint
+    const char* mountPoint,
+    SPIClass& spi,
+    gpionum_t csPin
 ) {
     sdMountPath = mountPoint;
 
-    return false;
+    // Remove trailing slashes
+    while (sdMountPath.ends_with('/')) {
+        sdMountPath.pop_back();
+    }
+
+    if (!SD.begin(csPin, spi)) {
+        LogError(TAG, "Error initializing SD card.");
+        return false;
+    }
+
+    return true;
 }
 
 bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRelPath)
@@ -87,17 +106,20 @@ bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRel
     if (!path.starts_with(sdMountPath)) {
         return false;
     }
-    if (path.length() == sdMountPath.length()) {
+    const size_t sdMountPathLen = sdMountPath.length();
+    if (path.length() == sdMountPathLen) {
         // Exact mount point
+        if (outRelPath) {
+            *outRelPath = "/";
+        }
+        return true;
+    } else if (path[sdMountPathLen] != '/') {
+        // Not actually a path below the mount path (just starts the same)
+        return false;
     }
 
     if (outRelPath) {
-        if (path.length() == sdMountPath.length()) {
-            // Root directory
-            *outRelPath = "/";
-        } else {
-            *outRelPath = ;
-        }
+        *outRelPath = path.substr(sdMountPathLen);
     }
 
     return true;

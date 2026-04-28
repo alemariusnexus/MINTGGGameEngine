@@ -32,16 +32,10 @@ class GPIODeviceMCP2300X : public GPIODevice
 {
 public:
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-	/**
-	 * \brief Create a new MCP2300X instance.
-	 *
-	 * \param i2cAddr The I2C slave address of the device. 0x20 is the default for when
-	 * 		the ADDR pins of the MCP2300X are all connected to GND.
-	 * \param wire The Arduino Wire instance to use for the I2C bus.
-	 */
-	GPIODeviceMCP2300X(uint8_t i2cAddr = 0x20, TwoWire* wire = &Wire);
+	GPIODeviceMCP2300X(TwoWire& bus, uint8_t i2cAddr = 0x20);
+	GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    GPIODeviceMCP2300X(gpio_num_t sclPin, gpio_num_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
+    GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
     GPIODeviceMCP2300X(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev);
 #endif
 	

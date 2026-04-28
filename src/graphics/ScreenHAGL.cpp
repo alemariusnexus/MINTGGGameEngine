@@ -18,6 +18,11 @@ ScreenHAGL::ScreenHAGL()
 {
 }
 
+void ScreenHAGL::begin()
+{
+    begin(hagl_init());
+}
+
 void ScreenHAGL::begin(hagl_backend_t* display)
 {
     this->display = display;
@@ -103,6 +108,11 @@ void ScreenHAGL::drawText(const Text& text, int16_t ox, int16_t oy)
     putText(wcontent, text.getX()+ox, text.getY()+oy, text.getColor().toRGB565(), font6x9);
 }
 
+Color ScreenHAGL::readPixel(int16_t x, int16_t y)
+{
+    return Color(hagl_get_pixel(display, x, y));
+}
+
 void ScreenHAGL::commit()
 {
     if (!display) {
@@ -122,12 +132,6 @@ void ScreenHAGL::commit()
     }
 
     hagl_flush(display);
-}
-
-bool ScreenHAGL::saveScreenshot(const char* path)
-{
-    // TODO: Support this
-    return false;
 }
 
 

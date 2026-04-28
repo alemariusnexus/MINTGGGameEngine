@@ -25,7 +25,17 @@ namespace MINTGGGameEngine
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
-    // TODO: Implement
+MCP2300XDevice::MCP2300XDevice(TwoWire& bus, uint8_t i2cAddr)
+    : i2cBus(&bus), i2cAddr(i2cAddr)
+{
+}
+
+MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
+    : i2cBus(&Wire), i2cAddr(i2cAddr)
+{
+    i2cBus->begin(sdaPin, sclPin);
+    i2cBus->setClock(clockFreq);
+}
 
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 
@@ -34,12 +44,12 @@ MCP2300XDevice::MCP2300XDevice(i2c_master_bus_handle_t bus, i2c_master_dev_handl
 {
 }
 
-MCP2300XDevice::MCP2300XDevice(gpio_num_t sclPin, gpio_num_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
+MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
 {
     i2c_master_bus_config_t busCfg = {
         .i2c_port = I2C_NUM_0,
-        .sda_io_num = sdaPin,
-        .scl_io_num = sclPin,
+        .sda_io_num = static_cast<gpio_num_t>(sdaPin),
+        .scl_io_num = static_cast<gpio_num_t>(sclPin),
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7
     };
@@ -95,8 +105,17 @@ bool MCP2300XDevice::readPins(uint8_t* pinStates)
 bool MCP2300XDevice::readRegister(uint8_t addr, uint8_t* value)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    // TODO: Implement
-    return false;
+    i2cBus->beginTransmission(i2cAddr);
+    i2cBus->write(addr);
+    if (i2cBus->endTransmission() != 0) {
+        return false;
+    }
+    uint8_t numReceived = i2cBus->requestFrom(i2cAddr, 1);
+    if (numReceived != 1) {
+        return false;
+    }
+    *value = i2cBus->read();
+    return true;
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     if (i2c_master_transmit_receive(i2cDev, &addr, 1, value, 1, -1) != ESP_OK) {
         return false;
@@ -108,8 +127,13 @@ bool MCP2300XDevice::readRegister(uint8_t addr, uint8_t* value)
 bool MCP2300XDevice::writeRegister(uint8_t addr, uint8_t value)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    // TODO: Implement
-    return false;
+    i2cBus->beginTransmission(i2cAddr);
+    i2cBus->write(addr);
+    i2cBus->write(value);
+    if (i2cBus->endTransmission() != 0) {
+        return false;
+    }
+    return true;
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     uint8_t writeBuf[] = {addr, value};
     if (i2c_master_transmit(i2cDev, writeBuf, sizeof(writeBuf), -1) != ESP_OK) {

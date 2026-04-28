@@ -39,16 +39,16 @@ void LogMessage(const char* tag, int level, const char* format, ...);
 
 #define LogMessage(tag, level, format, ...) do {        \
         if (LogMessageBegin((tag), (level))) {          \
-            Serial.printf((format), __VA_ARGS__);       \
+            Serial.printf((format), ## __VA_ARGS__);    \
             Serial.println();                           \
         }                                               \
     } while (false)
 
-#define LogError(tag, format, ...) LogMessage((tag), LOG_LEVEL_ERROR, ## __VA_ARGS__)
-#define LogWarning(tag, format, ...) LogMessage((tag), LOG_LEVEL_WARNING, ## __VA_ARGS__)
-#define LogInfo(tag, format, ...) LogMessage((tag), LOG_LEVEL_INFO, ## __VA_ARGS__)
-#define LogDebug(tag, format, ...) LogMessage((tag), LOG_LEVEL_DEBUG, ## __VA_ARGS__)
-#define LogVerbose(tag, format, ...) LogMessage((tag), LOG_LEVEL_VERBOSE, ## __VA_ARGS__)
+#define LogError(tag, format, ...) LogMessage((tag), LOG_LEVEL_ERROR, format, ## __VA_ARGS__)
+#define LogWarning(tag, format, ...) LogMessage((tag), LOG_LEVEL_WARNING, format, ## __VA_ARGS__)
+#define LogInfo(tag, format, ...) LogMessage((tag), LOG_LEVEL_INFO, format, ## __VA_ARGS__)
+#define LogDebug(tag, format, ...) LogMessage((tag), LOG_LEVEL_DEBUG, format, ## __VA_ARGS__)
+#define LogVerbose(tag, format, ...) LogMessage((tag), LOG_LEVEL_VERBOSE, format, ## __VA_ARGS__)
 
 #endif
 

@@ -85,14 +85,14 @@ void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool*
         }
     }
     if (puEnabled) {
-        if (pinMode == INPUT_PULLUP  ||  pinMode == OUTPUT_PULLUP) {
+        if (pinMode == INPUT_PULLUP) {
             *puEnabled = true;
         } else {
             *puEnabled = false;
         }
     }
     if (pdEnabled) {
-        if (pinMode == INPUT_PULLDOWN  ||  pinMode == OUTPUT_PULLDOWN) {
+        if (pinMode == INPUT_PULLDOWN) {
             *pdEnabled = true;
         } else {
             *pdEnabled = false;

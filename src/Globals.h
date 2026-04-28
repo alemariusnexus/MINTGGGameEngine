@@ -65,10 +65,7 @@ enum
     OUTPUT          = 0x01,
 
     INPUT_PULLDOWN  = 0x02,
-    INPUT_PULLUP    = 0x04,
-
-    OUTPUT_PULLDOWN = 0x03,
-    OUTPUT_PULLUP   = 0x05
+    INPUT_PULLUP    = 0x04
 };
 #endif
 

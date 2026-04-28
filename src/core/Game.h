@@ -100,13 +100,6 @@ public:
      * \return Input engine reference.
      */
     InputEngine& input();
-
-    /**
-     * \brief Return a reference to the storage engine.
-     *
-     * @return Storage engine reference.
-     */
-    StorageEngine& storage();
     
     ///@}
     
@@ -435,7 +428,6 @@ private:
     
     AudioEngine audioEng;
     InputEngine inputEng;
-    StorageEngine storageEng;
 
     CollisionCb collisionCb;
 

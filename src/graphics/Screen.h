@@ -22,8 +22,10 @@ public:
     virtual void drawCircle(int16_t cx, int16_t cy, int16_t r, const Color& color, bool filled = false) = 0;
     virtual void drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir flipDir = FlipDir::None) = 0;
     virtual void drawText(const Text& text, int16_t ox = 0, int16_t oy = 0) = 0;
-    
-    virtual bool saveScreenshot(const char* path) { return false; }
+
+    virtual Color readPixel(int16_t x, int16_t y) = 0;
+
+    virtual bool saveScreenshot(const char* path);
     
     virtual void commit() = 0;
 
