@@ -26,7 +26,7 @@ private:
     struct Data
     {
         Data(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m, bool own) : w(w), h(h), d(d), m(m), own(own) {}
-        ~Data() { if (own) { delete[] d; delete[] m; } }
+        ~Data() { if (own) { free(const_cast<uint16_t*>(d)); free(const_cast<uint8_t*>(m)); } }
         
         uint16_t w;
         uint16_t h;
@@ -42,7 +42,7 @@ public:
      * 
      * The new bitmap takes ownership of all the data, and will delete it when
      * the bitmap itself is deleted. It is assumed that the data was created
-     * using the C++ operator new[]. The data must remain valid throughout the
+     * using the C function malloc(). The data must remain valid throughout the
      * lifetime of the bitmap object (and all its shallow copies).
      *
      * \param w The width in pixels.
@@ -68,12 +68,19 @@ public:
      */
     static Bitmap copyFrom(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m = nullptr)
     {
-        uint16_t* cd = new uint16_t[w*h];
+        auto cd = static_cast<uint16_t*>(malloc(w*h*sizeof(uint16_t)));
+        if (!cd) {
+            return Bitmap();
+        }
         uint8_t* cm = nullptr;
         memcpy(cd, d, w*h*sizeof(uint16_t));
         if (m) {
             uint16_t maskByteW = (w+7)/8;
-            cm = new uint8_t[maskByteW*h];
+            cm = static_cast<uint8_t*>(malloc(maskByteW*h*sizeof(uint8_t)));
+            if (!cm) {
+                free(cd);
+                return Bitmap();
+            }
             memcpy(cm, m, maskByteW*h);
         }
         return Bitmap(w, h, cd, cm, true);
@@ -93,7 +100,12 @@ public:
      * \return The loaded bitmap.
      * \see loadBMP(const char*, const char**)
      */
-    static Bitmap loadBMP(File& file, const char** outErrmsg = nullptr);
+    static Bitmap loadBMP (
+        File& file,
+        uint16_t ox = 0, uint16_t oy = 0,
+        uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
+        const char** outErrmsg = nullptr
+        );
     
     /**
      * \brief Create a bitmap from a BMP file at the given File object.
@@ -104,7 +116,12 @@ public:
      * \return The loaded bitmap.
      * \see loadBMP(File&, const char**)
      */
-    static Bitmap loadBMP(const char* path, const char** outErrmsg = nullptr);
+    static Bitmap loadBMP (
+        const char* path,
+        uint16_t ox = 0, uint16_t oy = 0,
+        uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
+        const char** outErrmsg = nullptr
+        );
     
 public:
     /**
