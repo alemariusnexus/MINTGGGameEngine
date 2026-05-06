@@ -4,6 +4,7 @@
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_err.h>
+#include <esp_spiffs.h>
 #include <esp_vfs_fat.h>
 #endif
 
@@ -73,6 +74,25 @@ bool StorageEngine::mountSDCard (
         );
     if (res != ESP_OK) {
         LogError(TAG, "Error mounting SD card: %s", esp_err_to_name(res));
+        return false;
+    }
+
+    return true;
+}
+
+bool StorageEngine::mountSPIFFS (
+    const char* mountPoint
+) {
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = mountPoint,
+        .partition_label = NULL,
+        .max_files = 5,
+        .format_if_mount_failed = true
+    };
+
+    esp_err_t res = esp_vfs_spiffs_register(&conf);
+    if (res != ESP_OK) {
+        LogError(TAG, "Error registering SPIFFS: %s", esp_err_to_name(res));
         return false;
     }
 

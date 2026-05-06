@@ -6,10 +6,12 @@
 #include <dirent.h>
 #endif
 
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 
 #include "StorageEngine.h"
+#include "util/Log.h"
 
 
 namespace MINTGGGameEngine
@@ -195,7 +197,7 @@ bool File::remove()
 #endif
 }
 
-bool File::open(OpenMode mode)
+bool File::open(OpenMode mode, const char** outErrmsg)
 {
     close();
 
@@ -203,19 +205,20 @@ bool File::open(OpenMode mode)
     const char* smode;
     switch (mode) {
     case ReadOnly:
-        smode = "r";
+        smode = "rb";
         break;
     case WriteOnly:
-        smode = "w";
+        smode = "wb";
         break;
     case AppendOnly:
-        smode = "a";
+        smode = "ab";
         break;
     default:
         return false;
     }
     fhandle = fopen(path.c_str(), smode);
     if (!fhandle) {
+        if (outErrmsg) *outErrmsg = strerror(errno);
         return false;
     }
     return true;
@@ -376,18 +379,56 @@ int File::printf(const char* format, ...)
 #endif
 }
 
-bool File::seek(ssize_t offset)
+size_t File::skip(size_t size)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     if (!fhandle) {
         return false;
     }
-    return fseek(fhandle, offset, SEEK_SET) == 0;
+    char dummy[64];
+    size_t numRead;
+    do {
+        numRead = fread(dummy, 1, std::min(sizeof(dummy), size), fhandle);
+        size -= numRead;
+    } while (size != 0);
+    /*if (fseek(fhandle, size, SEEK_CUR) == 0) {
+        return size;
+    }*/
+    return size;
+#else
+    // TODO: Implement
+    return 0;
+#endif
+}
+
+bool File::seek(ssize_t offset, SeekMode mode)
+{
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    if (!fhandle) {
+        return false;
+    }
+    int origin;
+    switch (mode) {
+    case SeekSet:
+        origin = SEEK_SET;
+        break;
+    case SeekCur:
+        origin = SEEK_CUR;
+        break;
+    default:
+        return false;
+    }
+    return fseek(fhandle, offset, origin) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     if (!fhandle) {
         return false;
     }
-    return fhandle.seek(offset) != 0;
+    if (mode == SeekSet) {
+        return fhandle.seek(offset) != 0;
+    } else if (mode == SeekCur) {
+        ssize_t cpos = static_cast<ssize_t>(fhandle.position());
+        return fhandle.seek(cpos+offset) != 0;
+    }
 #else
     return false;
 #endif

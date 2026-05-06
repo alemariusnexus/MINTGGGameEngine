@@ -8,6 +8,7 @@ list(APPEND SRCS
 
 	graphics/Bitmap.cpp
 	graphics/Color.cpp
+	graphics/ImageLoader.cpp
 	graphics/Screen.cpp
 	graphics/ScreenHAGL.cpp
 	graphics/ScreenNull.cpp
@@ -27,14 +28,17 @@ list(APPEND SRCS
 	platform/GPIODeviceNative.cpp
 	platform/MCP2300XDevice.cpp
 
+    storage/BufferedReader.cpp
 	storage/File.cpp
 	storage/StorageEngine.cpp
 
+    util/GameObjectStreamer.cpp
 	util/Log.cpp
 	util/MathUtils.cpp
 	util/RayCastResult.cpp
     util/Util.cpp
 	util/Vec2.cpp
+	util/WorkerTask.cpp
 	)
 
 foreach(_SRCFILE ${SRCS})
@@ -52,4 +56,5 @@ idf_component_register(
 		fatfs
 		hagl
 		hagl_hal
+		spiffs
 )

@@ -28,9 +28,11 @@
 
 #include "physics/GravitySimulator.h"
 
+#include "storage/BufferedReader.h"
 #include "storage/File.h"
 #include "storage/StorageEngine.h"
 
+#include "util/GameObjectStreamer.h"
 #include "util/Log.h"
 #include "util/MathUtils.h"
 #include "util/RayCastResult.h"

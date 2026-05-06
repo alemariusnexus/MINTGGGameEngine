@@ -26,6 +26,7 @@ bool LogMessageBegin(const char* tag, int level)
 #else
     printf("[%s] %s - ", levelStr, tag);
 #endif
+    return true;
 }
 
 #endif

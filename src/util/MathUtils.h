@@ -24,6 +24,11 @@ bool PointLiesInsideAARect (
         float rx, float ry, float rw, float rh
         );
 
+bool IntersectAABoxAABox (
+    float ax, float ay, float aw, float ah,
+    float bx, float by, float bw, float bh
+    );
+
 /**
  * \brief Calculate intersection between two line segments (simple version).
  *

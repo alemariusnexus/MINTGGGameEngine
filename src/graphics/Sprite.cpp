@@ -96,19 +96,22 @@ Sprite& Sprite::operator=(const Sprite& other)
 {
     type = other.type;
     if (other.type == Type::Null) {
-        // Nothing to do
+        bitmap = Bitmap();
     } else if (type == Type::Rect) {
         rect.w = other.rect.w;
         rect.h = other.rect.h;
         rect.color = other.rect.color;
         rect.filled = other.rect.filled;
+        bitmap = Bitmap();
     } else if (type == Type::Circle) {
         circle.r = other.circle.r;
         circle.color = other.circle.color;
         circle.filled = other.circle.filled;
+        bitmap = Bitmap();
     } else if (type == Type::Bitmap) {
         bitmap = other.bitmap;
     } else {
+        bitmap = Bitmap();
         assert(false);
     }
     return *this;

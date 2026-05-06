@@ -3,6 +3,9 @@
 #include "../Globals.h"
 #include "../storage/File.h"
 
+#include "../util/Log.h"
+#include "Color.h"
+
 #include <memory>
 
 
@@ -25,13 +28,13 @@ class Bitmap
 private:
     struct Data
     {
-        Data(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m, bool own) : w(w), h(h), d(d), m(m), own(own) {}
-        ~Data() { if (own) { free(const_cast<uint16_t*>(d)); free(const_cast<uint8_t*>(m)); } }
+        Data(uint16_t w, uint16_t h, uint16_t* d, uint8_t* m, bool own) : w(w), h(h), d(d), m(m), own(own) {}
+        ~Data() { if (own) { free(d); free(m); } }
         
         uint16_t w;
         uint16_t h;
-        const uint16_t* d;
-        const uint8_t* m;
+        uint16_t* d;
+        uint8_t* m;
         bool own;
     };
 
@@ -51,7 +54,7 @@ public:
      * \param m The bit mask, or null if none is used.
      * \return The new bitmap.
      */
-    static Bitmap takeOwnership(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m = nullptr)
+    static Bitmap takeOwnership(uint16_t w, uint16_t h, uint16_t* d, uint8_t* m = nullptr)
             { return Bitmap(w, h, d, m, true); }
 
     /**
@@ -85,27 +88,6 @@ public:
         }
         return Bitmap(w, h, cd, cm, true);
     }
-
-    /**
-     * \brief Create a bitmap from a BMP file at the given File object.
-     *
-     * Note that only a very limited subset of BMP images is supported.
-     * Currently, only BGR888 and BGRA8888 formats can be loaded, even though
-     * the resulting bitmap will be in RGB565 format.
-     * This was tested on images exported by GIMP 2.10.32.
-     *
-     * \param in file The file to load the BMP data from.
-     * \param out outErrmsg Pointer to an error message, in case the loading
-     *      fails. Can be NULL if no error message if required.
-     * \return The loaded bitmap.
-     * \see loadBMP(const char*, const char**)
-     */
-    static Bitmap loadBMP (
-        File& file,
-        uint16_t ox = 0, uint16_t oy = 0,
-        uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
-        const char** outErrmsg = nullptr
-        );
     
     /**
      * \brief Create a bitmap from a BMP file at the given File object.
@@ -122,6 +104,8 @@ public:
         uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
         const char** outErrmsg = nullptr
         );
+
+    static size_t calcMaskBytesPerLine(uint16_t w) { return (w+7)/8; }
     
 public:
     /**
@@ -142,7 +126,25 @@ public:
      * \see loadBMP()
      */
     Bitmap(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m = nullptr)
-            : d(std::make_shared<Data>(w, h, d, m, false)) {}
+            : d(std::make_shared<Data>(w, h, const_cast<uint16_t*>(d), const_cast<uint8_t*>(m), false)) {}
+
+    /**
+     * \brief Create a bitmap with uninitialized data, to be filled later.
+     *
+     * A data and mask buffer with the correct size are allocated automatically if requested.
+     * Note that neither buffers are initialized, so the initial data is undefined!
+     *
+     * @param w The width in pixels.
+     * @param h The height in pixels.
+     * @param haveData true to create the bitmap with color data (RGB565), false otherwise.
+     * @param haveMask true to create the bitmap with mask data, false otherwise.
+     */
+    Bitmap(uint16_t w, uint16_t h, bool haveData = true, bool haveMask = false)
+            : d(std::make_shared<Data>(w, h,
+                static_cast<uint16_t*>(malloc(w*h*sizeof(uint16_t))),
+                static_cast<uint8_t*>(malloc(calcMaskBytesPerLine(w)*h*sizeof(uint8_t))),
+                true
+                )) {}
     
     /**
      * \brief Create an invalid bitmap.
@@ -177,7 +179,45 @@ public:
      * \brief Return the raw bit mask.
      */
     const uint8_t* getMask() const { return d ? d->m : nullptr; }
+
+    size_t getMemoryUsage() const;
     
+    ///@}
+
+
+    /// \name Pixel Access
+    ///@{
+
+    uint16_t getPixelRaw(uint16_t x, uint16_t y) const
+            { return d  &&  d->d ? d->d[y*d->w+x] : 0; }
+
+    Color getPixel(uint16_t x, uint16_t y) const { return Color(getPixelRaw(x, y)); }
+
+    bool getMaskPixel(uint16_t x, uint16_t y) const
+    {
+        if (!d  ||  !d->m) return false;
+        uint16_t maskByteW = (d->w+7)/8;
+        return (d->m[y*maskByteW + (x>>3)] & (0x80 >> (x&7))) != 0;
+    }
+
+    void setPixel(uint16_t x, uint16_t y, const Color& color)
+    {
+        if (!d  ||  !d->d) return;
+        d->d[x*d->w+x] = color.toRGB565();
+    }
+
+    void setMaskPixel(uint16_t x, uint16_t y, bool set) const
+    {
+        if (!d  ||  !d->m) return;
+        uint16_t maskByteW = (d->w+7)/8;
+        if (set) {
+            d->m[y*maskByteW + (x>>3)] |= (0x80 >> (x&7));
+        } else {
+            d->m[y*maskByteW + (x>>3)] &= ~(0x80 >> (x&7));
+        }
+        //return (d->m[y*maskByteW + (x>>3)] & (0x80 >> (x&7))) != 0;
+    }
+
     ///@}
     
     
@@ -217,7 +257,7 @@ public:
     ///@}
 
 private:
-    Bitmap(uint16_t w, uint16_t h, const uint16_t* d, const uint8_t* m, bool own)
+    Bitmap(uint16_t w, uint16_t h, uint16_t* d, uint8_t* m, bool own)
         : d(std::make_shared<Data>(w, h, d, m, own)) {}
 
 private:

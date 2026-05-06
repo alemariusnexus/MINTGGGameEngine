@@ -91,21 +91,35 @@ void ScreenHAGL::drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir 
     drawBitmapHelper(x, y, bitmap, flipDir, &ScreenHAGL::drawBitmapHelper_drawPixel, &ScreenHAGL::drawBitmapHelper_drawPixels, display);
 }
 
+
 void ScreenHAGL::drawText(const Text& text, int16_t ox, int16_t oy)
 {
     if (!display) {
         return;
     }
 
+    wchar_t stackBuf[128];
+
     std::string content = text.getText();
 
     size_t bufLen = content.length()+1;
-    wchar_t* wcontent = new wchar_t[bufLen];
+
+    wchar_t* wcontent;
+    if (bufLen <= sizeof(stackBuf)/sizeof(wchar_t)) {
+        wcontent = stackBuf;
+    } else {
+        wcontent = static_cast<wchar_t*>(malloc(bufLen * sizeof(wchar_t)));
+    }
+
     mbstowcs(wcontent, content.c_str(), bufLen);
 
     // TODO: Support text size setting and transparent background
 
     putText(wcontent, text.getX()+ox, text.getY()+oy, text.getColor().toRGB565(), font6x9);
+
+    if (wcontent != stackBuf) {
+        free(wcontent);
+    }
 }
 
 Color ScreenHAGL::readPixel(int16_t x, int16_t y)

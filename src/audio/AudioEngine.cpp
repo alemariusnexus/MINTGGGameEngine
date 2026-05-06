@@ -26,31 +26,33 @@ bool AudioEngine::begin(gpionum_t speakerPin)
 #if defined(ESP_PLATFORM)  &&  !defined(ARDUINO)
     // Configure LEDC for the audio PWM signal
 
-    ledcTimer = LEDC_TIMER_0;
-    ledcChannel = LEDC_CHANNEL_0;
+    if (speakerPin >= 0) {
+        ledcTimer = LEDC_TIMER_0;
+        ledcChannel = LEDC_CHANNEL_0;
 
-    ledc_timer_config_t timerCfg = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .timer_num = ledcTimer,
-        .freq_hz = 440,
-        .clk_cfg = LEDC_AUTO_CLK,
-        .deconfigure = false
-    };
-    ESP_ERROR_CHECK(ledc_timer_config(&timerCfg));
+        ledc_timer_config_t timerCfg = {
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .duty_resolution = LEDC_TIMER_10_BIT,
+            .timer_num = ledcTimer,
+            .freq_hz = 440,
+            .clk_cfg = LEDC_AUTO_CLK,
+            .deconfigure = false
+        };
+        ESP_ERROR_CHECK(ledc_timer_config(&timerCfg));
 
-    ledc_channel_config_t channelCfg = {
-        .gpio_num = speakerPin,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = ledcChannel,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = ledcTimer,
-        .duty = 0,
-        .hpoint = 0,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = {}
-    };
-    ESP_ERROR_CHECK(ledc_channel_config(&channelCfg));
+        ledc_channel_config_t channelCfg = {
+            .gpio_num = speakerPin,
+            .speed_mode = LEDC_LOW_SPEED_MODE,
+            .channel = ledcChannel,
+            .intr_type = LEDC_INTR_DISABLE,
+            .timer_sel = ledcTimer,
+            .duty = 0,
+            .hpoint = 0,
+            .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
+            .flags = {}
+        };
+        ESP_ERROR_CHECK(ledc_channel_config(&channelCfg));
+    }
 #endif
     
     BaseType_t bres = xTaskCreate(&_AudioEngineTaskMain, "AudioTask", 4096,

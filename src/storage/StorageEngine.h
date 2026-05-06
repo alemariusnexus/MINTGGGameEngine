@@ -33,6 +33,10 @@ public:
         gpionum_t csPin = -1,
         uint32_t clkFreq = 20000000
         );
+
+    bool mountSPIFFS (
+        const char* mountPoint = "/spiffs"
+        );
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     bool mountSDCard (
         const char* mountPoint = "/sdcard",

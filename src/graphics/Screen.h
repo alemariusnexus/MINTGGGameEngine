@@ -51,14 +51,20 @@ void Screen::drawBitmapHelper (
     DrawPixelsT drawPixels,
     ContextT context
 ) {
-    uint16_t sw = getWidth();
-    uint16_t sh = getHeight();
 
-    uint16_t w = bitmap.getWidth();
-    uint16_t h = bitmap.getHeight();
+
+    const uint16_t sw = getWidth();
+    const uint16_t sh = getHeight();
+
+    const uint16_t w = bitmap.getWidth();
+    const uint16_t h = bitmap.getHeight();
 
     const uint16_t* d = bitmap.getData();
     const uint8_t* m = bitmap.getMask();
+
+    if (!d) {
+        return;
+    }
 
     int16_t byStart, byEnd, byStep;
     int16_t bxStart, bxEnd, bxStep;

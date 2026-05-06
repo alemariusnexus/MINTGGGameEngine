@@ -25,6 +25,12 @@ public:
         AppendOnly
     };
 
+    enum SeekMode
+    {
+        SeekSet,
+        SeekCur
+    };
+
 public:
     File(const File& other);
     File(const std::string& path);
@@ -43,7 +49,7 @@ public:
     bool mkdir();
     bool remove();
 
-    bool open(OpenMode mode = ReadOnly);
+    bool open(OpenMode mode = ReadOnly, const char** outErrmsg = nullptr);
     void close();
     bool isOpen() const;
 
@@ -51,7 +57,8 @@ public:
     size_t read(void* data, size_t size);
     size_t write(const void* data, size_t size);
     int printf(const char* format, ...);
-    bool seek(ssize_t offset);
+    size_t skip(size_t size);
+    bool seek(ssize_t offset, SeekMode mode = SeekSet);
     ssize_t tell();
 
     std::string getTextContent();
