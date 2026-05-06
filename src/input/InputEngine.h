@@ -57,6 +57,7 @@ namespace MINTGGGameEngine
  */
 class InputEngine
 {
+    friend class Game;
     friend void _InputEngineTaskMain(void* params);
     
 public:
@@ -78,9 +79,18 @@ public:
     //typedef void (*ButtonComboCb)();
     
 private:
+    enum
+    {
+        ButtonStateChangeFlagPressed = 0x01,
+        ButtonStateChangeFlagReleased = 0x02
+    };
+
     struct ButtonDef
     {
-        ButtonDef(const std::string& id, unsigned int pin, GPIODevice* dev, int flags) : id(id), pin(pin), dev(dev), flags(flags), rawState(0), pressed(false), debounceCount(0) {}
+        ButtonDef(const std::string& id, unsigned int pin, GPIODevice* dev, int flags)
+            : id(id), pin(pin), dev(dev), flags(flags), rawState(0), pressed(false),
+              stateChangeFlags(0), stateChangeFlagsBuffered(0), debounceCount(0)
+            {}
         
         std::string id;
 		unsigned int pin;
@@ -89,6 +99,8 @@ private:
         
 		uint8_t rawState;
         bool pressed;
+        uint8_t stateChangeFlags;
+        uint8_t stateChangeFlagsBuffered;
         uint8_t debounceCount;
     };
     
@@ -250,7 +262,10 @@ public:
      * \return true if pressed, false otherwise.
      */
     bool isButtonPressed(const std::string& id);
-    
+
+    bool isButtonPressedThisFrame(const std::string& id);
+    bool isButtonReleasedThisFrame(const std::string& id);
+
     /**
      * \brief Defines a button combination for which to watch out.
      *
@@ -307,6 +322,9 @@ private:
     AxisDef* getAxisDef(const std::string& id);
     
     bool debounceButton(ButtonDef* def, bool pressed);
+
+    void notifyBeginFrame();
+    void notifyEndFrame();
 
 private:
     TaskHandle_t inputTask;

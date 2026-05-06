@@ -51,6 +51,18 @@ InputEngine& Game::input()
 }
 
 
+void Game::beginFrame()
+{
+    inputEng.notifyBeginFrame();
+}
+
+
+void Game::endFrame()
+{
+    inputEng.notifyEndFrame();
+}
+
+
 void Game::checkCollisions(float shrink)
 {
     auto gameObjsLocal = gameObjs;

@@ -106,6 +106,9 @@ public:
     
     /// \name Frames
     ///@{
+
+    void beginFrame();
+    void endFrame();
     
     /**
      * \brief Return the targeted time for a single frame.

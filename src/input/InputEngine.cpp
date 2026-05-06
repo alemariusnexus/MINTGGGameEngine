@@ -279,6 +279,24 @@ bool InputEngine::isButtonPressed(const std::string& id)
     return def->pressed;
 }
 
+bool InputEngine::isButtonPressedThisFrame(const std::string& id)
+{
+    ButtonDef* def = getButtonDef(id);
+    if (!def) {
+        return false;
+    }
+    return (def->stateChangeFlagsBuffered & ButtonStateChangeFlagPressed) != 0;
+}
+
+bool InputEngine::isButtonReleasedThisFrame(const std::string& id)
+{
+    ButtonDef* def = getButtonDef(id);
+    if (!def) {
+        return false;
+    }
+    return (def->stateChangeFlagsBuffered & ButtonStateChangeFlagReleased) != 0;
+}
+
 void InputEngine::defineButtonCombo(const std::unordered_set<std::string>& ids, ButtonComboCb cb)
 {
     xSemaphoreTake(inputMtx, portMAX_DELAY);
@@ -324,11 +342,34 @@ bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
         return false;
     }
     if (def->debounceCount++ >= debounceCount) {
+        if (pressed) {
+            def->stateChangeFlags |= ButtonStateChangeFlagPressed;
+        } else {
+            def->stateChangeFlags |= ButtonStateChangeFlagReleased;
+        }
         def->pressed = pressed;
         def->debounceCount = 0;
         return true;
     }
     return false;
+}
+
+void InputEngine::notifyBeginFrame()
+{
+    xSemaphoreTake(inputMtx, portMAX_DELAY);
+
+    // Buffer and reset state change flags for each button
+    for (auto it = buttons.begin() ; it != buttons.end() ; ++it) {
+        ButtonDef* def = it->second;
+        def->stateChangeFlagsBuffered = def->stateChangeFlags;
+        def->stateChangeFlags = 0;
+    }
+
+    xSemaphoreGive(inputMtx);
+}
+
+void InputEngine::notifyEndFrame()
+{
 }
 
 }
