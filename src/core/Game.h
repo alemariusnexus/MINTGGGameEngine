@@ -5,6 +5,7 @@
 #include "../graphics/Screen.h"
 #include "../graphics/Text.h"
 #include "../input/InputEngine.h"
+#include "../network/NetworkEngine.h"
 #include "../physics/GameObjectCollision.h"
 #include "../storage/StorageEngine.h"
 #include "../util/RayCastResult.h"
@@ -100,6 +101,13 @@ public:
      * \return Input engine reference.
      */
     InputEngine& input();
+
+    /**
+     * \brief Return a reference to the network engine.
+     *
+     * \return Network engine reference.
+     */
+    NetworkEngine& network();
     
     ///@}
     
@@ -431,6 +439,7 @@ private:
     
     AudioEngine audioEng;
     InputEngine inputEng;
+    NetworkEngine networkEng;
 
     CollisionCb collisionCb;
 

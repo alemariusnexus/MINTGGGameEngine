@@ -18,6 +18,8 @@ list(APPEND SRCS
 
 	input/InputEngine.cpp
 
+	network/NetworkEngine.cpp
+
 	physics/Collider.cpp
 	physics/GameObjectCollision.cpp
 	physics/GravitySimulator.cpp
@@ -53,8 +55,11 @@ idf_component_register(
     REQUIRES
 		driver
 		esp_adc
+		esp_http_client
+        esp_wifi
 		fatfs
 		hagl
 		hagl_hal
+		nvs_flash
 		spiffs
 )

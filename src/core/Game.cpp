@@ -51,6 +51,12 @@ InputEngine& Game::input()
 }
 
 
+NetworkEngine& Game::network()
+{
+    return networkEng;
+}
+
+
 void Game::beginFrame()
 {
     inputEng.notifyBeginFrame();
