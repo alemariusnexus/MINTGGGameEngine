@@ -6,6 +6,7 @@
 #include <esp_err.h>
 #include <esp_spiffs.h>
 #include <esp_vfs_fat.h>
+#include <nvs_flash.h>
 #endif
 
 
@@ -29,6 +30,17 @@ StorageEngine::StorageEngine()
 
 bool StorageEngine::begin()
 {
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    esp_err_t nvsRes = nvs_flash_init();
+    if (nvsRes == ESP_ERR_NVS_NO_FREE_PAGES || nvsRes == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        nvsRes = nvs_flash_init();
+    }
+    if (nvsRes != ESP_OK) {
+        LogError(TAG, "Error initializing NVS: %s", esp_err_to_name(nvsRes));
+    }
+#endif
+
     return true;
 }
 

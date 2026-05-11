@@ -9,6 +9,7 @@
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+//#include <Preferences.h>
 #include <SD.h>
 #include <SPI.h>
 #endif
@@ -52,6 +53,10 @@ private:
 
 private:
     std::string sdMountPath;
+
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+
+#endif
 };
 
 

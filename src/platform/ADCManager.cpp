@@ -92,7 +92,7 @@ adc_oneshot_unit_handle_t ADCManager::setupADCInst(adc_unit_t unit)
     ADCUnitConfig unitCfg;
     adc_oneshot_unit_init_cfg_t cfg = {
         .unit_id = unit,
-        .clk_src = ADC_DIGI_CLK_SRC_DEFAULT,
+        .clk_src = static_cast<adc_oneshot_clk_src_t>(0),
         .ulp_mode = ADC_ULP_MODE_DISABLE
     };
     if (adc_oneshot_new_unit(&cfg, &unitCfg.adcHandle) != ESP_OK) {
