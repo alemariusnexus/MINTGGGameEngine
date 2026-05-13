@@ -54,7 +54,7 @@ MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t cloc
         .glitch_ignore_cnt = 7
     };
     if (i2c_new_master_bus(&busCfg, &i2cBus) != ESP_OK) {
-        LogError(TAG, "Error setting up I2C master.");
+        LogError("Error setting up I2C master.");
         return;
     }
 
@@ -65,7 +65,7 @@ MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t cloc
     };
 
     if (i2c_master_bus_add_device(i2cBus, &devCfg, &i2cDev) != ESP_OK) {
-        LogError(TAG, "Error setting up MCP2300X.");
+        LogError("Error setting up MCP2300X.");
         return;
     }
 }

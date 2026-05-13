@@ -133,7 +133,7 @@ void GameObjectStreamer::update()
             sobj.gobj.getX(), sobj.gobj.getY(), sobj.width, sobj.height,
             activeX, activeY, activeW, activeH
             );
-        //LogInfo(TAG, "Active: %s", active ? "yes" : "no");
+        //LogInfo("Active: %s", active ? "yes" : "no");
 
         if (active  &&  (sobj.flags & StreamFlagsActive) == 0) {
             streamIn(sobj);
@@ -145,7 +145,7 @@ void GameObjectStreamer::update()
 
 void GameObjectStreamer::streamIn(StreamedObject& sobj)
 {
-    //LogInfo(TAG, "Stream IN");
+    //LogInfo("Stream IN");
 
     if (sobj.flags & StreamFlagsSpriteBitmapFile) {
         workerTask.addWorkItem([&]() {
@@ -158,11 +158,11 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
                 &errmsg
                 );
             timer_mstick_t e = TimerGetTickcountMs();
-            //LogInfo(TAG, "BMP loading took %ums", (uint32_t) (e-s));
+            //LogInfo("BMP loading took %ums", (uint32_t) (e-s));
             if (bmp) {
                 sobj.gobj.setSprite(Sprite::createBitmap(bmp));
             } else {
-                LogError(TAG, "Error loading bitmap for streaming from %s: %s",
+                LogError("Error loading bitmap for streaming from %s: %s",
                     sobj.bmpFile.path.c_str(), errmsg);
             }
         });
@@ -173,7 +173,7 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
 
 void GameObjectStreamer::streamOut(StreamedObject& sobj)
 {
-    //LogInfo(TAG, "Stream OUT");
+    //LogInfo("Stream OUT");
 
     if (sobj.flags & StreamFlagsSpriteBitmapFile) {
         sobj.gobj.setSprite(Sprite());

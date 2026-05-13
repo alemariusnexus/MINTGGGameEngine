@@ -58,7 +58,7 @@ bool AudioEngine::begin(gpionum_t speakerPin)
     BaseType_t bres = xTaskCreate(&_AudioEngineTaskMain, "AudioTask", 4096,
             this, 1, &audioTask);
     if (bres != pdPASS) {
-        LogError(TAG, "ERROR: Unable to create AudioTask.");
+        LogError("ERROR: Unable to create AudioTask.");
         return false;
     }
     

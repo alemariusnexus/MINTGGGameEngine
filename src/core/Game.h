@@ -87,7 +87,9 @@ public:
     
     /// \name Engine Components
     ///@{
-    
+
+    Screen& getScreen();
+
     /**
      * \brief Return a reference to the audio engine.
      *

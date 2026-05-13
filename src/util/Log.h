@@ -25,17 +25,15 @@ enum LogLevel
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
-#define LogError(tag, format, ...) ESP_LOGE(tag, format, ## __VA_ARGS__)
-#define LogWarning(tag, format, ...) ESP_LOGW(tag, format, ## __VA_ARGS__)
-#define LogInfo(tag, format, ...) ESP_LOGI(tag, format, ## __VA_ARGS__)
-#define LogDebug(tag, format, ...) ESP_LOGD(tag, format, ## __VA_ARGS__)
-#define LogVerbose(tag, format, ...) ESP_LOGV(tag, format, ## __VA_ARGS__)
+#define LogError(format, ...) ESP_LOGE(TAG, format, ## __VA_ARGS__)
+#define LogWarning(format, ...) ESP_LOGW(TAG, format, ## __VA_ARGS__)
+#define LogInfo(format, ...) ESP_LOGI(TAG, format, ## __VA_ARGS__)
+#define LogDebug(format, ...) ESP_LOGD(TAG, format, ## __VA_ARGS__)
+#define LogVerbose(format, ...) ESP_LOGV(TAG, format, ## __VA_ARGS__)
 
 #else
 
 bool LogMessageBegin(const char* tag, int level);
-
-void LogMessage(const char* tag, int level, const char* format, ...);
 
 #define LogMessage(tag, level, format, ...) do {        \
         if (LogMessageBegin((tag), (level))) {          \
@@ -44,11 +42,11 @@ void LogMessage(const char* tag, int level, const char* format, ...);
         }                                               \
     } while (false)
 
-#define LogError(tag, format, ...) LogMessage((tag), LOG_LEVEL_ERROR, format, ## __VA_ARGS__)
-#define LogWarning(tag, format, ...) LogMessage((tag), LOG_LEVEL_WARNING, format, ## __VA_ARGS__)
-#define LogInfo(tag, format, ...) LogMessage((tag), LOG_LEVEL_INFO, format, ## __VA_ARGS__)
-#define LogDebug(tag, format, ...) LogMessage((tag), LOG_LEVEL_DEBUG, format, ## __VA_ARGS__)
-#define LogVerbose(tag, format, ...) LogMessage((tag), LOG_LEVEL_VERBOSE, format, ## __VA_ARGS__)
+#define LogError(format, ...) LogMessage(TAG, LOG_LEVEL_ERROR, format, ## __VA_ARGS__)
+#define LogWarning(format, ...) LogMessage(TAG, LOG_LEVEL_WARNING, format, ## __VA_ARGS__)
+#define LogInfo(format, ...) LogMessage(TAG, LOG_LEVEL_INFO, format, ## __VA_ARGS__)
+#define LogDebug(format, ...) LogMessage(TAG, LOG_LEVEL_DEBUG, format, ## __VA_ARGS__)
+#define LogVerbose(format, ...) LogMessage(TAG, LOG_LEVEL_VERBOSE, format, ## __VA_ARGS__)
 
 #endif
 

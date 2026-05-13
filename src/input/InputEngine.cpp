@@ -29,7 +29,7 @@ bool InputEngine::begin(uint8_t debounceCount)
     BaseType_t res = xTaskCreate(&_InputEngineTaskMain, "InputTask", 4096,
             this, 1, &inputTask);
     if (res != pdPASS) {
-        LogError(TAG, "Unable to create InputTask.");
+        LogError("Unable to create InputTask.");
         return false;
     }
     

@@ -296,7 +296,7 @@ bool ImageLoader::loadBMPRaw565 (
 
         timer_mstick_t t6 = TimerGetTickcountMs();
 
-        /*LogInfo("Bitmap", "Timing   -   t1-t2: %u, t2-t3: %u, t3:t4: %u, t4-t5: %u, t5-t6: %u",
+        /*LogInfo("Timing   -   t1-t2: %u, t2-t3: %u, t3:t4: %u, t4-t5: %u, t5-t6: %u",
             (unsigned int) (t2-t1),
             (unsigned int) (t3-t2),
             (unsigned int) (t4-t3),

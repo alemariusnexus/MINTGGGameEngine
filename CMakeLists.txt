@@ -3,6 +3,7 @@ list(APPEND SRCS
 	audio/AudioClip.cpp
 	audio/AudioEngine.cpp
 
+    core/DefaultEngine.cpp
 	core/Game.cpp
 	core/GameObject.cpp
 

@@ -36,7 +36,7 @@ bool WorkerTask::start()
     BaseType_t res = xTaskCreate(&WorkerTaskMain, taskName, stackSizeBytes,
             this, priority, &task);
     if (res != pdPASS) {
-        LogError(TAG, "ERROR: Unable to create task '%s'.", taskName);
+        LogError("ERROR: Unable to create task '%s'.", taskName);
         return false;
     }
     return true;

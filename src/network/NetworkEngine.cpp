@@ -77,13 +77,13 @@ bool NetworkEngine::start()
 
     res = esp_netif_init();
     if (res != ESP_OK) {
-        LogError(TAG, "Error initializing ESP Netif: %s", esp_err_to_name(res));
+        LogError("Error initializing ESP Netif: %s", esp_err_to_name(res));
         return false;
     }
 
     res = esp_event_loop_create_default();
     if (res != ESP_OK) {
-        LogError(TAG, "Error creating event loop: %s", esp_err_to_name(res));
+        LogError("Error creating event loop: %s", esp_err_to_name(res));
         return false;
     }
     esp_netif_create_default_wifi_sta();
@@ -91,7 +91,7 @@ bool NetworkEngine::start()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     res = esp_wifi_init(&cfg);
     if (res != ESP_OK) {
-        LogError(TAG, "Error initializing WiFi: %s", esp_err_to_name(res));
+        LogError("Error initializing WiFi: %s", esp_err_to_name(res));
         return false;
     }
 
@@ -117,11 +117,11 @@ bool NetworkEngine::start()
         }
     };
     if (wifiConfigs[0].ssid.length() >= sizeof(wifiCfg.sta.ssid)) {
-        LogError(TAG, "WiFi SSID too long.");
+        LogError("WiFi SSID too long.");
         return false;
     }
     if (wifiConfigs[0].password.length() >= sizeof(wifiCfg.sta.password)) {
-        LogError(TAG, "WiFi password too long.");
+        LogError("WiFi password too long.");
         return false;
     }
     strcpy(reinterpret_cast<char*>(wifiCfg.sta.ssid), wifiConfigs[0].ssid.c_str());
@@ -129,19 +129,19 @@ bool NetworkEngine::start()
 
     res = esp_wifi_set_mode(WIFI_MODE_STA);
     if (res != ESP_OK) {
-        LogError(TAG, "Error setting WiFi mode: %s", esp_err_to_name(res));
+        LogError("Error setting WiFi mode: %s", esp_err_to_name(res));
         return false;
     }
 
     res = esp_wifi_set_config(WIFI_IF_STA, &wifiCfg);
     if (res != ESP_OK) {
-        LogError(TAG, "Error setting WiFi config: %s", esp_err_to_name(res));
+        LogError("Error setting WiFi config: %s", esp_err_to_name(res));
         return false;
     }
 
     res = esp_wifi_start();
     if (res != ESP_OK) {
-        LogError(TAG, "Error starting WiFi: %s", esp_err_to_name(res));
+        LogError("Error starting WiFi: %s", esp_err_to_name(res));
         return false;
     }
 
@@ -195,7 +195,7 @@ uint8_t* NetworkEngine::sendHTTPGetRequestRaw(const std::string& url, size_t* ou
             *outRespLen = reqCtx.respNumWritten;
         }
     } else {
-        LogError(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
+        LogError("HTTP GET request failed: %s", esp_err_to_name(err));
         free(reqCtx.respBuf);
         reqCtx.respBuf = nullptr;
         if (outRespLen) {
@@ -213,7 +213,7 @@ uint8_t* NetworkEngine::sendHTTPGetRequestRaw(const std::string& url, size_t* ou
     int httpCode = http.GET();
 
     if (httpCode < 0) {
-        LogError(TAG, "Error sending HTTP request: %s", http.errorToString(httpCode));
+        LogError("Error sending HTTP request: %s", http.errorToString(httpCode));
         if (outRespLen) *outRespLen = 0;
         return nullptr;
     }
@@ -261,19 +261,19 @@ void NetworkEngine::espEventHandler (
     if (evtBase == WIFI_EVENT  &&  evtID == WIFI_EVENT_STA_START) {
         res = esp_wifi_connect();
         if (res != ESP_OK) {
-            LogError(TAG, "Error connecting WiFi: %s", esp_err_to_name(res));
+            LogError("Error connecting WiFi: %s", esp_err_to_name(res));
         }
     } else if (evtBase == WIFI_EVENT  &&  evtID == WIFI_EVENT_STA_DISCONNECTED) {
         connected = false;
         res = esp_wifi_connect();
         if (res != ESP_OK) {
-            LogError(TAG, "Error connecting WiFi: %s", esp_err_to_name(res));
+            LogError("Error connecting WiFi: %s", esp_err_to_name(res));
         }
     } else if (evtBase == IP_EVENT  &&  evtID == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* evt = (ip_event_got_ip_t*) evtData;
         connected = true;
 
-        LogInfo(TAG, "Got IP: " IPSTR, IP2STR(&evt->ip_info.ip));
+        LogInfo("Got IP: " IPSTR, IP2STR(&evt->ip_info.ip));
     }
 }
 

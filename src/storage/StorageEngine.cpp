@@ -37,7 +37,7 @@ bool StorageEngine::begin()
         nvsRes = nvs_flash_init();
     }
     if (nvsRes != ESP_OK) {
-        LogError(TAG, "Error initializing NVS: %s", esp_err_to_name(nvsRes));
+        LogError("Error initializing NVS: %s", esp_err_to_name(nvsRes));
     }
 #endif
 
@@ -85,7 +85,7 @@ bool StorageEngine::mountSDCard (
         &sdcard
         );
     if (res != ESP_OK) {
-        LogError(TAG, "Error mounting SD card: %s", esp_err_to_name(res));
+        LogError("Error mounting SD card: %s", esp_err_to_name(res));
         return false;
     }
 
@@ -104,7 +104,7 @@ bool StorageEngine::mountSPIFFS (
 
     esp_err_t res = esp_vfs_spiffs_register(&conf);
     if (res != ESP_OK) {
-        LogError(TAG, "Error registering SPIFFS: %s", esp_err_to_name(res));
+        LogError("Error registering SPIFFS: %s", esp_err_to_name(res));
         return false;
     }
 
@@ -126,7 +126,7 @@ bool StorageEngine::mountSDCard (
     }
 
     if (!SD.begin(csPin, spi)) {
-        LogError(TAG, "Error initializing SD card.");
+        LogError("Error initializing SD card.");
         return false;
     }
 

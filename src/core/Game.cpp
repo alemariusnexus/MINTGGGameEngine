@@ -39,6 +39,12 @@ void Game::begin(Screen& screen, uint16_t fps)
 }
 
 
+Screen& Game::getScreen()
+{
+    return *screen;
+}
+
+
 AudioEngine& Game::audio()
 {
     return audioEng;
