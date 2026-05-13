@@ -1,5 +1,7 @@
 #include "Log.h"
 
+#include "Util.h"
+
 
 namespace MINTGGGameEngine
 {
@@ -9,6 +11,8 @@ namespace MINTGGGameEngine
 
 bool LogMessageBegin(const char* tag, int level)
 {
+    timer_mstick_t now = TimerGetTickcountMs();
+
     const char* levelStr;
     switch (level) {
     case LOG_LEVEL_ERROR: levelStr = "ERR"; break;
@@ -20,11 +24,13 @@ bool LogMessageBegin(const char* tag, int level)
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     Serial.print("[");
     Serial.print(levelStr);
-    Serial.print("] ");
+    Serial.print("] (");
+    Serial.print(now);
+    Serial.print(") ");
     Serial.print(tag);
     Serial.print(" - ");
 #else
-    printf("[%s] %s - ", levelStr, tag);
+    printf("[%s] (%lu) %s - ", levelStr, static_cast<unsigned long>(now), tag);
 #endif
     return true;
 }

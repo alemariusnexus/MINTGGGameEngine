@@ -4,6 +4,10 @@
 
 #include "Game.h"
 
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#include "../graphics/ScreenST7735.h"
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -18,6 +22,10 @@ public:
 
         const char* sdCardMountPoint;
         const char* internalStorageMountPoint;
+
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+        SPIClass* spiBase;
+#endif
 
         struct {
             int spiMISO;
@@ -70,7 +78,7 @@ protected:
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     SPIClass* spi;
-    Adafruit_ST7735 tft;
+    Adafruit_ST7735* tft;
 #endif
 };
 

@@ -51,6 +51,10 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     game = cfg->game;
 
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    initSerial(cfg);
+#endif
+
     LogInfo("*** BEGIN ENGINE SETUP ***");
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -65,9 +69,7 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     TimerInit();
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    initSerial(cfg);
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     initNVS(cfg);
 #endif
 
@@ -85,10 +87,6 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     LogInfo("Initializing storage...");
     initStorage(cfg);
-
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    spi.begin(SPI_SCK, SPI_MISO, SPI_MOSI, TFT_CS);
-#endif
 
     mountInternalStorage(cfg);
 
@@ -168,10 +166,12 @@ void DefaultEngine::initStorage(SetupConfig* cfg)
 void DefaultEngine::initScreen(SetupConfig* cfg)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    spi = new SPIClass(SPI_BUS);
-    tft = new Adafruit_ST7735(spi, TFT_CS, TFT_DC, TFT_RST);
+    spi = new SPIClass(*cfg->spiBase);
+    spi->begin(cfg->pins.spiSCK, cfg->pins.spiMISO, cfg->pins.spiMOSI, cfg->pins.screenCS);
+
+    tft = new Adafruit_ST7735(spi, cfg->pins.screenCS, cfg->pins.screenDC, cfg->pins.screenRST);
     ScreenST7735* stScreen = new ScreenST7735(*tft);
-    screen->begin();
+    stScreen->begin();
     screen = stScreen;
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     ScreenHAGL* haglScreen = new ScreenHAGL;
@@ -240,7 +240,7 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
         sdMountOk = StorageEngine::getInstance().mountSDCard (
             cfg->sdCardMountPoint,
-            spi,
+            *spi,
             cfg->pins.sdCardCS
             );
 #endif
@@ -257,7 +257,7 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
-void DefaultSetupManager::initSerial(SetupConfig* cfg)
+void DefaultEngine::initSerial(SetupConfig* cfg)
 {
     Serial.begin(115200);
 }
