@@ -56,6 +56,11 @@ Vec2 GameObject::getCenterPosition(bool useSprite) const
     return getPosition() + getSize(useSprite)*0.5f;
 }
 
+void GameObject::setCenterPosition(const Vec2& p, bool useSprite)
+{
+    setPosition(p.x() - getWidth(useSprite)/2, p.y() - getHeight(useSprite)/2);
+}
+
 bool GameObject::isLeftOf(const GameObject& other, bool useSprite) const
 {
     return getCenterPosition(useSprite).x() < other.getCenterPosition(useSprite).x();

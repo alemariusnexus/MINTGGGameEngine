@@ -280,6 +280,11 @@ public:
      * \return The center position.
      */
     Vec2 getCenterPosition(bool useSprite = false) const;
+
+    void setCenterPosition(const Vec2& p, bool useSprite = false);
+
+    void setCenterPosition(float x, float y, bool useSprite = false)
+            { setCenterPosition(Vec2(x, y), useSprite); }
     
     /**
      * \brief Return the object's movement direction.
