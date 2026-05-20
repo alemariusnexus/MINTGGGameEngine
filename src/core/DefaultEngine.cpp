@@ -219,11 +219,9 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
 bool DefaultEngine::mountInternalStorage(SetupConfig* cfg)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-#ifdef MOUNT_SPIFFS
     LogInfo("Mounting SPIFFS...");
     StorageEngine::getInstance().mountSPIFFS(cfg->internalStorageMountPoint);
     return true;
-#endif
 #endif
 
     return false;
