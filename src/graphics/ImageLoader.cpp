@@ -1,5 +1,7 @@
 #include "ImageLoader.h"
 
+#include "../storage/BufferedReader.h"
+#include "../storage/FileReader.h"
 #include "../util/Log.h"
 #include "../util/Util.h"
 
@@ -38,7 +40,18 @@ ImageLoader::ImageLoader()
 {
 }
 
-Bitmap ImageLoader::loadBitmapBMP(const char* path)
+Bitmap ImageLoader::loadBitmapBMP(Reader& reader)
+{
+    uint16_t* rgb = nullptr;
+    uint8_t* mask = nullptr;
+    uint16_t w, h;
+    if (!loadBMPRaw565(reader, &rgb, &mask, &w, &h, 0)) {
+        return {};
+    }
+    return Bitmap::takeOwnership(w, h, rgb, mask);
+}
+
+Bitmap ImageLoader::loadBitmapBMP(const std::string_view& path)
 {
     uint16_t* rgb = nullptr;
     uint8_t* mask = nullptr;
@@ -49,8 +62,35 @@ Bitmap ImageLoader::loadBitmapBMP(const char* path)
     return Bitmap::takeOwnership(w, h, rgb, mask);
 }
 
-Bitmap ImageLoader::loadBitmapBMPSeparateMask(const char* rgbPath, const char* maskPath)
+Bitmap ImageLoader::loadBitmapBMPSeparateMask(Reader& rgbReader, Reader& maskReader)
 {
+    uint16_t* rgb = nullptr;
+    uint16_t w, h;
+    if (!loadBMPRaw565(rgbReader, &rgb, nullptr, &w, &h, 0)) {
+        return {};
+    }
+
+    uint8_t* mask = nullptr;
+    uint16_t wm, hm;
+    if (!loadBMPRaw565(maskReader, nullptr, &mask, &wm, &hm, BMPLoadFlagMaskFromColor)) {
+        free(rgb);
+        return {};
+    }
+
+    if (wm != w  ||  hm != h) {
+        free(rgb);
+        free(mask);
+        setError("mask dimensions mismatch");
+        return {};
+    }
+
+    return Bitmap::takeOwnership(w, h, rgb, mask);
+}
+
+Bitmap ImageLoader::loadBitmapBMPSeparateMask (
+    const std::string_view& rgbPath,
+    const std::string_view& maskPath
+) {
     uint16_t* rgb = nullptr;
     uint16_t w, h;
     if (!loadBMPRaw565(rgbPath, &rgb, nullptr, &w, &h, 0)) {
@@ -59,7 +99,7 @@ Bitmap ImageLoader::loadBitmapBMPSeparateMask(const char* rgbPath, const char* m
 
     uint8_t* mask = nullptr;
     uint16_t wm, hm;
-    if (!loadBMPRaw565(rgbPath, nullptr, &mask, &wm, &hm, BMPLoadFlagMaskFromColor)) {
+    if (!loadBMPRaw565(maskPath, nullptr, &mask, &wm, &hm, BMPLoadFlagMaskFromColor)) {
         free(rgb);
         return {};
     }
@@ -75,29 +115,27 @@ Bitmap ImageLoader::loadBitmapBMPSeparateMask(const char* rgbPath, const char* m
 }
 
 bool ImageLoader::loadBMPRaw565 (
-    const char* path,
+    const std::string_view& path,
     uint16_t** outRgb, uint8_t** outMask,
     uint16_t* outWidth, uint16_t* outHeight,
     int flags
 ) {
     char fbuf[512];
-    BufferedReader reader(File(path), fbuf, sizeof(fbuf));
+    FileReader freader{File(path)};
+    if (!freader.open(&errmsg)) {
+        return false;
+    }
+    BufferedReader reader(freader, fbuf, sizeof(fbuf));
     return loadBMPRaw565(reader, outRgb, outMask, outWidth, outHeight, flags);
 }
 
 bool ImageLoader::loadBMPRaw565 (
-    BufferedReader& reader,
+    Reader& reader,
     uint16_t** outRgb, uint8_t** outMask,
     uint16_t* outWidth, uint16_t* outHeight,
     int flags
 ) {
     timer_mstick_t t1 = TimerGetTickcountMs();
-
-    if (!reader.isOpen()) {
-        if (!reader.open(&errmsg)) {
-            return false;
-        }
-    }
 
     ssize_t bmpOrigin = reader.tell();
     if (bmpOrigin < 0) {

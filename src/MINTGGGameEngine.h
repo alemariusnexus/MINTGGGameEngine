@@ -11,6 +11,7 @@
 
 #include "graphics/Bitmap.h"
 #include "graphics/Color.h"
+#include "graphics/Font.h"
 #include "graphics/Screen.h"
 #include "graphics/ScreenHAGL.h"
 #include "graphics/ScreenNull.h"
@@ -31,6 +32,9 @@
 
 #include "storage/BufferedReader.h"
 #include "storage/File.h"
+#include "storage/FileReader.h"
+#include "storage/MemReader.h"
+#include "storage/Reader.h"
 #include "storage/StorageEngine.h"
 
 #include "util/GameObjectStreamer.h"

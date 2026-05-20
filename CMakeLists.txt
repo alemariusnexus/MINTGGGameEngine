@@ -9,6 +9,7 @@ list(APPEND SRCS
 
 	graphics/Bitmap.cpp
 	graphics/Color.cpp
+	graphics/Font.cpp
 	graphics/ImageLoader.cpp
 	graphics/Screen.cpp
 	graphics/ScreenHAGL.cpp
@@ -33,6 +34,9 @@ list(APPEND SRCS
 
     storage/BufferedReader.cpp
 	storage/File.cpp
+	storage/FileReader.cpp
+	storage/MemReader.cpp
+	storage/Reader.cpp
 	storage/StorageEngine.cpp
 
     util/GameObjectStreamer.cpp

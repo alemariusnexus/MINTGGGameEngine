@@ -1,5 +1,6 @@
 #include "DefaultEngine.h"
 
+#include "../graphics/Font.h"
 #include "../util/Log.h"
 #include "../util/Util.h"
 #include "graphics/ScreenHAGL.h"
@@ -165,6 +166,8 @@ void DefaultEngine::initStorage(SetupConfig* cfg)
 
 void DefaultEngine::initScreen(SetupConfig* cfg)
 {
+    Font::loadDefaultFonts();
+
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     spi = new SPIClass(*cfg->spiBase);
     spi->begin(cfg->pins.spiSCK, cfg->pins.spiMISO, cfg->pins.spiMOSI, cfg->pins.screenCS);

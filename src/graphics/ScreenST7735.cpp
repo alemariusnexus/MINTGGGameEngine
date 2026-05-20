@@ -6,6 +6,8 @@
 namespace MINTGGGameEngine
 {
 
+// TODO: Handle coordinate overflow/underflow more gracefully
+
 void ScreenST7735::begin(int rotation)
 {
     tft->initR(INITR_BLACKTAB);
@@ -20,35 +22,55 @@ void ScreenST7735::fillScreen(const Color& color)
     canvas.fillScreen(color);
 }
 
-void ScreenST7735::drawPixel(int16_t x, int16_t y, const Color& color)
+void ScreenST7735::drawPixel(int32_t x, int32_t y, const Color& color)
 {
-    canvas.drawPixel(x, y, color);
+    canvas.drawPixel(static_cast<int16_t>(x), static_cast<int16_t>(y), color);
 }
 
-void ScreenST7735::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, const Color& color)
+void ScreenST7735::drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color)
 {
-    canvas.drawLine(x0, y0, x1, y1, color);
+    canvas.drawLine (
+        static_cast<int16_t>(x0), static_cast<int16_t>(y0),
+        static_cast<int16_t>(x1), static_cast<int16_t>(y1),
+        color
+        );
 }
 
-void ScreenST7735::drawRect(int16_t x, int16_t y, int16_t w, int16_t h, const Color& color, bool filled)
+void ScreenST7735::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Color& color, bool filled)
 {
     if (filled) {
-        canvas.fillRect(x, y, w, h, color);
+        canvas.fillRect (
+            static_cast<int16_t>(x), static_cast<int16_t>(y),
+            static_cast<int16_t>(w), static_cast<int16_t>(h),
+            color
+            );
     } else {
-        canvas.drawRect(x, y, w, h, color);
+        canvas.drawRect (
+            static_cast<int16_t>(x), static_cast<int16_t>(y),
+            static_cast<int16_t>(w), static_cast<int16_t>(h),
+            color
+            );
     }
 }
 
-void ScreenST7735::drawCircle(int16_t cx, int16_t cy, int16_t r, const Color& color, bool filled)
+void ScreenST7735::drawCircle(int32_t cx, int32_t cy, int32_t r, const Color& color, bool filled)
 {
     if (filled) {
-        canvas.fillCircle(cx, cy, r, color);
+        canvas.fillCircle (
+            static_cast<int16_t>(cx), static_cast<int16_t>(cy),
+            static_cast<int16_t>(r),
+            color
+            );
     } else {
-        canvas.drawCircle(cx, cy, r, color);
+        canvas.drawCircle (
+            static_cast<int16_t>(cx), static_cast<int16_t>(cy),
+            static_cast<int16_t>(r),
+            color
+            );
     }
 }
 
-void ScreenST7735::drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDir flipDir)
+void ScreenST7735::drawBitmap(int32_t x, int32_t y, const Bitmap& bitmap, FlipDir flipDir)
 {
     canvas.startWrite();
     drawBitmapHelper(
@@ -62,17 +84,9 @@ void ScreenST7735::drawBitmap(int16_t x, int16_t y, const Bitmap& bitmap, FlipDi
     canvas.endWrite();
 }
 
-void ScreenST7735::drawText(const Text& text, int16_t ox, int16_t oy)
+Color ScreenST7735::readPixel(int32_t x, int32_t y)
 {
-    canvas.setCursor(text.getX()+ox, text.getY()+oy);
-    canvas.setTextSize(text.getSize());
-    canvas.setTextColor(text.getColor());
-    canvas.print(String(text.getText().c_str()));
-}
-
-Color ScreenST7735::readPixel(int16_t x, int16_t y)
-{
-    return Color(canvas.getPixel(x, y));
+    return Color(canvas.getPixel(static_cast<int16_t>(x), static_cast<int16_t>(y)));
 }
 
 void ScreenST7735::commit()

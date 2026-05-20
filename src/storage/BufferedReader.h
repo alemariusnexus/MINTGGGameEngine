@@ -4,32 +4,25 @@
 
 #include <string>
 
-#include "File.h"
+#include "Reader.h"
 
 
 namespace MINTGGGameEngine
 {
 
 
-class BufferedReader
+class BufferedReader : public Reader
 {
 public:
-    BufferedReader(const File& file, void* buf, size_t bufSize);
-    BufferedReader(const char* path, void* buf, size_t bufSize);
-    BufferedReader(const File& file, size_t bufSize);
-    BufferedReader(const char* path, size_t bufSize);
-    BufferedReader(const File& file);
-    BufferedReader(const char* path);
-    ~BufferedReader();
+    BufferedReader(Reader& reader, void* buf, size_t bufSize);
+    BufferedReader(Reader& reader, size_t bufSize);
+    BufferedReader(Reader& reader);
+    virtual ~BufferedReader();
 
-    bool open(const char** outErrmsg = nullptr);
-    void close();
-    bool isOpen() const;
-
-    size_t read(void* out, size_t size);
-    size_t skip(size_t size);
-    bool seek(ssize_t offset, File::SeekMode mode = File::SeekSet);
-    ssize_t tell();
+    size_t read(void* out, size_t size) override;
+    size_t skip(size_t size) override;
+    bool seek(ssize_t offset, File::SeekMode mode = File::SeekSet) override;
+    ssize_t tell() override;
 
 private:
     size_t readFromBuffer(uint8_t* out, size_t size);
@@ -37,7 +30,7 @@ private:
     size_t readThroughBuffer(uint8_t* out, size_t size);
 
 private:
-    File file;
+    Reader* reader;
 
     uint8_t* buf;
     size_t bufSize;

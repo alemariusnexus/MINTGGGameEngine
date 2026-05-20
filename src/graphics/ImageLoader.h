@@ -2,7 +2,7 @@
 
 #include "../Globals.h"
 
-#include "../storage/BufferedReader.h"
+#include "../storage/Reader.h"
 #include "Bitmap.h"
 
 
@@ -31,18 +31,22 @@ public:
 
     const char* getErrorMessage() const { return errmsg; }
 
-    Bitmap loadBitmapBMP(const char* path);
-    Bitmap loadBitmapBMPSeparateMask(const char* rgbPath, const char* maskPath);
+    Bitmap loadBitmapBMP(Reader& reader);
+    Bitmap loadBitmapBMP(const std::string_view& path);
+
+    Bitmap loadBitmapBMPSeparateMask(Reader& rgbReader, Reader& maskReader);
+    Bitmap loadBitmapBMPSeparateMask (
+        const std::string_view& rgbPath, const std::string_view& maskPath);
 
 private:
     bool loadBMPRaw565 (
-        const char* path,
+        const std::string_view& path,
         uint16_t** outRgb, uint8_t** outMask,
         uint16_t* outWidth, uint16_t* outHeight,
         int flags
         );
     bool loadBMPRaw565 (
-        BufferedReader& reader,
+        Reader& reader,
         uint16_t** outRgb, uint8_t** outMask,
         uint16_t* outWidth, uint16_t* outHeight,
         int flags

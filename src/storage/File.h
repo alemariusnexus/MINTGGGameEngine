@@ -33,7 +33,7 @@ public:
 
 public:
     File(const File& other);
-    File(const std::string& path);
+    File(const std::string_view& path);
     File(const File& parent, const std::string& child);
     ~File();
 
@@ -55,6 +55,7 @@ public:
 
     bool flush();
     size_t read(void* data, size_t size);
+    size_t readAll(void* data, size_t size);
     size_t write(const void* data, size_t size);
     int printf(const char* format, ...);
     size_t skip(size_t size);

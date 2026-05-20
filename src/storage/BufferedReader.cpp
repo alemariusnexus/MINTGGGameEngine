@@ -12,67 +12,33 @@ namespace MINTGGGameEngine
 {
 
 
-BufferedReader::BufferedReader(const File& file, void* buf, size_t bufSize)
-    : file(file), buf(reinterpret_cast<uint8_t*>(buf)),
+BufferedReader::BufferedReader(Reader& reader, void* buf, size_t bufSize)
+    : reader(&reader), buf(reinterpret_cast<uint8_t*>(buf)),
       bufSize(bufSize), bufOwned(false), bufOffset(0), bufNumLeft(0)
 {
 }
 
-BufferedReader::BufferedReader(const char* path, void* buf, size_t bufSize)
-    : BufferedReader(File(path), buf, bufSize)
-{
-}
-
-BufferedReader::BufferedReader(const File& file, size_t bufSize)
-    : file(file), buf(bufSize != 0 ? static_cast<uint8_t*>(malloc(bufSize)) : nullptr),
+BufferedReader::BufferedReader(Reader& reader, size_t bufSize)
+    : reader(&reader), buf(bufSize != 0 ? static_cast<uint8_t*>(malloc(bufSize)) : nullptr),
       bufSize(bufSize), bufOwned(true), bufOffset(0), bufNumLeft(0)
 {
 }
 
-BufferedReader::BufferedReader(const char* path, size_t bufSize)
-    : BufferedReader(File(path), bufSize)
-{
-}
-
-BufferedReader::BufferedReader(const File& file)
-    : BufferedReader(file, 128)
-{
-}
-
-BufferedReader::BufferedReader(const char* path)
-    : BufferedReader(File(path))
+BufferedReader::BufferedReader(Reader& reader)
+    : BufferedReader(reader, 128)
 {
 }
 
 BufferedReader::~BufferedReader()
 {
-    close();
     if (bufOwned) {
         free(buf);
     }
 }
 
-bool BufferedReader::open(const char** outErrmsg)
-{
-    return file.open(File::ReadOnly, outErrmsg);
-}
-
-void BufferedReader::close()
-{
-    file.close();
-}
-
-bool BufferedReader::isOpen() const
-{
-    return file.isOpen();
-}
-
 size_t BufferedReader::read(void* out, size_t size)
 {
     if (!out  ||  size == 0) {
-        return 0;
-    }
-    if (!file.isOpen()) {
         return 0;
     }
 
@@ -112,12 +78,9 @@ size_t BufferedReader::skip(size_t size)
     if (size == 0) {
         return 0;
     }
-    if (!file.isOpen()) {
-        return 0;
-    }
 
     if (!this->buf) {
-        return file.skip(size);
+        return reader->skip(size);
     }
 
     size_t numSkipped;
@@ -138,7 +101,7 @@ size_t BufferedReader::skip(size_t size)
         this->bufOffset = 0;
         this->bufNumLeft = 0;
 
-        numSkipped += file.skip(size-numSkipped);
+        numSkipped += reader->skip(size-numSkipped);
     }
 
     return numSkipped;
@@ -146,13 +109,10 @@ size_t BufferedReader::skip(size_t size)
 
 bool BufferedReader::seek(ssize_t offset, File::SeekMode mode)
 {
-    if (!file.isOpen()) {
-        return false;
-    }
     if (mode == File::SeekSet) {
         this->bufOffset = 0;
         this->bufNumLeft = 0;
-        return file.seek(offset, File::SeekSet);
+        return reader->seek(offset, File::SeekSet);
     } else if (mode == File::SeekCur) {
         if (offset >= 0  &&  offset <= this->bufNumLeft) {
             // Seek destination within buffer
@@ -168,7 +128,7 @@ bool BufferedReader::seek(ssize_t offset, File::SeekMode mode)
             return true;
         } else {
             // Seek destination not within buffer -> drop buffer and seek normally
-            bool seekOk = file.seek(offset-this->bufNumLeft, File::SeekCur);
+            bool seekOk = reader->seek(offset-this->bufNumLeft, File::SeekCur);
             this->bufOffset = 0;
             this->bufNumLeft = 0;
             return seekOk;
@@ -179,10 +139,7 @@ bool BufferedReader::seek(ssize_t offset, File::SeekMode mode)
 
 ssize_t BufferedReader::tell()
 {
-    if (!file.isOpen()) {
-        return -1;
-    }
-    return file.tell() - this->bufNumLeft;
+    return reader->tell() - this->bufNumLeft;
 }
 
 size_t BufferedReader::readFromBuffer(uint8_t* out, size_t size)
@@ -213,7 +170,7 @@ size_t BufferedReader::readDirect(uint8_t* out, size_t size)
     size_t numRead = 0;
     size_t numReadSingle;
     do {
-        numReadSingle = file.read(out, size);
+        numReadSingle = reader->read(out, size);
         out += numReadSingle;
         size -= numReadSingle;
         numRead += numReadSingle;

@@ -27,7 +27,7 @@ File::File(const File& other)
     normalizePath();
 }
 
-File::File(const std::string& path)
+File::File(const std::string_view& path)
     : path(path)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
       , fhandle(nullptr)
@@ -316,6 +316,20 @@ size_t File::read(void* data, size_t size)
 #else
     return 0;
 #endif
+}
+
+size_t File::readAll(void* data, size_t size)
+{
+    size_t numRead = 0;
+    while (size != 0) {
+        size_t numReadLocal = read(reinterpret_cast<uint8_t*>(data)+numRead, size);
+        if (numReadLocal == 0) {
+            break;
+        }
+        size -= numReadLocal;
+        numRead += numReadLocal;
+    }
+    return numRead;
 }
 
 size_t File::write(const void* data, size_t size)
