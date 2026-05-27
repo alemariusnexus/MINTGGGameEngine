@@ -45,6 +45,12 @@ Screen& Game::getScreen()
 }
 
 
+StorageEngine& Game::storage()
+{
+    return storageEng;
+}
+
+
 AudioEngine& Game::audio()
 {
     return audioEng;
@@ -60,6 +66,18 @@ InputEngine& Game::input()
 NetworkEngine& Game::network()
 {
     return networkEng;
+}
+
+
+void Game::setApplicationID(const std::string& id)
+{
+    appID = id;
+}
+
+
+const std::string& Game::getApplicationID() const
+{
+    return appID;
 }
 
 

@@ -90,6 +90,8 @@ public:
 
     Screen& getScreen();
 
+    StorageEngine& storage();
+
     /**
      * \brief Return a reference to the audio engine.
      *
@@ -111,6 +113,16 @@ public:
      */
     NetworkEngine& network();
     
+    ///@}
+
+
+    /// \name Engine Components
+    ///@{
+
+    void setApplicationID(const std::string& id);
+
+    const std::string& getApplicationID() const;
+
     ///@}
     
     
@@ -432,13 +444,16 @@ private:
     void onCollision(const GameObject& a, const GameObject& b, float shrink);
 
 private:
+    std::string appID;
+
     Screen* screen;
     std::set<GameObject, GOZOrderComparator> gameObjs;
     std::list<Text> texts;
 
     std::random_device randDev;
     std::mt19937 randGen;
-    
+
+    StorageEngine storageEng;
     AudioEngine audioEng;
     InputEngine inputEng;
     NetworkEngine networkEng;

@@ -70,9 +70,10 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     TimerInit();
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    initNVS(cfg);
-#endif
+    game->setApplicationID(cfg->appID ? cfg->appID : "mygame");
+
+    LogInfo("Initializing storage...");
+    initStorage(cfg);
 
     LogInfo("Initializing screen...");
     initScreen(cfg);
@@ -85,9 +86,6 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     LogInfo("Initializing network...");
     initNetwork(cfg);
-
-    LogInfo("Initializing storage...");
-    initStorage(cfg);
 
     mountInternalStorage(cfg);
 
@@ -144,6 +142,11 @@ void DefaultEngine::doFrame(void (*gameLoopFunc)(float))
 }
 
 
+void DefaultEngine::initStorage(SetupConfig* cfg)
+{
+    game->storage().begin(*game);
+}
+
 void DefaultEngine::initAudio(SetupConfig* cfg)
 {
     game->audio().begin(cfg->pins.speaker);
@@ -157,11 +160,6 @@ void DefaultEngine::initInput(SetupConfig* cfg)
 void DefaultEngine::initNetwork(SetupConfig* cfg)
 {
     game->network().begin();
-}
-
-void DefaultEngine::initStorage(SetupConfig* cfg)
-{
-    StorageEngine::getInstance().begin();
 }
 
 void DefaultEngine::initScreen(SetupConfig* cfg)
@@ -220,7 +218,7 @@ bool DefaultEngine::mountInternalStorage(SetupConfig* cfg)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     LogInfo("Mounting SPIFFS...");
-    StorageEngine::getInstance().mountSPIFFS(cfg->internalStorageMountPoint);
+    game->storage().mountSPIFFS(cfg->internalStorageMountPoint);
     return true;
 #endif
 
@@ -233,13 +231,13 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
         LogInfo("Mounting SD card...");
         bool sdMountOk = false;
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-        sdMountOk = StorageEngine::getInstance().mountSDCard (
+        sdMountOk = game->storage().mountSDCard (
             cfg->sdCardMountPoint,
             static_cast<spi_host_device_t>(CONFIG_MIPI_DISPLAY_SPI_HOST),
             cfg->pins.sdCardCS
             );
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-        sdMountOk = StorageEngine::getInstance().mountSDCard (
+        sdMountOk = game->storage().mountSDCard (
             cfg->sdCardMountPoint,
             *spi,
             cfg->pins.sdCardCS
@@ -264,18 +262,6 @@ void DefaultEngine::initSerial(SetupConfig* cfg)
 }
 
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-
-void DefaultEngine::initNVS(SetupConfig* cfg)
-{
-    esp_err_t nvsRes = nvs_flash_init();
-    if (nvsRes == ESP_ERR_NVS_NO_FREE_PAGES || nvsRes == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        nvsRes = nvs_flash_init();
-    }
-    if (nvsRes != ESP_OK) {
-        LogError("Error initializing NVS: %s", esp_err_to_name(nvsRes));
-    }
-}
 
 #endif
 

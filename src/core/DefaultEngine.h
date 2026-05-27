@@ -20,6 +20,8 @@ public:
     {
         Game* game;
 
+        const char* appID;
+
         const char* sdCardMountPoint;
         const char* internalStorageMountPoint;
 
@@ -67,7 +69,6 @@ protected:
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     virtual void initSerial(SetupConfig* cfg);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    virtual void initNVS(SetupConfig* cfg);
 #endif
 
 protected:

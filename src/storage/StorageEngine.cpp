@@ -1,12 +1,12 @@
 #include "StorageEngine.h"
 
+#include "../core/Game.h"
 #include "../util/Log.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_err.h>
 #include <esp_spiffs.h>
 #include <esp_vfs_fat.h>
-#include <nvs_flash.h>
 #endif
 
 
@@ -17,19 +17,15 @@ namespace MINTGGGameEngine
 {
 
 
-StorageEngine& StorageEngine::getInstance()
-{
-    static StorageEngine inst;
-    return inst;
-}
-
-
 StorageEngine::StorageEngine()
+    : game(nullptr)
 {
 }
 
-bool StorageEngine::begin()
+bool StorageEngine::begin(Game& game)
 {
+    this->game = &game;
+
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     esp_err_t nvsRes = nvs_flash_init();
     if (nvsRes == ESP_ERR_NVS_NO_FREE_PAGES || nvsRes == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -39,6 +35,17 @@ bool StorageEngine::begin()
     if (nvsRes != ESP_OK) {
         LogError("Error initializing NVS: %s", esp_err_to_name(nvsRes));
     }
+
+    std::string nsName = game.getApplicationID().substr(0, NVS_KEY_NAME_MAX_SIZE-1);
+    LogInfo("Using NVS namespace: %s", nsName.data());
+
+    nvsRes = nvs_open(nsName.data(), NVS_READWRITE, &nvsHandle);
+    if (nvsRes != ESP_OK) {
+        LogError("Error opening NVS namespace: %s", esp_err_to_name(nvsRes));
+        return false;
+    }
+
+
 #endif
 
     return true;
@@ -111,6 +118,21 @@ bool StorageEngine::mountSPIFFS (
     return true;
 }
 
+bool StorageEngine::hasValue(const std::string_view& key)
+{
+    return nvs_find_key(nvsHandle, key.data(), nullptr) == ESP_OK;
+}
+
+bool StorageEngine::commitNVS()
+{
+    esp_err_t res = nvs_commit(nvsHandle);
+    if (res != ESP_OK) {
+        LogError("Error committing NVS: %s", esp_err_to_name(res));
+        return false;
+    }
+    return true;
+}
+
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 bool StorageEngine::mountSDCard (
@@ -155,6 +177,12 @@ bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRel
     }
 
     return true;
+}
+
+bool StorageEngine::hasValue(const std::string_view& key)
+{
+    // TODO: Implement
+    return false;
 }
 
 #endif
