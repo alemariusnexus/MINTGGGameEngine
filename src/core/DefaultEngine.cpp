@@ -243,7 +243,7 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
             cfg->pins.sdCardCS
             );
 #endif
-        if (sdMountOk) {
+        if (!sdMountOk) {
             LogError("Error mounting SD card. Trying to continue anyway...");
         }
 

@@ -1073,8 +1073,7 @@ Font Font::loadFONTX2File (
     }
 
     File f(path.data());
-    if (!f.open(File::ReadOnly)) {
-        if (outErrmsg) *outErrmsg = "error opening file";
+    if (!f.open(File::ReadOnly, outErrmsg)) {
         *ok = false;
         return {};
     }

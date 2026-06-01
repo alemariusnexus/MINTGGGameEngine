@@ -105,6 +105,8 @@ public:
         const char** outErrmsg = nullptr
         );
 
+    static Bitmap createPlaceholder(uint16_t w, uint16_t h);
+
     static size_t calcMaskBytesPerLine(uint16_t w) { return (w+7)/8; }
     
 public:

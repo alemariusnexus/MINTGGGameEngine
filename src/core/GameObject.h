@@ -118,7 +118,7 @@ public:
      * \see Bitmap
      * \see Sprite
      */
-    static GameObject createBitmap(float x, float y, const Bitmap& bitmap, bool collider = true);
+    static GameObject createBitmap(float x, float y, const Bitmap& bitmap = Bitmap(), bool collider = true);
     
     
     /**

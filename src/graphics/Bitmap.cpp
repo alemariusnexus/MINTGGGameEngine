@@ -22,10 +22,26 @@ Bitmap Bitmap::loadBMP (
     il.setOffset(ox, oy);
     il.setMaxSize(w, h);
     Bitmap bmp = il.loadBitmapBMP(path);
-    if (outErrmsg  &&  !bmp) {
-        *outErrmsg = il.getErrorMessage();
+    if (!bmp) {
+        if (outErrmsg) *outErrmsg = il.getErrorMessage();
     }
     return bmp;
+}
+
+Bitmap Bitmap::createPlaceholder(uint16_t w, uint16_t h)
+{
+    uint16_t* data = static_cast<uint16_t*>(malloc(w*h*sizeof(uint16_t)));
+
+    const uint16_t evenColor = 0xF81F;
+    const uint16_t oddColor = 0x07FF;
+
+    for (uint16_t y = 0 ; y < h ; y++) {
+        for (uint16_t x = 0 ; x < w ; x++) {
+            data[y*w + x] = (y+x)%2 == 0 ? evenColor : oddColor;
+        }
+    }
+
+    return takeOwnership(w, h, data);
 }
 
 size_t Bitmap::getMemoryUsage() const
