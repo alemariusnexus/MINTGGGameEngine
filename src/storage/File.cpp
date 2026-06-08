@@ -429,6 +429,9 @@ bool File::seek(ssize_t offset, SeekMode mode)
     case SeekCur:
         origin = SEEK_CUR;
         break;
+    case SeekEnd:
+        origin = SEEK_END;
+        break;
     default:
         return false;
     }
@@ -442,6 +445,9 @@ bool File::seek(ssize_t offset, SeekMode mode)
     } else if (mode == SeekCur) {
         ssize_t cpos = static_cast<ssize_t>(fhandle.position());
         return fhandle.seek(cpos+offset) != 0;
+    } else if (mode == SeekEnd) {
+        ssize_t size = static_cast<ssize_t>(fhandle.size());
+        return fhandle.seek(size+offset) != 0;
     }
 #else
     return false;

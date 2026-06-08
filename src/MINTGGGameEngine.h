@@ -4,6 +4,7 @@
 
 #include "audio/AudioClip.h"
 #include "audio/AudioEngine.h"
+#include "audio/MIDILoader.h"
 
 #include "core/DefaultEngine.h"
 #include "core/Game.h"

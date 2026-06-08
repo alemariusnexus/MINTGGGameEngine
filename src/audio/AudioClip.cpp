@@ -4,9 +4,38 @@
 
 #include <algorithm>
 
+#include "MIDILoader.h"
+#include "util/Log.h"
+
+
+LOG_USE_TAG("AudioClip")
+
 
 namespace MINTGGGameEngine
 {
+
+AudioClip AudioClip::loadMIDI (
+    const std::string_view& path,
+    int8_t transposeHalftones,
+    std::string* outErrmsg
+) {
+    MIDILoader loader;
+    loader.setTranspose(transposeHalftones);
+    AudioClip clip = loader.loadMIDIFile(path);
+    if (outErrmsg) {
+        if (loader.isLoadSuccessful()) {
+            *outErrmsg = {};
+        } else {
+            *outErrmsg = loader.getErrorMessage();
+        }
+    }
+    return clip;
+}
+
+void AudioClip::newAtom(uint16_t freq, uint16_t duration, uint32_t timestamp)
+{
+    d->atoms.push_back(Atom(freq, duration, timestamp));
+}
 
 void AudioClip::newAtom(uint16_t freq, uint16_t duration)
 {
@@ -15,7 +44,7 @@ void AudioClip::newAtom(uint16_t freq, uint16_t duration)
         const Atom& last = d->atoms.back();
         timestamp = last.timestamp + last.duration;
     }
-    d->atoms.push_back(Atom(freq, duration, timestamp));
+    newAtom(freq, duration, timestamp);
 }
 
 void AudioClip::clear()
@@ -58,8 +87,8 @@ float AudioClip::getPlaybackPosition(float pos, Atom** outAtom, float* outTimeWi
     });
     if (next == d->atoms.begin()) {
         *outAtom = &d->atoms.front();
-        *outTimeWithinAtom = 0.0f;
-        return 0.0f;
+        *outTimeWithinAtom = -1.0f;
+        return pos;
     }
     next--;
     *outAtom = &*next;

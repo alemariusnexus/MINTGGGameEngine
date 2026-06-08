@@ -108,8 +108,10 @@ bool AudioEngine::tick(float deltaTime)
         
         float releaseT = 1.0f - astate.clip.getNoteEndReleaseDuration();
         float atomT = timeWithinAtom / curAtom->duration;
-        
-        if (atomT > releaseT) {
+
+        if (atomT < 0) {
+            setTone(0);
+        } else if (atomT > releaseT) {
             setTone(0);
         } else {
             setTone(curAtom->freq);

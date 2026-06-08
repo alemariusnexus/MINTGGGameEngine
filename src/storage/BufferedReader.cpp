@@ -113,6 +113,10 @@ bool BufferedReader::seek(ssize_t offset, File::SeekMode mode)
         this->bufOffset = 0;
         this->bufNumLeft = 0;
         return reader->seek(offset, File::SeekSet);
+    } else if (mode== File::SeekEnd) {
+        this->bufOffset = 0;
+        this->bufNumLeft = 0;
+        return reader->seek(offset, File::SeekEnd);
     } else if (mode == File::SeekCur) {
         if (offset >= 0  &&  offset <= this->bufNumLeft) {
             // Seek destination within buffer

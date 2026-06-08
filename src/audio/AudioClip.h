@@ -177,6 +177,13 @@ public:
         float tempo; // Number of base units per minute
         float noteEndReleaseDuration; // Percent of base unit
     };
+
+public:
+    static AudioClip loadMIDI (
+        const std::string_view& path,
+        int8_t transposeHalftones = 0,
+        std::string* outErrmsg = nullptr
+        );
     
 public:
     /**
@@ -196,6 +203,16 @@ public:
      * \param duration The note's duration, in base units.
      */
     void note(uint16_t freq, uint16_t duration) { newAtom(freq, duration); }
+
+    /**
+     * \brief Add a single note at any position within the clip.
+     *
+     * \param freq The note's frequency. See Note enum for predefined values.
+     * \param duration The note's duration, in base units.
+     * \param timestamp The timestamp for when the note should start, in base units.
+     */
+    void noteAt(uint16_t freq, uint16_t duration, uint32_t timestamp)
+            { newAtom(freq, duration, timestamp); }
     
     /**
      * \brief Add a single pause (i.e. silence) to the end of the clip.
@@ -307,6 +324,7 @@ public:
     ///@}
 
 private:
+    void newAtom(uint16_t freq, uint16_t duration, uint32_t timestamp);
     void newAtom(uint16_t freq, uint16_t duration);
 
 private:

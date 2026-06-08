@@ -40,6 +40,12 @@ bool MemReader::seek(ssize_t offset, File::SeekMode mode)
         }
         this->offset = static_cast<size_t>(offset);
         return true;
+    } else if (mode == File::SeekEnd) {
+        if (offset > 0  ||  -offset > bufSize) {
+            return false;
+        }
+        this->offset = bufSize - static_cast<size_t>(-offset);
+        return true;
     } else if (mode == File::SeekCur) {
         return seek(this->offset + offset, File::SeekSet);
     } else {

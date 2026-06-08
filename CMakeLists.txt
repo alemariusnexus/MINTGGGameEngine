@@ -1,7 +1,12 @@
 list(APPEND SRCS
 
+    3rdparty/eMIDI/src/helpers.c
+    3rdparty/eMIDI/src/midifile.c
+
+    audio/internal/emidi_hal_mintgggameengine.cpp
 	audio/AudioClip.cpp
 	audio/AudioEngine.cpp
+	audio/MIDILoader.cpp
 
     core/DefaultEngine.cpp
 	core/Game.cpp
@@ -68,3 +73,6 @@ idf_component_register(
 		nvs_flash
 		spiffs
 )
+
+# Fix for eMIDI
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-error=parentheses)

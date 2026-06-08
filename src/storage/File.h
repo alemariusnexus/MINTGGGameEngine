@@ -28,7 +28,8 @@ public:
     enum SeekMode
     {
         SeekSet,
-        SeekCur
+        SeekCur,
+        SeekEnd
     };
 
 public:
