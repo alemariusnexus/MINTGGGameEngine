@@ -17,6 +17,13 @@ namespace MINTGGGameEngine
 {
 
 
+StorageEngine& StorageEngine::getInstance()
+{
+    static StorageEngine inst;
+    return inst;
+}
+
+
 StorageEngine::StorageEngine()
     : game(nullptr)
 {

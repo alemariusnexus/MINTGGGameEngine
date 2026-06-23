@@ -51,11 +51,11 @@ long eMidi_ftell(FILE* pStream)
 int eMidi_fseek(FILE* pStream, long offset, int whence)
 {
     FileReader* fr = reinterpret_cast<FileReader*>(pStream);
-    File::SeekMode seekMode;
+    MINTGGGameEngine::File::SeekMode seekMode;
     switch (whence) {
-    case SEEK_CUR: seekMode = File::SeekCur; break;
-    case SEEK_SET: seekMode = File::SeekSet; break;
-    case SEEK_END: seekMode = File::SeekEnd; break;
+    case SEEK_CUR: seekMode = MINTGGGameEngine::File::SeekCur; break;
+    case SEEK_SET: seekMode = MINTGGGameEngine::File::SeekSet; break;
+    case SEEK_END: seekMode = MINTGGGameEngine::File::SeekEnd; break;
     }
     return fr->seek(static_cast<ssize_t>(offset)) ? 0 : 1;
 }

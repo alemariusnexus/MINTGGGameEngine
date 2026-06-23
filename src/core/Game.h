@@ -544,7 +544,6 @@ private:
     std::random_device randDev;
     std::mt19937 randGen;
 
-    StorageEngine storageEng;
     AudioEngine audioEng;
     InputEngine inputEng;
     NetworkEngine networkEng;

@@ -27,8 +27,9 @@ class Game;
 class StorageEngine
 {
 public:
-    StorageEngine();
+    static StorageEngine& getInstance();
 
+public:
     bool begin(Game& game);
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -61,6 +62,8 @@ public:
     bool hasValue(const std::string_view& key);
 
 private:
+    StorageEngine();
+
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     bool commitNVS();
 #endif

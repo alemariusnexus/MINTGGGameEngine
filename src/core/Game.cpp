@@ -47,7 +47,7 @@ Screen& Game::getScreen()
 
 StorageEngine& Game::storage()
 {
-    return storageEng;
+    return StorageEngine::getInstance();
 }
 
 
