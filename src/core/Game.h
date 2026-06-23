@@ -27,6 +27,8 @@ namespace MINTGGGameEngine
  */
 class Game
 {
+    friend class GameObject;
+
 private:
     struct GOZOrderComparator
     {
@@ -88,8 +90,18 @@ public:
     /// \name Engine Components
     ///@{
 
+    /**
+     * \brief Return the screen used for the game.
+     *
+     * @return The game screen.
+     */
     Screen& getScreen();
 
+    /**
+     * \brief Return a reference to the storage engine.
+     *
+     * @return Storage engine reference.
+     */
     StorageEngine& storage();
 
     /**
@@ -119,8 +131,23 @@ public:
     /// \name Engine Components
     ///@{
 
+    /**
+     * \brief Set the internal ID for the game application.
+     *
+     * This can be an arbitrary value, but should be unique to each game. It should
+     * also be pretty short, as it may be used e.g. as a NVS namespace for storing
+     * data on an ESP32's NVS.
+     *
+     * @param id The application ID.
+     */
     void setApplicationID(const std::string& id);
 
+    /**
+     * \brief Return the application ID, which uniquely identifies the game.
+     *
+     * @return The application ID.
+     * @see setApplicationID()
+     */
     const std::string& getApplicationID() const;
 
     ///@}
@@ -129,7 +156,23 @@ public:
     /// \name Frames
     ///@{
 
+    /**
+     * \brief Notify the game that frame processing is about to start.
+     *
+     * Must be called before any per-frame processing is done.
+     *
+     * @see endFrame()
+     */
     void beginFrame();
+
+    /**
+     * \brief Notify the game that frame processing has just finished.
+     *
+     * Must be called after all per-frame processing is done (but before
+     * any waiting time for the next frame).
+     *
+     * @see beginFrame()
+     */
     void endFrame();
     
     /**
@@ -204,12 +247,49 @@ public:
      */
     void draw(DrawStats* stats = nullptr);
 
+    /**
+     * \brief Set the background color used for rendering.
+     *
+     * This color is used to fill the entire screen at the start of each frame rendering.
+     * Note that if a background bitmap is set, the bitmap takes precedence and the
+     * background color is not used (not even if the background bitmap only partl covers
+     * the screen).
+     *
+     * @param color The background color.
+     * @see setBackgroundBitmap()
+     */
     void setBackgroundColor(const Color& color) { backgroundColor = color; backgroundBmp = Bitmap(); }
 
+    /**
+     * \brief Return the background color used for rendering.
+     *
+     * @return The background color.
+     */
     Color getBackgroundColor() const { return backgroundColor; }
 
+    /**
+     * \brief Set a bitmap that is rendered as a background each frame.
+     *
+     * If a valid bitmap is passed, it is drawn as the first step on each
+     * frame rendering at coordiantes (0, 0). Note that if such a background
+     * bitmap is used, the background color will NOT be applied, even if the
+     * bitmap only partially covers the screen.
+     *
+     * Using this method for setting a background is faster than using a simple
+     * background GameObject, since this method will cause the step of filling
+     * the screen with a solid color each frame to be skipped.
+     *
+     * @param bmp The background bitmap. Pass an invalid bitmap to disable
+     *  the background bitmap and use a background color instead.
+     * @see setBackgroundColor()
+     */
     void setBackgroundBitmap(const Bitmap& bmp) { backgroundBmp = bmp; }
 
+    /**
+     * \brief Return the background bitmap.
+     *
+     * @return The background bitmap.
+     */
     Bitmap getBackgroundBitmap() const { return backgroundBmp; }
     
     ///@}
@@ -223,12 +303,11 @@ public:
      *
      * This will add the GameObject to the lists for drawing, collision checking
      * etc.
-     * A GameObject should only be spawned once. Spawning it multiple times
-     * (whout despawning in-between) results in undefined behavior.
      *
      * \param obj The GameObject to spawn.
+     * \return true if spawned, false otherwise.
      */
-    void spawnObject(const GameObject& obj);
+    bool spawnObject(const GameObject& obj);
     
     /**
      * \brief Despawn the given GameObject.
@@ -251,6 +330,16 @@ public:
      * \see despawnObject()
      */
     bool despawnObjects(const std::vector<GameObject>& objs);
+
+    /**
+     * \brief Despawn all objects that have the given tag.
+     *
+     * @param tag The tag to search for. Only a single tag is allowed here.
+     * @return true if **any** object was successfully despawned, false otherwise.
+     * @see despawnObjects()
+     * @see getGameObjectsWithTag()
+     */
+    bool despawnObjectsWithTag(uint64_t tag);
     
     /**
      * \brief Get a list of all GameObjects.
@@ -442,6 +531,8 @@ private:
     void drawFinish(DrawStats* stats);
 
     void onCollision(const GameObject& a, const GameObject& b, float shrink);
+
+    void notifyGameObjectZOrderChanged(const GameObject& gobj);
 
 private:
     std::string appID;

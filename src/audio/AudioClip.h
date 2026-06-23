@@ -190,6 +190,14 @@ public:
      * \brief Create an empty audio clip.
      */
     AudioClip() : d(std::make_shared<Data>()) {}
+
+    /**
+     * Copy constructor.
+     *
+     * This class is implicitly shared, so copying is cheap.
+     *
+     * @param other
+     */
     AudioClip(const AudioClip& other) : d(other.d) {}
     
     

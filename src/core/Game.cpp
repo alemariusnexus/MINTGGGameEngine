@@ -191,21 +191,24 @@ void Game::drawFinish(DrawStats* stats)
 }
 
 
-void Game::spawnObject(const GameObject& obj)
+bool Game::spawnObject(const GameObject& obj)
 {
+    if (obj.isSpawned()) {
+        return false;
+    }
     gameObjs.insert(obj);
+    obj.notifySpawned(this);
+    return true;
 }
 
 
 bool Game::despawnObject(const GameObject& obj)
 {
-    return gameObjs.erase(obj) != 0;
-    /*auto it = std::find(gameObjs.begin(), gameObjs.end(), obj);
-    if (it == gameObjs.end()) {
-        return false;
+    if (gameObjs.erase(obj) != 0) {
+        obj.notifyDespawned(this);
+        return true;
     }
-    gameObjs.erase(it);
-    return true;*/
+    return false;
 }
 
 
@@ -218,6 +221,12 @@ bool Game::despawnObjects(const std::vector<GameObject>& objs)
         }
     }
     return anyDespawned;
+}
+
+
+bool Game::despawnObjectsWithTag(uint64_t tag)
+{
+    return despawnObjects(getGameObjectsWithTag(tag));
 }
 
 
@@ -325,6 +334,14 @@ void Game::onCollision(const GameObject& a, const GameObject& b, float shrink)
 {
     if (collisionCb) {
         collisionCb(GameObjectCollision(a, b));
+    }
+}
+
+
+void Game::notifyGameObjectZOrderChanged(const GameObject& gobj)
+{
+    if (despawnObject(gobj)) {
+        spawnObject(gobj);
     }
 }
 

@@ -105,8 +105,21 @@ public:
         const char** outErrmsg = nullptr
         );
 
+    /**
+     * \brief Create a simple placeholder bitmap of the given size.
+     *
+     * @param w The width in pixels.
+     * @param h The height in pixels.
+     * @return The placeholder bitmap.
+     */
     static Bitmap createPlaceholder(uint16_t w, uint16_t h);
 
+    /**
+     * \brief Calculate number of bytes used for a single line in the mask.
+     *
+     * @param w The width in pixels.
+     * @return Number of bytes per line, including padding.
+     */
     static size_t calcMaskBytesPerLine(uint16_t w) { return (w+7)/8; }
     
 public:
@@ -182,6 +195,11 @@ public:
      */
     const uint8_t* getMask() const { return d ? d->m : nullptr; }
 
+    /**
+     * \brief Estimate number of bytes in RAM used by the bitmap.
+     *
+     * @return Estimate byte size.
+     */
     size_t getMemoryUsage() const;
     
     ///@}
@@ -190,11 +208,32 @@ public:
     /// \name Pixel Access
     ///@{
 
+    /**
+     * \brief Returns the raw color value of a single pixel.
+     *
+     * \param x x coordinate.
+     * \param y y coordinate.
+     * \return Raw color value (currently in RGB565 format).
+     */
     uint16_t getPixelRaw(uint16_t x, uint16_t y) const
             { return d  &&  d->d ? d->d[y*d->w+x] : 0; }
 
+    /**
+     * \brief Returns the color of a single pixel.
+     *
+     * @param x x coordinate.
+     * @param y y coordinate.
+     * @return The pixel's color.
+     */
     Color getPixel(uint16_t x, uint16_t y) const { return Color(getPixelRaw(x, y)); }
 
+    /**
+     * \brief Returns the mask value of a single pixel.
+     *
+     * @param x x coordinate.
+     * @param y y coordinate.
+     * @return true if the mask is set, false otherwise.
+     */
     bool getMaskPixel(uint16_t x, uint16_t y) const
     {
         if (!d  ||  !d->m) return false;
@@ -202,12 +241,26 @@ public:
         return (d->m[y*maskByteW + (x>>3)] & (0x80 >> (x&7))) != 0;
     }
 
+    /**
+     * \brief Set the color of a single pixel.
+     *
+     * @param x x coordinate.
+     * @param y y coordinate.
+     * @param color Pixel color.
+     */
     void setPixel(uint16_t x, uint16_t y, const Color& color)
     {
         if (!d  ||  !d->d) return;
         d->d[x*d->w+x] = color.toRGB565();
     }
 
+    /**
+     * \brief Set the mask value of a single pixel.
+     *
+     * @param x x coordinate.
+     * @param y y coordinate.
+     * @param set true to set the mask, false to clear it.
+     */
     void setMaskPixel(uint16_t x, uint16_t y, bool set) const
     {
         if (!d  ||  !d->m) return;

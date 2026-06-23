@@ -1,5 +1,7 @@
 #include "GameObject.h"
 
+#include "Game.h"
+
 
 namespace MINTGGGameEngine
 {
@@ -40,6 +42,7 @@ GameObject GameObject::createColliderRect(float x, float y, float w, float h)
 GameObject::GameObject(float x, float y, const Sprite& sprite, const Collider& collider)
     : d(std::make_shared<Data>())
 {
+    d->game = nullptr;
     d->x = x;
     d->y = y;
     d->moveDir = Vec2();
@@ -91,6 +94,16 @@ float GameObject::getHeight(bool useSprite) const
     return useSprite ? d->sprite.getHeight() : d->collider.getHeight();
 }
 
+void GameObject::setZOrder(uint16_t zorder)
+{
+    if (d) {
+        d->zOrder = zorder;
+        if (d->game) {
+            d->game->notifyGameObjectZOrderChanged(*this);
+        }
+    }
+}
+
 Collider GameObject::getWorldCollider() const
 {
     return getCollider().toWorld(getX(), getY(), getFlipDir());
@@ -106,6 +119,22 @@ void GameObject::draw(Screen& screen, const Vec2& offset) const
 bool GameObject::collides(const GameObject& other, float shrink) const
 {
     return getWorldCollider().collides(other.getWorldCollider(), shrink);
+}
+
+void GameObject::notifySpawned(Game* game) const
+{
+    if (d) {
+        assert(!d->game);
+        d->game = game;
+    }
+}
+
+void GameObject::notifyDespawned(Game* game) const
+{
+    if (d) {
+        assert(d->game == game);
+        d->game = nullptr;
+    }
 }
 
 }

@@ -14,6 +14,10 @@
 namespace MINTGGGameEngine
 {
 
+
+class Game;
+
+
 /**
  * \brief Represents a single object in the game (e.g. player, enemy, bullet).
  *
@@ -47,9 +51,12 @@ namespace MINTGGGameEngine
  */
 class GameObject
 {
+    friend class Game;
+
 private:
     struct Data
     {
+        Game* game;
         float x;
         float y;
         Vec2 moveDir;
@@ -150,12 +157,12 @@ public:
 
 public:
     /**
-     * Create a null GameObject.
+     * \brief Create a null GameObject.
      */
     GameObject() {}
     
     /**
-     * Create a null GameObject.
+     * \brief Create a null GameObject.
      */
     GameObject(std::nullptr_t) {}
 
@@ -281,8 +288,23 @@ public:
      */
     Vec2 getCenterPosition(bool useSprite = false) const;
 
+    /**
+     * \brief Set the position of the center of the bounding rectangle.
+     *
+     * @param p Coordinates.
+     * @param useSprite true to use the sprite's size, false to use the
+     *      collider's size.
+     */
     void setCenterPosition(const Vec2& p, bool useSprite = false);
 
+    /**
+     * \brief Set the position of the center of the bounding rectangle.
+     *
+     * @param x x coordinate.
+     * @param y y coordinate.
+     * @param useSprite true to use the sprite's size, false to use the
+     *      collider's size.
+     */
     void setCenterPosition(float x, float y, bool useSprite = false)
             { setCenterPosition(Vec2(x, y), useSprite); }
     
@@ -437,6 +459,22 @@ public:
     
     /// \name Miscellaneous
     ///@{
+
+    /**
+     * \brief Return the game that the object is currently spawned in.
+     *
+     * If the object is not spawned, null is returned.
+     *
+     * @return The spawned game, or null if not spawned.
+     */
+    Game* getGame() const { return d ? d->game : nullptr; }
+
+    /**
+     * \brief Check whether the object is currently spawned.
+     *
+     * @return true if spawned, false otherwise.
+     */
+    bool isSpawned() const { return getGame() != nullptr; }
     
     /**
      * \brief Return the direction that the object is flipped.
@@ -471,7 +509,7 @@ public:
      * \param zorder The Z order.
      * \see ZOrder
      */
-    void setZOrder(uint16_t zorder = ZOrderNormal) { if (d) d->zOrder = zorder; }
+    void setZOrder(uint16_t zorder = ZOrderNormal);
     
     /**
      * \brief Return whether the object is currently visible.
@@ -675,6 +713,10 @@ public:
     bool operator>=(const GameObject& other) const { return d >= other.d; }
     
     ///@}
+
+private:
+    void notifySpawned(Game* game) const;
+    void notifyDespawned(Game* game) const;
 
 private:
     std::shared_ptr<Data> d;

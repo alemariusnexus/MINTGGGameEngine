@@ -110,6 +110,12 @@ public:
      * delivered to the speaker.
      */
     void setMute(bool mute);
+
+    /**
+     * \brief Check whether audio is muted.
+     *
+     * @return true if muted, false otherwise.
+     */
     bool isMute() const { return mute; }
 
 private:

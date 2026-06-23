@@ -16,51 +16,77 @@ class Color
 {
 public:
     /**
-     * The color black (RGB565: 0x0000)
+     * \brief The color black (RGB565: 0x0000)
      */
     static const Color BLACK;
     
     /**
-     * The color white (RGB565: 0xFFFF)
+     * \brief The color white (RGB565: 0xFFFF)
      */
     static const Color WHITE;
 
+    /**
+     * \brief The color red (RGB565: 0xF800)
+     */
     static const Color RED;
+
+    /**
+     * \brief The color green (RGB565: 0x07E0)
+     */
     static const Color GREEN;
+
+    /**
+     * \brief The color blue (RGB565: 0x001F)
+     */
     static const Color BLUE;
 
+    /**
+     * \brief The color yellow (RGB565: 0xFFE0)
+     */
     static const Color YELLOW;
+
+    /**
+     * \brief The color magenta (RGB565: 0xF81F)
+     */
     static const Color MAGENTA;
+
+    /**
+     * \brief The color cyan (RGB565: 0x07FF)
+     */
     static const Color CYAN;
 
 public:
     /**
-     * Create black color.
+     * \brief Create black color.
      */
     Color() : rgb565(0x0000) {}
     
     /**
-     * Create color from the given RGB565 value.
+     * \brief Create color from the given RGB565 value.
      */
     Color(uint16_t rgb565) : rgb565(rgb565) {}
     
     /**
-     * Create color from the given RGB888 values.
+     * \brief Create color from the given RGB888 values.
+     *
+     * \param r Red value (range 0-255).
+     * \param g Green value (range 0-255).
+     * \param b Blue value (range 0-255).
      */
     Color(uint8_t r, uint8_t g, uint8_t b);
     
     /**
-     * Copy constructor.
+     * \brief Copy constructor.
      */
     Color(const Color& other) : rgb565(other.rgb565) {}
 
     /**
-     * Return the color in RGB565 format.
+     * \brief Return the color in RGB565 format.
      */
     uint16_t toRGB565() const { return rgb565; }
     
     /**
-     * Return the color in RGB565 format.
+     * \brief Return the color in RGB565 format.
      */
     operator uint16_t() const { return toRGB565(); }
 
