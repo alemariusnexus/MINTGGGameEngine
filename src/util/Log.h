@@ -2,8 +2,10 @@
 
 #include "../Globals.h"
 
+#ifndef MINTGGGAMEENGINE_PORT_ARDUINO
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include <esp_log.h>
+#endif
 #endif
 
 
@@ -11,7 +13,7 @@ namespace MINTGGGameEngine
 {
 
 
-#define LOG_USE_TAG(tag) const static char* TAG = tag;
+#define LOG_USE_TAG(tag) [[maybe_unused]] const static char* TAG = tag;
 
 
 enum LogLevel
@@ -23,7 +25,8 @@ enum LogLevel
     LOG_LEVEL_VERBOSE
 };
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+
+#if defined(MINTGGGAMEENGINE_PORT_ESPIDF)  &&  !defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 #define LogError(format, ...) ESP_LOGE(TAG, format, ## __VA_ARGS__)
 #define LogWarning(format, ...) ESP_LOGW(TAG, format, ## __VA_ARGS__)

@@ -135,14 +135,14 @@ bool ImageLoader::loadBMPRaw565 (
     uint16_t* outWidth, uint16_t* outHeight,
     int flags
 ) {
-    timer_mstick_t t1 = TimerGetTickcountMs();
+    //timer_mstick_t t1 = TimerGetTickcountMs();
 
     ssize_t bmpOrigin = reader.tell();
     if (bmpOrigin < 0) {
         return setError("file position not available");
     }
 
-    timer_mstick_t t2 = TimerGetTickcountMs();
+    //timer_mstick_t t2 = TimerGetTickcountMs();
 
     BMPFileHeader fileHeader;
     BMPInfoHeader infoHeader;
@@ -174,7 +174,7 @@ bool ImageLoader::loadBMPRaw565 (
         return setError("image too large");
     }
 
-    timer_mstick_t t3 = TimerGetTickcountMs();
+    //timer_mstick_t t3 = TimerGetTickcountMs();
 
     const uint16_t sx = std::min(offsetX, static_cast<uint16_t>(infoHeader.width));
     const uint16_t sy = std::min(offsetY, static_cast<uint16_t>(infoHeader.height));
@@ -242,7 +242,7 @@ bool ImageLoader::loadBMPRaw565 (
 
         const size_t interLineSkipSize = lineSize - w*bytesPerPixel;
 
-        timer_mstick_t t4 = TimerGetTickcountMs();
+        //timer_mstick_t t4 = TimerGetTickcountMs();
 
         bool seekOk = reader.seek (
             bmpOrigin + fileHeader.dataOffset                               // Start of data block
@@ -254,7 +254,7 @@ bool ImageLoader::loadBMPRaw565 (
             return setError("error seeking data");
         }
 
-        timer_mstick_t t5 = TimerGetTickcountMs();
+        //timer_mstick_t t5 = TimerGetTickcountMs();
 
         if (infoHeader.bitsPerPixel == 24) {
             uint8_t bgr[3];
@@ -332,7 +332,7 @@ bool ImageLoader::loadBMPRaw565 (
             }
         }
 
-        timer_mstick_t t6 = TimerGetTickcountMs();
+        //timer_mstick_t t6 = TimerGetTickcountMs();
 
         /*LogInfo("Timing   -   t1-t2: %u, t2-t3: %u, t3:t4: %u, t4-t5: %u, t5-t6: %u",
             (unsigned int) (t2-t1),

@@ -1139,9 +1139,10 @@ void Font::loadDefaultFonts()
             LogError("Error loading default font %u: %s", fontIdx, errmsg);
         }
         font.setName(df.name);
-        LogInfo("Loaded font: %s", font.getName().c_str());
+        const bool setAsDefault = (fontIdx == 0);
+        LogInfo("Loaded font: %s%s", font.getName().c_str(), setAsDefault ? " -> default" : "");
         registerFont(font);
-        if (fontIdx == 0) {
+        if (setAsDefault) {
             setDefaultFont(font);
         }
         fontIdx++;
@@ -1156,7 +1157,7 @@ Font Font::loadFONTX2 (
     bool* ok,
     const char** outErrmsg
 ) {
-    if (fullSize < 16) {
+    if (fullSize < 17) {
         // We don't even have a full header
         if (outErrmsg) *outErrmsg = "premature end of file";
         if (ok) *ok = false;
@@ -1181,7 +1182,7 @@ Font Font::loadFONTX2 (
 
         const size_t blockSize = 256*glyphSize;
 
-        if (fullSize < 16+blockSize) {
+        if (fullSize < 17+blockSize) {
             if (outErrmsg) *outErrmsg = "premature end of file";
             if (ok) *ok = false;
             return {};
@@ -1227,6 +1228,16 @@ Font Font::loadFONTX2 (
 }
 
 
+Font::Data::~Data()
+{
+    if (bufOwned) {
+        free(const_cast<uint8_t*>(rawData));
+    }
+    for (auto& edata : explodedRawData) {
+        free(edata.second);
+    }
+}
+
 
 Font::Font(const std::string_view& name)
 {
@@ -1234,12 +1245,12 @@ Font::Font(const std::string_view& name)
     if (it != fontRegistry.end()) {
         d = it->second.d;
     } else {
-        d = defaultFont.d;
+        d = nullptr;
     }
 }
 
 Font::Font()
-    : Font(defaultFont)
+    : Font(nullptr)
 {
 }
 
@@ -1252,54 +1263,197 @@ Font::Font(const uint8_t* rawData, bool bufOwned) : d(std::make_shared<Data>(raw
 
 std::string Font::getName() const
 {
+    if (!d) {
+        return defaultFont.d ? defaultFont.getName() : "";
+    }
     return d->name;
 }
 
 void Font::setName(const std::string_view& name)
 {
+    if (!d) {
+        if (defaultFont.d) {
+            defaultFont.setName(name);
+        }
+        return;
+    }
     d->name = name;
 }
 
 uint8_t Font::getGlyphWidth() const
 {
+    if (!d) {
+        return defaultFont.d ? defaultFont.getGlyphWidth() : 0;
+    }
     return d->rawData[14];
 }
 
 uint8_t Font::getGlyphHeight() const
 {
+    if (!d) {
+        return defaultFont.d ? defaultFont.getGlyphHeight() : 0;
+    }
     return d->rawData[15];
 }
 
 size_t Font::getGlyphSize() const
 {
-    return ((d->rawData[14] + 7) / 8) * d->rawData[15];
+    return ((getGlyphWidth() + 7) / 8) * getGlyphHeight();
+}
+
+size_t Font::getExplodedGlyphSize(uint8_t explosion) const
+{
+    return ((getGlyphWidth() + 2*explosion + 7) / 8) * (getGlyphHeight() + 2*explosion);
 }
 
 const uint8_t* Font::getGlyphBuffer(uint16_t cp) const
 {
-    if (d->rawData[16] == 0) {
+    return getExplodedGlyphBuffer(cp, 0);
+}
+
+const uint8_t* Font::getExplodedGlyphBuffer(uint16_t cp, uint8_t explosion) const
+{
+    if (!d) {
+        return defaultFont.d ? defaultFont.getExplodedGlyphBuffer(cp, explosion) : nullptr;
+    }
+
+    const uint8_t* rawData = d->rawData;
+    size_t explodedGlyphSize = getGlyphSize();
+
+    if (explosion != 0) {
+        auto it = d->explodedRawData.find(explosion);
+        if (it == d->explodedRawData.end()) {
+            if (!const_cast<Font*>(this)->loadExplodedVersion(explosion)) {
+                return nullptr;
+            }
+            it = d->explodedRawData.find(explosion);
+        }
+        if (it == d->explodedRawData.end()) {
+            return nullptr;
+        }
+        rawData = it->second;
+        explodedGlyphSize = getExplodedGlyphSize(explosion);
+    }
+
+    if (rawData[16] == 0) {
         // Single byte format
         if (cp > 255) {
             return nullptr;
         }
-        return d->rawData + 17 + cp*getGlyphSize();
+        return rawData + 17 + cp*explodedGlyphSize;
     } else {
         // Double byte format
-        const uint8_t numCbs = d->rawData[17];
-        const size_t glyphSize = getGlyphSize();
+        const uint8_t numCbs = rawData[17];
 
-        const uint8_t* blockPtr = d->rawData + 18;
+        const uint8_t* blockPtr = rawData + 18;
 
         for (uint8_t i = 0 ; i < numCbs ; i++) {
             const uint16_t firstCP = FromLittleEndian(*reinterpret_cast<const uint16_t*>(blockPtr));
             const uint16_t lastCP = FromLittleEndian(*reinterpret_cast<const uint16_t*>(blockPtr+2));
             if (cp >= firstCP  &&  cp <= lastCP) {
-                return blockPtr + 4 + (cp-firstCP)*glyphSize;
+                return blockPtr + 4 + (cp-firstCP)*explodedGlyphSize;
             }
-            blockPtr += (lastCP-firstCP+1)*glyphSize;
+            blockPtr += (lastCP-firstCP+1)*explodedGlyphSize;
         }
 
         return nullptr;
+    }
+}
+
+bool Font::isValid() const
+{
+    return d  ||  defaultFont.d;
+}
+
+bool Font::loadExplodedVersion(uint8_t explosion)
+{
+    if (!d) {
+        if (defaultFont.d) {
+            return defaultFont.loadExplodedVersion(explosion);
+        }
+        return false;
+    }
+    if (d->explodedRawData.find(explosion) != d->explodedRawData.end()) {
+        return true;
+    }
+    uint8_t* explodedData = deriveExplodedFont(explosion);
+    if (!explodedData) {
+        return false;
+    }
+    d->explodedRawData[explosion] = explodedData;
+    return true;
+}
+
+uint8_t* Font::deriveExplodedFont(uint8_t delta) const
+{
+    if (!d) {
+        if (defaultFont.d) {
+            return defaultFont.deriveExplodedFont(delta);
+        }
+        return nullptr;
+    }
+
+    const auto oldGlyphWidth = getGlyphWidth();
+    const auto oldGlyphHeight = getGlyphHeight();
+
+    const uint8_t newGlyphWidth = oldGlyphWidth + 2*delta;
+    const uint8_t newGlyphHeight = oldGlyphHeight + 2*delta;
+
+    const size_t oldGlyphSize = ((oldGlyphWidth + 7) / 8) * oldGlyphHeight;
+    const size_t newGlyphSize = ((newGlyphWidth + 7) / 8) * newGlyphHeight;
+
+    uint8_t* newRawData = nullptr;
+
+    if (d->rawData[16] == 0) {
+        // Single-byte format
+
+        const size_t newRawDataSize = 17 + 256*newGlyphSize;
+
+        newRawData = static_cast<uint8_t*>(malloc(newRawDataSize));
+        if (!newRawData) {
+            return nullptr;
+        }
+        memcpy(newRawData, d->rawData, 17);
+        memset(newRawData+17, 0, newRawDataSize-17);
+
+        newRawData[14] = newGlyphWidth;
+        newRawData[15] = newGlyphHeight;
+
+        for (unsigned int glyphIdx = 0 ; glyphIdx < 256 ; glyphIdx++) {
+            const uint8_t* origData = d->rawData + 17 + glyphIdx*oldGlyphSize;
+            uint8_t* newData = newRawData + 17 + glyphIdx*newGlyphSize;
+            explodeGlyph(newData, origData, oldGlyphWidth, oldGlyphHeight, delta);
+        }
+    } else {
+        // TODO: Implement
+        return nullptr;
+    }
+
+    return newRawData;
+}
+
+void Font::explodeGlyph(uint8_t* exploded, const uint8_t* orig, uint8_t origWidth, uint8_t origHeight, uint8_t delta) const
+{
+    const uint8_t explodedWidth = origWidth + 2*delta;
+
+    const uint8_t origByteWidth = (origWidth+7) / 8;
+    const uint8_t explodedByteWidth = (explodedWidth+7) / 8;
+
+#define ExplodeGlyphIsOrigPixelSet(x, y) (orig[(y)*origByteWidth + ((x)>>3)] & (0x80 >> ((x)&0x7)))
+#define ExplodeGlyphSetNewPixel(x, y) exploded[(y)*explodedByteWidth + ((x)>>3)] |= (0x80 >> ((x)&0x7));
+
+    const uint8_t neighborSize = 1 + delta*2;
+
+    for (uint8_t origY = 0 ; origY < origHeight ; origY++) {
+        for (uint8_t origX = 0 ; origX < origWidth ; origX++) {
+            if (ExplodeGlyphIsOrigPixelSet(origX, origY)) {
+                for (uint8_t newY = origY ; newY < origY+neighborSize ; newY++) {
+                    for (uint8_t newX = origX ; newX < origX+neighborSize ; newX++) {
+                        ExplodeGlyphSetNewPixel(newX, newY);
+                    }
+                }
+            }
+        }
     }
 }
 

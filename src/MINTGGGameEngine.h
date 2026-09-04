@@ -10,26 +10,34 @@
 #include "core/Game.h"
 #include "core/GameObject.h"
 
+#include "graphics/screen/drivers/AbstractMIPIScreen.h"
+#include "graphics/screen/drivers/ScreenILI9341.h"
+#include "graphics/screen/drivers/ScreenNull.h"
+#include "graphics/screen/drivers/ScreenST7735.h"
+#include "graphics/screen/BufferedScreen.h"
+#include "graphics/screen/Screen.h"
+#include "graphics/surface/DrawSurface.h"
+#include "graphics/surface/MemDrawSurface.h"
 #include "graphics/Bitmap.h"
 #include "graphics/Color.h"
 #include "graphics/Font.h"
-#include "graphics/Screen.h"
-#include "graphics/ScreenHAGL.h"
-#include "graphics/ScreenNull.h"
-#include "graphics/ScreenST7735.h"
+#include "graphics/ImageLoader.h"
 #include "graphics/Sprite.h"
 #include "graphics/Text.h"
 
 #include "input/InputEngine.h"
 
+#include "network/NetworkEngine.h"
+
 #include "physics/Collider.h"
 #include "physics/GameObjectCollision.h"
+#include "physics/GravitySimulator.h"
 
+#include "platform/ADCManager.h"
 #include "platform/GPIODevice.h"
 #include "platform/GPIODeviceMCP2300X.h"
 #include "platform/GPIODeviceNative.h"
-
-#include "physics/GravitySimulator.h"
+#include "platform/MCP2300XDevice.h"
 
 #include "storage/BufferedReader.h"
 #include "storage/File.h"
@@ -44,6 +52,7 @@
 #include "util/RayCastResult.h"
 #include "util/Util.h"
 #include "util/Vec2.h"
+#include "util/WorkerTask.h"
 
 
 namespace MINTGGGameEngine

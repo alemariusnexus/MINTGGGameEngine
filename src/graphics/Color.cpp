@@ -20,4 +20,9 @@ Color::Color(uint8_t r, uint8_t g, uint8_t b)
 {
 }
 
+uint16_t Color::toBGR565() const
+{
+    return ((rgb565 >> 11) & 0x1F) | (rgb565 & 0x7E) | ((rgb565 << 11) & 0xF8);
+}
+
 }

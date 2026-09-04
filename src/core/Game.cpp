@@ -24,7 +24,7 @@ Game::Game()
       collisionCb(nullptr),
       drawColliders(false), drawRayCasts(false),
       frameTime(1000/40), lastFrameTime(0),
-      backgroundColor(Color::WHITE)
+      backgroundColor(Color(0xFFFF))
 {
 }
 
@@ -124,9 +124,9 @@ void Game::drawBegin(DrawStats* stats)
 
     timer_ustick_t timeFill = TimerGetTickcountUs();
     if (backgroundBmp) {
-        screen->drawBitmap(0, 0, backgroundBmp);
+        screen->drawBitmap(0, 0, backgroundBmp, FlipDir::None);
     } else {
-        screen->fillScreen(backgroundColor);
+        screen->fill(backgroundColor, false);
     }
 
     timer_ustick_t timeObjects = TimerGetTickcountUs();
@@ -174,7 +174,7 @@ void Game::drawFinish(DrawStats* stats)
             if (text.isWorldSpace()) {
                 screen->drawText(text, (int16_t) (drawOffset.x()+0.5f), (int16_t) (drawOffset.y()+0.5f));
             } else {
-                screen->drawText(text);
+                screen->drawText(text, 0, 0);
             }
         }
     }
@@ -286,8 +286,7 @@ RayCastResult Game::castRay (
     res.getHits().reserve(10);
     
     for (const GameObject& go : gameObjects) {
-        size_t numIntersections = go.getWorldCollider()
-                .castRay(res.getHits(), start, direction, length, go);
+        go.getWorldCollider().castRay(res.getHits(), start, direction, length, go);
     }
     
     if (sort) {

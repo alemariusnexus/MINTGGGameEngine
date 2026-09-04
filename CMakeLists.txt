@@ -12,14 +12,18 @@ list(APPEND SRCS
 	core/Game.cpp
 	core/GameObject.cpp
 
+    graphics/screen/drivers/AbstractMIPIScreen.cpp
+    graphics/screen/drivers/ScreenILI9341.cpp
+    graphics/screen/drivers/ScreenNull.cpp
+    graphics/screen/drivers/ScreenST7735.cpp
+    graphics/screen/BufferedScreen.cpp
+    graphics/screen/Screen.cpp
+    graphics/surface/DrawSurface.cpp
+    graphics/surface/MemDrawSurface.cpp
 	graphics/Bitmap.cpp
 	graphics/Color.cpp
 	graphics/Font.cpp
 	graphics/ImageLoader.cpp
-	graphics/Screen.cpp
-	graphics/ScreenHAGL.cpp
-	graphics/ScreenNull.cpp
-	graphics/ScreenST7735.cpp
 	graphics/Sprite.cpp
 	graphics/Text.cpp
 
@@ -63,16 +67,23 @@ idf_component_register(
     INCLUDE_DIRS
 		src
     REQUIRES
-		driver
 		esp_adc
+        esp_driver_gpio
+        esp_driver_gptimer
+        esp_driver_i2c
+		esp_driver_ledc
+        esp_driver_sdmmc
+        esp_driver_spi
 		esp_http_client
+		esp_lcd
         esp_wifi
 		fatfs
-		hagl
-		hagl_hal
 		nvs_flash
 		spiffs
 )
 
-# Fix for eMIDI
-target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-error=parentheses)
+# Disable some annoying and unhelpful warnings
+target_compile_options(${COMPONENT_LIB} PRIVATE
+    -Wno-missing-field-initializers
+    -Wno-parentheses                        # For eMidi
+    )

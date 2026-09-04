@@ -6,7 +6,11 @@
 #include <string>
 #include <vector>
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#if !defined(MINTGGGAMEENGINE_PORT_ARDUINO)  ||  defined(MINTGGGAMEENGINE_PORT_ESPIDF)
+#   define MINTGGGAMEENGINE_FILE_IMPL_POSIX
+#endif
+
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  &&  !defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
 #include <SD.h>
 #endif
 
@@ -71,14 +75,14 @@ private:
 
     bool listChildren(std::vector<File>& res, bool recursive) const;
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  &&  !defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
     bool openSDFile(::File* outFile) const;
 #endif
 
 private:
     std::string path;
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     FILE* fhandle;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     ::File fhandle;

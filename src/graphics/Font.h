@@ -2,6 +2,7 @@
 
 #include "../Globals.h"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -107,17 +108,19 @@ private:
     struct Data
     {
         Data(const uint8_t* rawData, bool bufOwned) : rawData(rawData), bufOwned(bufOwned) {}
-        ~Data() { if (bufOwned) free(const_cast<uint8_t*>(rawData)); }
+        ~Data();
 
         const uint8_t* rawData;
         bool bufOwned;
 
         std::string name;
+
+        std::map<uint8_t, uint8_t*> explodedRawData;
     };
 
 public:
     /**
-     * \brief Create the default font.
+     * \brief Create a font that always refers to the current default font.
      */
     Font();
 
@@ -181,6 +184,8 @@ public:
      */
     size_t getGlyphSize() const;
 
+    size_t getExplodedGlyphSize(uint8_t explosion) const;
+
     /**
      * \brief Return a pointer to the glyph data for the given codepoint.
      *
@@ -189,9 +194,20 @@ public:
      */
     const uint8_t* getGlyphBuffer(uint16_t cp) const;
 
+    const uint8_t* getExplodedGlyphBuffer(uint16_t cp, uint8_t explosion) const;
+
+    bool isValid() const;
+
+    operator bool() const { return isValid(); }
+
+    bool loadExplodedVersion(uint8_t explosion);
+
 private:
     Font(nullptr_t) : d(nullptr) {}
     Font(const uint8_t* rawData, bool bufOwned);
+
+    uint8_t* deriveExplodedFont(uint8_t delta) const;
+    void explodeGlyph(uint8_t* exploded, const uint8_t* orig, uint8_t origWidth, uint8_t origHeight, uint8_t delta) const;
 
 private:
     std::shared_ptr<Data> d;

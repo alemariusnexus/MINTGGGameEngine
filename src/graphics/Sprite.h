@@ -3,7 +3,7 @@
 #include "../Globals.h"
 #include "Bitmap.h"
 #include "Color.h"
-#include "Screen.h"
+#include "screen/Screen.h"
 
 namespace MINTGGGameEngine
 {

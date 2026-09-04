@@ -10,10 +10,21 @@
 #include <string>
 
 
+#ifdef ESP_PLATFORM
+#   define MINTGGGAMEENGINE_PORT_ESPIDF
+#endif
+
 #ifdef ARDUINO
-#define MINTGGGAMEENGINE_PORT_ARDUINO
-#elif defined(ESP_PLATFORM)
-#define MINTGGGAMEENGINE_PORT_ESPIDF
+#   define MINTGGGAMEENGINE_PORT_ARDUINO
+#endif
+
+
+#if defined(CONFIG_IDF_TARGET_ESP32)
+#   define MINTGGGAMEENGINE_CHIP_ESP32
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+#   define MINTGGGAMEENGINE_CHIP_ESP32C3
+#else
+#   error This chip is currently not supported by MINTGGGameEngine!
 #endif
 
 
@@ -42,7 +53,7 @@ enum class FlipDir
  * means that lower values result in background objects, and higher values in
  * foreground objects. The order is only important for when objects overlap.
  */
-enum ZOrder
+enum ZOrder : uint16_t
 {
     ZOrderBackground    = 4000, ///< Rendered behind everything else (e.g. for background images).
     ZOrderNormal        = 5000, ///< Rendered as a regular object (e.g. player, enemy, bullet, ...)

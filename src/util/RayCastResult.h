@@ -2,7 +2,7 @@
 
 #include "../Globals.h"
 #include "../core/GameObject.h"
-#include "../graphics/Screen.h"
+#include "../graphics/screen/Screen.h"
 #include "../physics/GameObjectCollision.h"
 #include "Vec2.h"
 

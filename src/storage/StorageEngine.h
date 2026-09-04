@@ -11,10 +11,11 @@
 #include <nvs_flash.h>
 #endif
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-//#include <Preferences.h>
-#include <SD.h>
-#include <SPI.h>
+#ifndef MINTGGGAMEENGINE_PORT_ESPIDF
+#   ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#       include <SD.h>
+#       include <SPI.h>
+#   endif
 #endif
 
 
@@ -74,8 +75,6 @@ private:
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     nvs_handle_t nvsHandle;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-
 #endif
 };
 

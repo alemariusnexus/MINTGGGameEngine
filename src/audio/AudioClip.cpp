@@ -8,9 +8,6 @@
 #include "util/Log.h"
 
 
-LOG_USE_TAG("AudioClip")
-
-
 namespace MINTGGGameEngine
 {
 

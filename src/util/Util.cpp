@@ -1,5 +1,7 @@
 #include "Util.h"
 
+#include <freertos/FreeRTOS.h>
+
 #include <driver/gptimer.h>
 #include <esp_err.h>
 #include <soc/soc.h>
@@ -73,6 +75,33 @@ timer_ustick_t TimerGetTickcountUs()
 #else
     return 0;
 #endif
+}
+
+void TimerDelaySpinMs(unsigned int ms)
+{
+    if (ms == 0) {
+        return;
+    }
+    const timer_mstick_t endTime = TimerGetTickcountMs() + ms;
+    while (TimerGetTickcountMs() <= endTime);
+}
+
+void TimerDelaySpinUs(unsigned int us)
+{
+#ifdef MINTGGGAMEENGINE_TIMER_HAVE_US_RESOLUTION
+    if (us == 0) {
+        return;
+    }
+    const timer_ustick_t endTime = TimerGetTickcountUs() + us;
+    while (TimerGetTickcountUs() <= endTime);
+#else
+    TimerDelaySpinMs((us+999) / 1000);
+#endif
+}
+
+void DelayTaskMs(uint32_t delayMs)
+{
+    vTaskDelay((delayMs + portTICK_PERIOD_MS-1) / portTICK_PERIOD_MS);
 }
 
 void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool* pdEnabled)

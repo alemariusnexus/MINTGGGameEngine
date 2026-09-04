@@ -7,7 +7,7 @@ namespace MINTGGGameEngine
 {
 
 
-#ifndef MINTGGGAMEENGINE_PORT_ESPIDF
+#if !defined(MINTGGGAMEENGINE_PORT_ESPIDF)  ||  defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 bool LogMessageBegin(const char* tag, int level)
 {

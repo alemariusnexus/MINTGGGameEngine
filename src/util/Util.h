@@ -6,6 +6,10 @@
 // TODO: Actually detect it. Currently we're just assuming.
 #define MINTGGGAMEENGINE_LITTLE_ENDIAN
 
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  ||  defined(MINTGGGAMEENGINE_PORT_ESPIDF)
+#   define MINTGGGAMEENGINE_TIMER_HAVE_US_RESOLUTION
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -20,6 +24,13 @@ void TimerShutdown();
 
 timer_mstick_t TimerGetTickcountMs();
 timer_ustick_t TimerGetTickcountUs();
+
+void TimerDelaySpinMs(unsigned int ms);
+void TimerDelaySpinUs(unsigned int us);
+
+
+void DelayTaskMs(uint32_t delayMs);
+
 
 void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool* pdEnabled);
 

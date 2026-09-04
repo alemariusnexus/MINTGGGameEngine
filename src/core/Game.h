@@ -2,7 +2,7 @@
 
 #include "../Globals.h"
 #include "../audio/AudioEngine.h"
-#include "../graphics/Screen.h"
+#include "../graphics/screen/Screen.h"
 #include "../graphics/Text.h"
 #include "../input/InputEngine.h"
 #include "../network/NetworkEngine.h"
@@ -246,6 +246,9 @@ public:
      * setDrawRayCasts()).
      */
     void draw(DrawStats* stats = nullptr);
+
+    void drawBegin(DrawStats* stats = nullptr);
+    void drawFinish(DrawStats* stats = nullptr);
 
     /**
      * \brief Set the background color used for rendering.
@@ -527,9 +530,6 @@ public:
     ///@}
 
 private:
-    void drawBegin(DrawStats* stats);
-    void drawFinish(DrawStats* stats);
-
     void onCollision(const GameObject& a, const GameObject& b, float shrink);
 
     void notifyGameObjectZOrderChanged(const GameObject& gobj);

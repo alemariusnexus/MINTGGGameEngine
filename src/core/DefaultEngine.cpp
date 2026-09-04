@@ -3,14 +3,12 @@
 #include "../graphics/Font.h"
 #include "../util/Log.h"
 #include "../util/Util.h"
-#include "graphics/ScreenHAGL.h"
+#include "../graphics/screen/drivers/ScreenNull.h"
+#include "../graphics/screen/drivers/ScreenST7735.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include "esp_heap_caps.h"
 #include "nvs_flash.h"
-
-#include <hagl.h>
-#include <hagl_hal.h>
 #endif
 
 
@@ -37,26 +35,41 @@ void HeapCapsAllocFailedHook (
 
 
 DefaultEngine::DefaultEngine()
-    : screen(nullptr), printFrameStats(false)
+    : earlySetupDone(false), printFrameStats(false)
 {
+}
+
+bool DefaultEngine::earlySetup()
+{
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    initSerial();
+#endif
+
+    LogInfo("*** BEGIN ENGINE SETUP ***");
+
+    earlySetupDone = true;
+
+    return true;
 }
 
 bool DefaultEngine::setup(SetupConfig* cfg)
 {
+    if (!earlySetupDone) {
+        if (!earlySetup()) {
+            return false;
+        }
+        LogWarning("You forgot to call earlySetup() before setup()!");
+    }
+
     if (!cfg->internalStorageMountPoint) {
-        cfg->internalStorageMountPoint = "/internal";
+        cfg->internalStorageMountPoint = "/storage";
     }
     if (!cfg->sdCardMountPoint) {
         cfg->sdCardMountPoint = "/sdcard";
     }
 
     game = cfg->game;
-
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    initSerial(cfg);
-#endif
-
-    LogInfo("*** BEGIN ENGINE SETUP ***");
+    screen = cfg->screen;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     LogInfo("Platform: ESP-IDF");
@@ -71,6 +84,9 @@ bool DefaultEngine::setup(SetupConfig* cfg)
     TimerInit();
 
     game->setApplicationID(cfg->appID ? cfg->appID : "mygame");
+
+    LogInfo("Initializing SPI bus...");
+    initSPI(cfg);
 
     LogInfo("Initializing storage...");
     initStorage(cfg);
@@ -96,32 +112,41 @@ bool DefaultEngine::setup(SetupConfig* cfg)
     return true;
 }
 
-void DefaultEngine::doFrame(void (*gameLoopFunc)(float))
+void DefaultEngine::doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float))
 {
     game->beginFrame();
 
-    float dt = game->getFrameTime() * 1e-3f;
+    const float dt = game->getFrameTime() * 1e-3f;
 
-    timer_ustick_t gameLoopTime = TimerGetTickcountUs();
+    const timer_ustick_t gameLoopTime = TimerGetTickcountUs();
     if (gameLoopFunc) {
         gameLoopFunc(dt);
     }
 
-    timer_ustick_t checkCollTime = TimerGetTickcountUs();
+    const timer_ustick_t checkCollTime = TimerGetTickcountUs();
     game->checkCollisions(); // Kollisionsprüfung
 
-    timer_ustick_t drawTime = TimerGetTickcountUs();
+    const timer_ustick_t drawTime = TimerGetTickcountUs();
     Game::DrawStats drawStats;
-    game->draw(&drawStats); // GameObjects zeichnen
 
-    timer_ustick_t endTime = TimerGetTickcountUs();
+    // GameObjects zeichnen
+    game->drawBegin(&drawStats);
+    if (postDrawFunc) {
+        postDrawFunc(dt);
+    }
+    game->drawFinish(&drawStats);
+
+    const timer_ustick_t endTime = TimerGetTickcountUs();
+
+    const float fps = 1e6f / (endTime - gameLoopTime);
 
     if (printFrameStats) {
         LogInfo(
-            "Frame Stats   -   total: %uus   -   gameLoop: %uus, checkCollisions: %uus, draw: %uus   -   "
+            "Frame Stats   -   total: %uus (~%.2f FPS)   -   gameLoop: %uus, checkCollisions: %uus, draw: %uus   -   "
             "fill: %uus, objs: %uus, colls: %uus, rays: %uus, texts: %uus, comm: %uus",
 
             (uint32_t) (endTime-gameLoopTime),
+            fps,
 
             (uint32_t) (checkCollTime-gameLoopTime),
             (uint32_t) (drawTime-checkCollTime),
@@ -147,6 +172,32 @@ void DefaultEngine::initStorage(SetupConfig* cfg)
     game->storage().begin(*game);
 }
 
+void DefaultEngine::initSPI(SetupConfig* cfg)
+{
+    if (cfg->pins.spiMOSI >= 0  ||  cfg->pins.spiMISO >= 0  ||  cfg->pins.spiSCK >= 0) {
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+        spi_bus_config_t busCfg = {
+            .mosi_io_num = cfg->pins.spiMOSI,
+            .miso_io_num = cfg->pins.spiMISO,
+            .sclk_io_num = cfg->pins.spiSCK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+            .max_transfer_sz = static_cast<int>(cfg->spiMaxTransferSize),
+            .flags = 0
+        };
+
+        esp_err_t res = spi_bus_initialize(cfg->spiHost, &busCfg, SPI_DMA_CH_AUTO);
+        if (res != ESP_OK) {
+            LogError("Error initializing SPI bus: %s", esp_err_to_name(res));
+        }
+#else
+        LogWarning("SPI bus not currently implemented on this platform.");
+#endif
+    } else {
+        LogWarning("SPI bus is disabled since not all pins are configured.");
+    }
+}
+
 void DefaultEngine::initAudio(SetupConfig* cfg)
 {
     game->audio().begin(cfg->pins.speaker);
@@ -166,48 +217,22 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
 {
     Font::loadDefaultFonts();
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    spi = new SPIClass(*cfg->spiBase);
-    spi->begin(cfg->pins.spiSCK, cfg->pins.spiMISO, cfg->pins.spiMOSI, cfg->pins.screenCS);
-
-    tft = new Adafruit_ST7735(spi, cfg->pins.screenCS, cfg->pins.screenDC, cfg->pins.screenRST);
-    ScreenST7735* stScreen = new ScreenST7735(*tft);
-    stScreen->begin();
-    screen = stScreen;
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    ScreenHAGL* haglScreen = new ScreenHAGL;
-
-    hagl_hal_custom_config_t haglCfg = {
-        .width = 160,
-        .height = 128,
-        .offsetX = 0,
-        .offsetY = 0,
-        .clockFreqHz = 40000000,
-
-        .invertColors = false,
-        .blActiveLevel = 1,
-        .blPwmDutyCycle = -1,
-
-        .pins = {
-            .miso = cfg->pins.spiMISO,
-            .mosi = cfg->pins.spiMOSI,
-            .sck = cfg->pins.spiSCK,
-            .cs = cfg->pins.screenCS,
-            .dc = cfg->pins.screenDC,
-            .rst = cfg->pins.screenRST,
-            .bl = -1
-        }
-    };
-    hagl_hal_custom_config(&haglCfg);
-
-    haglScreen->begin();
-
-    screen = haglScreen;
-#else
-    screen = new ScreenNull;
-#endif
+    if (!screen) {
+        LogWarning("No screen configured. Using ScreenNull.");
+        screen = new ScreenNull;
+    }
 
     assert(screen);
+
+    if (!screen->init()) {
+        LogError("Error initializing screen. Falling back to ScreenNull.AAA");
+        delete screen;
+
+        screen = new ScreenNull;
+        if (!screen->init()) {
+            LogError("Error initializing fallback screen as well. Giving up.");
+        }
+    }
 
     if (screen) {
         game->begin(*screen);
@@ -233,7 +258,7 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
         sdMountOk = game->storage().mountSDCard (
             cfg->sdCardMountPoint,
-            static_cast<spi_host_device_t>(CONFIG_MIPI_DISPLAY_SPI_HOST),
+            cfg->spiHost,
             cfg->pins.sdCardCS
             );
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
@@ -256,12 +281,10 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
-void DefaultEngine::initSerial(SetupConfig* cfg)
+void DefaultEngine::initSerial()
 {
     Serial.begin(115200);
 }
-
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 
 #endif
 

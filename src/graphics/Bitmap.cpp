@@ -108,7 +108,7 @@ Bitmap Bitmap::scaled(int16_t factor) const
         return Bitmap::takeOwnership(nw, nh, nd, nm);
     } else {
         // Scale down
-        uint16_t ufactor = -factor;
+        [[maybe_unused]] uint16_t ufactor = -factor;
         // TODO: Implement
         return Bitmap();
     }

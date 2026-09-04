@@ -3,7 +3,7 @@
 #include "../Globals.h"
 #include "../graphics/Bitmap.h"
 #include "../graphics/Color.h"
-#include "../graphics/Screen.h"
+#include "../graphics/screen/Screen.h"
 #include "../graphics/Sprite.h"
 #include "../physics/Collider.h"
 #include "../util/Vec2.h"
@@ -499,7 +499,7 @@ public:
      *
      * \return The Z order.
      */
-    uint16_t getZOrder() const { return d ? d->zOrder : ZOrderNormal; }
+    uint16_t getZOrder() const { return d ? d->zOrder : static_cast<uint16_t>(ZOrderNormal); }
     
     /**
      * \brief Set the drawing order of this object.

@@ -2,6 +2,11 @@
 
 #include <algorithm>
 
+#include "util/Log.h"
+
+
+LOG_USE_TAG("Text")
+
 
 namespace MINTGGGameEngine
 {
@@ -18,7 +23,9 @@ Text::Text (
     d->y = y;
     d->font = font;
     d->scaleFactor = scaleFactor;
+    d->explosion = 0;
     d->color = color;
+    d->explosionColor = Color::WHITE;
     d->anchor = Anchor::TopLeft;
     d->halign = HAlign::Left;
     d->text = text;
@@ -58,7 +65,7 @@ void Text::transformAnchorPosition (
     int32_t* outX, int32_t* outY,
     TextMetrics* metrics
 ) const {
-    if (newAnchor == d->anchor) {
+    if (!d->font  ||  newAnchor == d->anchor) {
         *outX = d->x;
         *outY = d->y;
     } else {
@@ -67,6 +74,8 @@ void Text::transformAnchorPosition (
             metrics = &localMetrics;
             getTextMetrics(metrics);
         }
+
+        // TODO: Handle explosion
 
         int32_t w = metrics->maxGlyphsPerLine * d->font.getGlyphWidth() * d->scaleFactor;
         int32_t h = metrics->numLines * d->font.getGlyphHeight() * d->scaleFactor;

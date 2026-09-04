@@ -57,7 +57,9 @@ private:
         int32_t y;
         Font font;
         uint16_t scaleFactor;
+        uint8_t explosion;
         Color color;
+        Color explosionColor;
         Anchor anchor;
         HAlign halign;
         std::string text;
@@ -90,7 +92,9 @@ public:
     int32_t getY() const { return d->y; }
     const Font& getFont() const { return d->font; }
     uint16_t getScaleFactor() const { return d->scaleFactor; }
+    uint8_t getExplosion() const { return d->explosion; }
     const Color& getColor() const { return d->color; }
+    const Color& getExplosionColor() const { return d->color; }
     Anchor getAnchor() const { return d->anchor; }
     HAlign getHAlign() const { return d->halign; }
     const std::string& getText() const { return d->text; }
@@ -100,12 +104,14 @@ public:
     void setPosition(int32_t x, int32_t y) { d->x = x; d->y = y; }
     void setFont(const Font& font) { d->font = font; }
     void setScaleFactor(uint16_t scaleFactor) { d->scaleFactor = scaleFactor; }
+    void setExplosion(uint8_t explosion) { d->explosion = explosion; }
     void setColor(const Color& color) { d->color = color; }
+    void setExplosionColor(const Color& color) { d->explosionColor = color; }
     void setAnchor(Anchor anchor) { d->anchor = anchor; }
     void setHAlign(HAlign halign) { d->halign = halign; }
     void setText(const std::string& text) { d->text = text; }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    void setText(const String& text) { setText(std::string(text.c_str())); }
+    [[deprecated]] void setArduinoText(const String& text) { setText(std::string(text.c_str())); }
 #endif
     void setVisible(bool visible) { d->visible = visible; }
     void setWorldSpace(bool worldSpace) { d->worldSpace = worldSpace; }

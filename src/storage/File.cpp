@@ -1,6 +1,6 @@
 #include "File.h"
 
-#ifndef MINTGGGAMEENGINE_PORT_ARDUINO
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -20,7 +20,7 @@ namespace MINTGGGameEngine
 
 File::File(const File& other)
     : path(other.path)
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
       , fhandle(nullptr)
 #endif
 {
@@ -29,7 +29,7 @@ File::File(const File& other)
 
 File::File(const std::string_view& path)
     : path(path)
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
       , fhandle(nullptr)
 #endif
 {
@@ -37,7 +37,7 @@ File::File(const std::string_view& path)
 
 File::File(const File& parent, const std::string& child)
     : path(parent.getPath().append("/").append(child))
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
       , fhandle(nullptr)
 #endif
 {
@@ -58,7 +58,7 @@ void File::normalizePath()
 
 bool File::exists() const
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
     return stat(path.c_str(), &st) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
@@ -74,7 +74,7 @@ bool File::exists() const
 
 bool File::isDirectory() const
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
     if (stat(path.c_str(), &st) != 0) {
         return false;
@@ -95,7 +95,7 @@ bool File::isDirectory() const
 
 bool File::isRegularFile() const
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
     if (stat(path.c_str(), &st) != 0) {
         return false;
@@ -110,7 +110,7 @@ bool File::isRegularFile() const
 
 size_t File::getSize() const
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
     if (stat(path.c_str(), &st) != 0) {
         return 0;
@@ -140,7 +140,7 @@ bool File::listChildren(std::vector<File>& res, bool recursive) const
 {
     size_t oldSize = res.size();
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     DIR* dir = opendir(path.c_str());
     while (struct dirent* ent = readdir(dir)) {
         res.emplace_back(*this, ent->d_name);
@@ -173,7 +173,7 @@ bool File::listChildren(std::vector<File>& res, bool recursive) const
 
 bool File::mkdir()
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     return ::mkdir(path.c_str(), 0) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     std::string relPath;
@@ -186,7 +186,7 @@ bool File::mkdir()
 
 bool File::remove()
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     return ::remove(path.c_str()) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     std::string relPath;
@@ -201,7 +201,7 @@ bool File::open(OpenMode mode, const char** outErrmsg)
 {
     close();
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     const char* smode;
     switch (mode) {
     case ReadOnly:
@@ -255,7 +255,7 @@ bool File::open(OpenMode mode, const char** outErrmsg)
 
 void File::close()
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (fhandle) {
         fclose(fhandle);
         fhandle = nullptr;
@@ -270,7 +270,7 @@ void File::close()
 
 bool File::isOpen() const
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     return fhandle != nullptr;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     return (bool) fhandle;
@@ -281,7 +281,7 @@ bool File::isOpen() const
 
 bool File::flush()
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return false;
     }
@@ -299,7 +299,7 @@ bool File::flush()
 
 size_t File::read(void* data, size_t size)
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return 0;
     }
@@ -334,7 +334,7 @@ size_t File::readAll(void* data, size_t size)
 
 size_t File::write(const void* data, size_t size)
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return 0;
     }
@@ -351,7 +351,7 @@ size_t File::write(const void* data, size_t size)
 
 int File::printf(const char* format, ...)
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return -1;
     }
@@ -395,7 +395,7 @@ int File::printf(const char* format, ...)
 
 size_t File::skip(size_t size)
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return false;
     }
@@ -417,7 +417,7 @@ size_t File::skip(size_t size)
 
 bool File::seek(ssize_t offset, SeekMode mode)
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return false;
     }
@@ -456,7 +456,7 @@ bool File::seek(ssize_t offset, SeekMode mode)
 
 ssize_t File::tell()
 {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     if (!fhandle) {
         return -1;
     }
@@ -502,7 +502,7 @@ bool File::setTextContent(const std::string& content)
     return true;
 }
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  &&  !defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
 bool File::openSDFile(::File* outFile) const
 {
     std::string relPath;

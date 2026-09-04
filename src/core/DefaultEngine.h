@@ -4,10 +4,6 @@
 
 #include "Game.h"
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-#include "../graphics/ScreenST7735.h"
-#endif
-
 
 namespace MINTGGGameEngine
 {
@@ -58,17 +54,14 @@ public:
         /**
          * \brief Mount point for internal storage (e.g. SPIFFS for ESP32).
          *
-         * If set to null, a default value of "/internal" is used.
+         * If set to null, a default value of "/storage" is used.
          */
         const char* internalStorageMountPoint;
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-        /**
-         * \brief The SPI class used for the display, SD card, and potentially
-         * other peripherals.
-         */
-        SPIClass* spiBase;
-#endif
+        Screen* screen;
+
+        spi_host_device_t spiHost;
+        size_t spiMaxTransferSize;
 
         /**
          * \brief Pin configuration.
@@ -90,21 +83,6 @@ public:
             int spiSCK;
 
             /**
-             * \brief CS pin for the screen on the SPI bus, or -1 if unused.
-             */
-            int screenCS;
-
-            /**
-             * \brief DC pin (also called RS) for the screen on the SPI bus, or -1 if unused.
-             */
-            int screenDC;
-
-            /**
-             * \brief RST pin for the screen on the SPI bus, or -1 if unused.
-             */
-            int screenRST;
-
-            /**
              * \brief CS pin for the SD card on the SPI bus, or -1 if unused.
              */
             int sdCardCS;
@@ -118,6 +96,8 @@ public:
 
 public:
     DefaultEngine();
+
+    virtual bool earlySetup();
 
     /**
      * \brief Run the initial engine setup.
@@ -144,7 +124,7 @@ public:
      *
      * @param gameLoopFunc User-defined game loop function. Can be null.
      */
-    virtual void doFrame(void (*gameLoopFunc)(float));
+    virtual void doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float));
 
     /**
      * \brief Return the game object.
@@ -168,6 +148,7 @@ public:
     void setPrintFrameStatistics(bool print) { printFrameStats = print; }
 
 protected:
+    virtual void initSPI(SetupConfig* cfg);
     virtual void initAudio(SetupConfig* cfg);
     virtual void initInput(SetupConfig* cfg);
     virtual void initNetwork(SetupConfig* cfg);
@@ -178,21 +159,51 @@ protected:
     virtual bool mountSDCard(SetupConfig* cfg);
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    virtual void initSerial(SetupConfig* cfg);
+    virtual void initSerial();
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 #endif
 
 protected:
+    bool earlySetupDone;
     Game* game;
     Screen* screen;
 
     bool printFrameStats;
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+/*#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     SPIClass* spi;
     Adafruit_ST7735* tft;
-#endif
+#endif*/
 };
+
+
+
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+
+#define MINTGGGAMEENGINE_STARTUP_CODE() \
+        void setup()                    \
+        {                               \
+            EngineSetup();              \
+        }                               \
+        void loop()                     \
+        {                               \
+            EngineLoop();               \
+        }
+
+#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
+
+#define MINTGGGAMEENGINE_STARTUP_CODE() \
+        extern "C" {                    \
+        void app_main()                 \
+        {                               \
+            EngineSetup();              \
+            for (;;) {                  \
+                EngineLoop();           \
+            }                           \
+        }                               \
+        }
+
+#endif
 
 
 }

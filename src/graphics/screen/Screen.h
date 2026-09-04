@@ -1,62 +1,22 @@
 #pragma once
 
-#include "../Globals.h"
-#include "Bitmap.h"
-#include "Color.h"
-#include "Text.h"
+#include "../../Globals.h"
+
+#include "../surface/DrawSurface.h"
 
 
 namespace MINTGGGameEngine
 {
 
-class Screen
+class Screen : public DrawSurface
 {
 public:
-    virtual uint16_t getWidth() const = 0;
-    virtual uint16_t getHeight() const = 0;
-
-    virtual void fillScreen(const Color& color) = 0;
-    virtual void drawPixel(int32_t x, int32_t y, const Color& color) = 0;
-    virtual void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color) = 0;
-    virtual void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Color& color, bool filled = false) = 0;
-    virtual void drawCircle(int32_t cx, int32_t cy, int32_t r, const Color& color, bool filled = false) = 0;
-    virtual void drawBitmap(int32_t x, int32_t y, const Bitmap& bitmap, FlipDir flipDir = FlipDir::None) = 0;
-
-    virtual Color readPixel(int32_t x, int32_t y) = 0;
-
-    virtual void drawText(const Text& text, int32_t ox = 0, int32_t oy = 0);
-
-    virtual bool saveScreenshot(const char* path);
-    
+    virtual bool init() = 0;
     virtual void commit() = 0;
-
-protected:
-    virtual void drawGlyph (
-        int32_t x, int32_t y,
-        const uint8_t* d, uint8_t w, uint8_t h,
-        uint16_t scale,
-        const Color& color
-        );
-
-    template <typename DrawPixelT, typename DrawPixelsT, typename ContextT>
-    void drawBitmapHelper (
-        int32_t x, int32_t y,
-        const Bitmap& bitmap,
-        FlipDir flipDir,
-        DrawPixelT drawPixel,
-        DrawPixelsT drawPixels,
-        ContextT userPtr
-        );
-
-private:
-    template <bool forward>
-    void drawTextLinear(const Text& text, int32_t px, int32_t py);
-
-    void drawTextCenteredTC(const Text& text, int32_t px, int32_t py);
 };
 
 
-template <typename DrawPixelT, typename DrawPixelsT, typename ContextT>
+/*template <typename DrawPixelT, typename DrawPixelsT, typename ContextT>
 void Screen::drawBitmapHelper (
     int32_t x, int32_t y,
     const Bitmap& bitmap,
@@ -222,6 +182,6 @@ void Screen::drawTextLinear(const Text& text, int32_t px, int32_t py)
             cptr--;
         }
     }
-}
+}*/
 
 }

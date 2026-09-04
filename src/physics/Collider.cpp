@@ -5,7 +5,7 @@
 
 #include "../util/MathUtils.h"
 #include "../util/RayCastResult.h"
-#include "../graphics/Screen.h"
+#include "../graphics/screen/Screen.h"
 
 
 
@@ -31,6 +31,29 @@ Collider::Collider(const Collider& o)
     } else {
         assert(false);
     }
+}
+
+
+Collider& Collider::operator=(const Collider& o)
+{
+    if (o != *this) {
+        type = o.type;
+        if (type == Type::Null) {
+            // Nothing to do
+        } else if (type == Type::Circle) {
+            circle.cx = o.circle.cx;
+            circle.cy = o.circle.cy;
+            circle.r = o.circle.r;
+        } else if (type == Type::Rect) {
+            rect.x = o.rect.x;
+            rect.y = o.rect.y;
+            rect.w = o.rect.w;
+            rect.h = o.rect.h;
+        } else {
+            assert(false);
+        }
+    }
+    return *this;
 }
 
 

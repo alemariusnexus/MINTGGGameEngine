@@ -84,6 +84,11 @@ public:
      * \brief Return the color in RGB565 format.
      */
     uint16_t toRGB565() const { return rgb565; }
+
+    /**
+     * \brief Return the color in BGR565 format.
+     */
+    uint16_t toBGR565() const;
     
     /**
      * \brief Return the color in RGB565 format.

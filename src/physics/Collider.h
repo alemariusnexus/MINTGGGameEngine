@@ -99,6 +99,8 @@ public:
      */
     Collider() : type(Type::Null) {}
     Collider(const Collider& o);
+
+    Collider& operator=(const Collider& o);
     
     float getWidth() const;
     float getHeight() const;

@@ -8,9 +8,6 @@ extern "C" {
 }
 
 
-LOG_USE_TAG("MIDILoader")
-
-
 namespace MINTGGGameEngine
 {
 

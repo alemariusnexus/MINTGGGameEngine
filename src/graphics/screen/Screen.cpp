@@ -1,18 +1,11 @@
 #include "Screen.h"
 
-#include <cassert>
-
-#include "../storage/File.h"
-
-
-LOG_USE_TAG("Screen")
-
 
 namespace MINTGGGameEngine
 {
 
 
-void Screen::drawText(const Text& text, int32_t ox, int32_t oy)
+/*void Screen::drawText(const Text& text, int32_t ox, int32_t oy)
 {
     const Text::HAlign halign = text.getHAlign();
 
@@ -121,7 +114,7 @@ void Screen::drawTextCenteredTC(const Text& text, int32_t px, int32_t py)
 
         py += scaledGlyphHeight;
     } while (eolPtr != cptrEnd);
-}
+}*/
 
 
 }

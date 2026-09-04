@@ -150,14 +150,14 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
     if (sobj.flags & StreamFlagsSpriteBitmapFile) {
         workerTask.addWorkItem([&]() {
             const char* errmsg;
-            timer_mstick_t s = TimerGetTickcountMs();
+            //timer_mstick_t s = TimerGetTickcountMs();
             Bitmap bmp = Bitmap::loadBMP (
                 sobj.bmpFile.path.c_str(),
                 sobj.bmpFile.ox, sobj.bmpFile.oy,
                 sobj.bmpFile.w, sobj.bmpFile.h,
                 &errmsg
                 );
-            timer_mstick_t e = TimerGetTickcountMs();
+            //timer_mstick_t e = TimerGetTickcountMs();
             //LogInfo("BMP loading took %ums", (uint32_t) (e-s));
             if (bmp) {
                 sobj.gobj.setSprite(Sprite::createBitmap(bmp));
