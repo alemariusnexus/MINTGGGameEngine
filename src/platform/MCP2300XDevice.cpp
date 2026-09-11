@@ -23,29 +23,12 @@ namespace MINTGGGameEngine
 {
 
 
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-
-MCP2300XDevice::MCP2300XDevice(TwoWire& bus, uint8_t i2cAddr)
-    : i2cBus(&bus), i2cAddr(i2cAddr)
-{
-}
-
-MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
-    : i2cBus(&Wire), i2cAddr(i2cAddr)
-{
-    i2cBus->begin(sdaPin, sclPin);
-    i2cBus->setClock(clockFreq);
-}
-
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-
-MCP2300XDevice::MCP2300XDevice(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev)
-    : i2cBus(bus), i2cDev(dev)
-{
-}
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
 {
+    init();
+
     i2c_master_bus_config_t busCfg = {
         .i2c_port = I2C_NUM_0,
         .sda_io_num = static_cast<gpio_num_t>(sdaPin),
@@ -53,7 +36,7 @@ MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t cloc
         .clk_source = I2C_CLK_SRC_DEFAULT,
         .glitch_ignore_cnt = 7
     };
-    if (i2c_new_master_bus(&busCfg, &i2cBus) != ESP_OK) {
+    if (i2c_new_master_bus(&busCfg, &espidf.i2cBus) != ESP_OK) {
         LogError("Error setting up I2C master.");
         return;
     }
@@ -64,13 +47,59 @@ MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t cloc
         .scl_speed_hz = clockFreq
     };
 
-    if (i2c_master_bus_add_device(i2cBus, &devCfg, &i2cDev) != ESP_OK) {
+    if (i2c_master_bus_add_device(espidf.i2cBus, &devCfg, &espidf.i2cDev) != ESP_OK) {
         LogError("Error setting up MCP2300X.");
         return;
     }
 }
 
+#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+
+MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
+{
+    init();
+    arduino.i2cBus = &Wire;
+    arduino.i2cAddr = i2cAddr;
+    arduino.i2cBus->begin(sdaPin, sclPin);
+    arduino.i2cBus->setClock(clockFreq);
+}
+
 #endif
+
+
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+
+MCP2300XDevice::MCP2300XDevice(TwoWire& bus, uint8_t i2cAddr)
+{
+    init();
+    arduino.i2cBus = &bus;
+    arduino.i2cAddr = i2cAddr;
+}
+
+#endif
+
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+
+MCP2300XDevice::MCP2300XDevice(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev)
+{
+    init();
+    espidf.i2cBus = bus;
+    espidf.i2cDev = dev;
+}
+
+#endif
+
+void MCP2300XDevice::init()
+{
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    arduino.i2cBus = nullptr;
+    arduino.i2cAddr = 0;
+#endif
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    espidf.i2cBus = nullptr;
+    espidf.i2cDev = nullptr;
+#endif
+}
 
 bool MCP2300XDevice::setIODirection(uint8_t ioDir)
 {
@@ -105,41 +134,55 @@ bool MCP2300XDevice::readPins(uint8_t* pinStates)
 bool MCP2300XDevice::readRegister(uint8_t addr, uint8_t* value)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    i2cBus->beginTransmission(i2cAddr);
-    i2cBus->write(addr);
-    if (i2cBus->endTransmission() != 0) {
-        return false;
+    if (arduino.i2cBus) {
+        arduino.i2cBus->beginTransmission(arduino.i2cAddr);
+        arduino.i2cBus->write(addr);
+        if (arduino.i2cBus->endTransmission() != 0) {
+            return false;
+        }
+        uint8_t numReceived = arduino.i2cBus->requestFrom(arduino.i2cAddr, 1);
+        if (numReceived != 1) {
+            return false;
+        }
+        *value = arduino.i2cBus->read();
+        return true;
     }
-    uint8_t numReceived = i2cBus->requestFrom(i2cAddr, 1);
-    if (numReceived != 1) {
-        return false;
-    }
-    *value = i2cBus->read();
-    return true;
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    if (i2c_master_transmit_receive(i2cDev, &addr, 1, value, 1, -1) != ESP_OK) {
-        return false;
-    }
-    return true;
 #endif
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    if (espidf.i2cBus) {
+        if (i2c_master_transmit_receive(espidf.i2cDev, &addr, 1, value, 1, -1) != ESP_OK) {
+            return false;
+        }
+        return true;
+    }
+#endif
+    return false;
 }
 
 bool MCP2300XDevice::writeRegister(uint8_t addr, uint8_t value)
 {
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    i2cBus->beginTransmission(i2cAddr);
-    i2cBus->write(addr);
-    i2cBus->write(value);
-    if (i2cBus->endTransmission() != 0) {
-        return false;
+    if (arduino.i2cBus) {
+        arduino.i2cBus->beginTransmission(arduino.i2cAddr);
+        arduino.i2cBus->write(addr);
+        arduino.i2cBus->write(value);
+        if (arduino.i2cBus->endTransmission() != 0) {
+            return false;
+        }
+        return true;
     }
-    return true;
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    uint8_t writeBuf[] = {addr, value};
-    if (i2c_master_transmit(i2cDev, writeBuf, sizeof(writeBuf), -1) != ESP_OK) {
-        return false;
-    }
-    return true;
 #endif
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    if (espidf.i2cBus) {
+        uint8_t writeBuf[] = {addr, value};
+        if (i2c_master_transmit(espidf.i2cDev, writeBuf, sizeof(writeBuf), -1) != ESP_OK) {
+            return false;
+        }
+        return true;
+    }
+#endif
+    return false;
 }
+
+
 }

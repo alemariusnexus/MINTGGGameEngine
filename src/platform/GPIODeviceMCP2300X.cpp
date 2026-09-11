@@ -8,6 +8,11 @@ namespace MINTGGGameEngine
 {
 
 
+GPIODeviceMCP2300X::GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
+    : mcp(sclPin, sdaPin, clockFreq, i2cAddr)
+{
+}
+
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 
 GPIODeviceMCP2300X::GPIODeviceMCP2300X(TwoWire& bus, uint8_t i2cAddr)
@@ -15,17 +20,9 @@ GPIODeviceMCP2300X::GPIODeviceMCP2300X(TwoWire& bus, uint8_t i2cAddr)
 {
 }
 
-GPIODeviceMCP2300X::GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
-    : mcp(sclPin, sdaPin, clockFreq, i2cAddr)
-{
-}
+#endif
 
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-
-GPIODeviceMCP2300X::GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
-    : mcp(sclPin, sdaPin, clockFreq, i2cAddr)
-{
-}
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 GPIODeviceMCP2300X::GPIODeviceMCP2300X(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev)
     : mcp(bus, dev)

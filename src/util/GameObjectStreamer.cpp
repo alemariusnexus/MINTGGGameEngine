@@ -12,6 +12,10 @@ namespace MINTGGGameEngine
 {
 
 
+// TODO: Implement proper synchronization with workerTask (e.g. what if GameObject is unregistered in the middle of
+//  streaming in/out?)
+
+
 GameObjectStreamer::GameObjectStreamer()
     : activeX(0), activeY(0), activeW(0), activeH(0), workerTask(4096, 1)
 {
@@ -51,13 +55,19 @@ bool GameObjectStreamer::enableSpriteBitmapFile (
     const GameObject& gobj,
     const char* path,
     uint16_t ox, uint16_t oy,
-    uint16_t w, uint16_t h
+    uint16_t w, uint16_t h,
+    bool maskOnly
 ) {
     StreamedObject* sobj = findObject(gobj);
     if (!sobj) {
         return false;
     }
     sobj->flags |= StreamFlagsSpriteBitmapFile;
+    if (maskOnly) {
+        sobj->flags |= StreamFlagsSpriteBitmapMaskOnly;
+    } else {
+        sobj->flags &= ~StreamFlagsSpriteBitmapMaskOnly;
+    }
     sobj->bmpFile.path = path;
     sobj->bmpFile.ox = ox;
     sobj->bmpFile.oy = oy;
@@ -72,8 +82,44 @@ bool GameObjectStreamer::disableSpriteBitmapFile(const GameObject& gobj)
     if (!sobj) {
         return false;
     }
-    sobj->flags &= ~StreamFlagsSpriteBitmapFile;
+    sobj->flags &= ~(StreamFlagsSpriteBitmapFile | StreamFlagsSpriteBitmapMaskOnly);
     sobj->bmpFile.path.clear();
+    return true;
+}
+
+bool GameObjectStreamer::enableCustomCallback (
+        const GameObject& gobj,
+        const StreamCbFunc& streamCb,
+        bool inBlocking, bool outBlocking
+) {
+    StreamedObject* sobj = findObject(gobj);
+    if (!sobj) {
+        return false;
+    }
+    sobj->flags |= StreamFlagsCustomCallback;
+    if (inBlocking) {
+        sobj->flags |= StreamFlagsCustomCallbackInBlocking;
+    } else {
+        sobj->flags &= ~StreamFlagsCustomCallbackInBlocking;
+    }
+    if (outBlocking) {
+        sobj->flags |= StreamFlagsCustomCallbackOutBlocking;
+    } else {
+        sobj->flags &= ~StreamFlagsCustomCallbackOutBlocking;
+    }
+    sobj->customCb.streamCb = streamCb;
+    return true;
+}
+
+bool GameObjectStreamer::disableCustomCallback(const GameObject& gobj)
+{
+    StreamedObject* sobj = findObject(gobj);
+    if (!sobj) {
+        return false;
+    }
+    sobj->flags &= ~(StreamFlagsCustomCallback | StreamFlagsCustomCallbackInBlocking
+        | StreamFlagsCustomCallbackOutBlocking);
+    sobj->customCb.streamCb = {};
     return true;
 }
 
@@ -106,6 +152,7 @@ size_t GameObjectStreamer::getMemoryUsage() const
 {
     size_t memUsage = 0;
     for (const StreamedObject& sobj : streamedObjs) {
+        memUsage += sizeof(sobj);
         if ((sobj.flags & StreamFlagsActive) != 0) {
             Sprite sprite = sobj.gobj.getSprite();
             if (sprite.getType() == Sprite::Type::Bitmap) {
@@ -151,12 +198,22 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
         workerTask.addWorkItem([&]() {
             const char* errmsg;
             //timer_mstick_t s = TimerGetTickcountMs();
-            Bitmap bmp = Bitmap::loadBMP (
-                sobj.bmpFile.path.c_str(),
-                sobj.bmpFile.ox, sobj.bmpFile.oy,
-                sobj.bmpFile.w, sobj.bmpFile.h,
-                &errmsg
-                );
+            Bitmap bmp;
+            if (sobj.flags & StreamFlagsSpriteBitmapMaskOnly) {
+                bmp = Bitmap::loadBMPMaskOnly (
+                    sobj.bmpFile.path.c_str(),
+                    sobj.bmpFile.ox, sobj.bmpFile.oy,
+                    sobj.bmpFile.w, sobj.bmpFile.h,
+                    &errmsg
+                    );
+            } else {
+                bmp = Bitmap::loadBMP (
+                    sobj.bmpFile.path.c_str(),
+                    sobj.bmpFile.ox, sobj.bmpFile.oy,
+                    sobj.bmpFile.w, sobj.bmpFile.h,
+                    &errmsg
+                    );
+            }
             //timer_mstick_t e = TimerGetTickcountMs();
             //LogInfo("BMP loading took %ums", (uint32_t) (e-s));
             if (bmp) {
@@ -168,12 +225,32 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
         });
     }
 
+    if (sobj.flags & StreamFlagsCustomCallback) {
+        if (sobj.flags & StreamFlagsCustomCallbackInBlocking) {
+            sobj.customCb.streamCb(sobj.gobj, true);
+        } else {
+            workerTask.addWorkItem([&]() {
+                sobj.customCb.streamCb(sobj.gobj, true);
+            });
+        }
+    }
+
     sobj.flags |= StreamFlagsActive;
 }
 
 void GameObjectStreamer::streamOut(StreamedObject& sobj)
 {
     //LogInfo("Stream OUT");
+
+    if (sobj.flags & StreamFlagsCustomCallback) {
+        if (sobj.flags & StreamFlagsCustomCallbackOutBlocking) {
+            sobj.customCb.streamCb(sobj.gobj, false);
+        } else {
+            workerTask.addWorkItem([&]() {
+                sobj.customCb.streamCb(sobj.gobj, false);
+            });
+        }
+    }
 
     if (sobj.flags & StreamFlagsSpriteBitmapFile) {
         sobj.gobj.setSprite(Sprite());

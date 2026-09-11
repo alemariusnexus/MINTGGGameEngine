@@ -10,6 +10,13 @@
 namespace MINTGGGameEngine
 {
 
+/**
+ * \brief Driver for an ST7735-based screen.
+ *
+ * This class currently assumes that the ST7735 is connected using the SPI interface. The ST7735 supports other
+ * interfaces, but they are not handled by this class.
+ * A hardware SPI peripheral is used to communicate with the screen.
+ */
 class ScreenST7735 : public AbstractMIPIScreen
 {
 public:
@@ -35,9 +42,9 @@ public:
 
         struct
         {
-            int cs;
-            int dc;
-            int rst;
+            gpionum_t cs;
+            gpionum_t dc;
+            gpionum_t rst;
         } pins;
     };
 

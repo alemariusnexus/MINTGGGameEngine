@@ -71,7 +71,7 @@ timer_ustick_t TimerGetTickcountUs()
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     uint64_t tc;
     ESP_ERROR_CHECK(gptimer_get_raw_count(TimerHandle, &tc));
-    return tc;
+    return static_cast<timer_ustick_t>(tc);
 #else
     return 0;
 #endif

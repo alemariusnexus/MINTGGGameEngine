@@ -177,4 +177,12 @@ void Text::transformAnchorPosition (
     }
 }
 
+Text& Text::operator=(const Text& other)
+{
+    if (&other != this) {
+        d = other.d;
+    }
+    return *this;
+}
+
 }

@@ -34,6 +34,9 @@ public:
     Bitmap loadBitmapBMP(Reader& reader);
     Bitmap loadBitmapBMP(const std::string_view& path);
 
+    Bitmap loadBitmapBMPMaskOnly(Reader& reader);
+    Bitmap loadBitmapBMPMaskOnly(const std::string_view& path);
+
     Bitmap loadBitmapBMPSeparateMask(Reader& rgbReader, Reader& maskReader);
     Bitmap loadBitmapBMPSeparateMask (
         const std::string_view& rgbPath, const std::string_view& maskPath);

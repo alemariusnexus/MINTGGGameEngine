@@ -105,6 +105,13 @@ public:
         const char** outErrmsg = nullptr
         );
 
+    static Bitmap loadBMPMaskOnly (
+        const char* path,
+        uint16_t ox = 0, uint16_t oy = 0,
+        uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
+        const char** outErrmsg = nullptr
+        );
+
     /**
      * \brief Create a simple placeholder bitmap of the given size.
      *
@@ -270,7 +277,6 @@ public:
         } else {
             d->m[y*maskByteW + (x>>3)] &= ~(0x80 >> (x&7));
         }
-        //return (d->m[y*maskByteW + (x>>3)] & (0x80 >> (x&7))) != 0;
     }
 
     ///@}

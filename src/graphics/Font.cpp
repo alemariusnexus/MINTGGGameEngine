@@ -1124,9 +1124,10 @@ void Font::loadDefaultFonts()
     };
 
     const DefaultFont defaultFonts[] = {
+        {   font8x13_ISO8859_1,     sizeof(font8x13_ISO8859_1),     "8x13_ISO8859_1"    },
+
         {   font5x8_ISO8859_1,      sizeof(font5x8_ISO8859_1),      "5x8_ISO8859_1"     },
         {   font6x12_ISO8859_1,     sizeof(font6x12_ISO8859_1),     "6x12_ISO8859_1"    },
-        {   font8x13_ISO8859_1,     sizeof(font8x13_ISO8859_1),     "8x13_ISO8859_1"    },
         {   font9x15_ISO8859_1,     sizeof(font9x15_ISO8859_1),     "9x15_ISO8859_1"    }
     };
 

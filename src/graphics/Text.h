@@ -123,6 +123,8 @@ public:
         int32_t* outX, int32_t* outY,
         TextMetrics* metrics = nullptr
         ) const;
+
+    Text& operator=(const Text& other);
     
     bool operator==(const Text& other) const { return d == other.d; }
     bool operator!=(const Text& other) const { return d != other.d; }

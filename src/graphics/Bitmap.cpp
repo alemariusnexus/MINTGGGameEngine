@@ -28,6 +28,22 @@ Bitmap Bitmap::loadBMP (
     return bmp;
 }
 
+Bitmap Bitmap::loadBMPMaskOnly (
+    const char* path,
+    uint16_t ox, uint16_t oy,
+    uint16_t w, uint16_t h,
+    const char** outErrmsg
+) {
+    ImageLoader il;
+    il.setOffset(ox, oy);
+    il.setMaxSize(w, h);
+    Bitmap bmp = il.loadBitmapBMPMaskOnly(path);
+    if (!bmp) {
+        if (outErrmsg) *outErrmsg = il.getErrorMessage();
+    }
+    return bmp;
+}
+
 Bitmap Bitmap::createPlaceholder(uint16_t w, uint16_t h)
 {
     uint16_t* data = static_cast<uint16_t*>(malloc(w*h*sizeof(uint16_t)));

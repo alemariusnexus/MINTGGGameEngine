@@ -86,6 +86,13 @@
 namespace MINTGGGameEngine
 {
 
+/**
+ * \brief Abstract base class for screens that use the MIPI Display Command Set (MIPI DCS).
+ *
+ * Many common displays are based on MIPI DCS, and can use common code for display initialization and sending
+ * framebuffer data. Subclasses must still handle the specific hardware interfaces and vendor-specific requirements
+ * of individual screen models.
+ */
 class AbstractMIPIScreen : public BufferedScreen
 {
 public:

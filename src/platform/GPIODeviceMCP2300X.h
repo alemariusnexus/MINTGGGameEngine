@@ -2,12 +2,6 @@
 
 #include "../Globals.h"
 
-#include <unordered_map>
-
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-#include <Wire.h>
-#endif
-
 #include "GPIODevice.h"
 #include "MCP2300XDevice.h"
 
@@ -31,11 +25,11 @@ namespace MINTGGGameEngine
 class GPIODeviceMCP2300X : public GPIODevice
 {
 public:
+    GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 	GPIODeviceMCP2300X(TwoWire& bus, uint8_t i2cAddr = 0x20);
-	GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-    GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
+#endif
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     GPIODeviceMCP2300X(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev);
 #endif
 	

@@ -62,6 +62,26 @@ Bitmap ImageLoader::loadBitmapBMP(const std::string_view& path)
     return Bitmap::takeOwnership(w, h, rgb, mask);
 }
 
+Bitmap ImageLoader::loadBitmapBMPMaskOnly(Reader& reader)
+{
+    uint8_t* mask = nullptr;
+    uint16_t w, h;
+    if (!loadBMPRaw565(reader, nullptr, &mask, &w, &h, BMPLoadFlagMaskFromColor)) {
+        return {};
+    }
+    return Bitmap::takeOwnership(w, h, nullptr, mask);
+}
+
+Bitmap ImageLoader::loadBitmapBMPMaskOnly(const std::string_view& path)
+{
+    uint8_t* mask = nullptr;
+    uint16_t w, h;
+    if (!loadBMPRaw565(path, nullptr, &mask, &w, &h, BMPLoadFlagMaskFromColor)) {
+        return {};
+    }
+    return Bitmap::takeOwnership(w, h, nullptr, mask);
+}
+
 Bitmap ImageLoader::loadBitmapBMPSeparateMask(Reader& rgbReader, Reader& maskReader)
 {
     uint16_t* rgb = nullptr;

@@ -122,7 +122,7 @@ enum Note
 
 
 /**
- * \brief An simple audio clip.
+ * \brief A simple audio clip.
  *
  * Audio clips can be played through the AudioEngine. They can be single-shot
  * or looped. See AudioEngine for details.

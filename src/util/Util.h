@@ -15,8 +15,8 @@ namespace MINTGGGameEngine
 {
 
 
-typedef uint64_t timer_mstick_t;
-typedef uint64_t timer_ustick_t;
+typedef int64_t timer_mstick_t;
+typedef int64_t timer_ustick_t;
 
 
 void TimerInit();

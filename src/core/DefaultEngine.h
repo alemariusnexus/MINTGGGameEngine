@@ -70,27 +70,27 @@ public:
             /**
              * \brief MISO pin for the SPI bus, or -1 if unused.
              */
-            int spiMISO;
+            gpionum_t spiMISO;
 
             /**
              * \brief MOSI pin for the SPI bus, or -1 if unused.
              */
-            int spiMOSI;
+            gpionum_t spiMOSI;
 
             /**
              * \brief SCK pin for the SPI bus, or -1 if unused.
              */
-            int spiSCK;
+            gpionum_t spiSCK;
 
             /**
              * \brief CS pin for the SD card on the SPI bus, or -1 if unused.
              */
-            int sdCardCS;
+            gpionum_t sdCardCS;
 
             /**
              * \brief Pin for the piezo speaker, or -1 if unused.
              */
-            int speaker;
+            gpionum_t speaker;
         } pins;
     };
 
