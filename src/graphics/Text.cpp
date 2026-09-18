@@ -126,6 +126,8 @@ void Text::transformAnchorPosition (
             assert(false);
             *outX = d->x;
             *outY = d->y;
+            tlX = d->x;
+            tlY = d->y;
         }
 
         // Then convert to new position

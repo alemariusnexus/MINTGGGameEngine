@@ -86,4 +86,5 @@ idf_component_register(
 target_compile_options(${COMPONENT_LIB} PRIVATE
     -Wno-missing-field-initializers
     -Wno-parentheses                        # For eMidi
+    -Wno-unused-function                    # For eMidi
     )
