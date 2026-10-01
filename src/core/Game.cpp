@@ -1,8 +1,5 @@
 #include "Game.h"
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
 #include <algorithm>
 #include <cmath>
 
@@ -20,7 +17,7 @@ namespace MINTGGGameEngine
 
 
 Game::Game()
-    : screen(nullptr), randGen(randDev()),
+    : quitRequested(false), screen(nullptr), randGen(randDev()),
       collisionCb(nullptr),
       drawColliders(false), drawRayCasts(false),
       frameTime(1000/40), lastFrameTime(0),
@@ -78,6 +75,30 @@ void Game::setApplicationID(const std::string& id)
 const std::string& Game::getApplicationID() const
 {
     return appID;
+}
+
+
+void Game::setApplicationName(const std::string& name)
+{
+    appName = name;
+}
+
+
+const std::string& Game::getApplicationName() const
+{
+    return appName;
+}
+
+
+void Game::quit()
+{
+    quitRequested = true;
+}
+
+
+bool Game::isQuitRequested() const
+{
+    return quitRequested;
 }
 
 
@@ -323,7 +344,7 @@ void Game::sleepNextFrame()
         delayTimeMs = frameTime - (now-lastFrameTime);
     }
 
-    vTaskDelay(delayTimeMs / portTICK_PERIOD_MS);
+    DelayTaskMs(delayTimeMs);
     
     lastFrameTime = TimerGetTickcountMs();
 }

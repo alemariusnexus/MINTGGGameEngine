@@ -1,5 +1,7 @@
 #include "DrawSurface.h"
 
+#include <cassert>
+
 #include "../../storage/File.h"
 
 

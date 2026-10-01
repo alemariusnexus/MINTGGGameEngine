@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "util/Log.h"
+#include "../util/Log.h"
 
 
 namespace MINTGGGameEngine

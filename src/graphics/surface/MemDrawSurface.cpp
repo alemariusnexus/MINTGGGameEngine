@@ -1,9 +1,10 @@
 #include "MemDrawSurface.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 
-#include "util/Util.h"
+#include "../../util/Util.h"
 
 
 LOG_USE_TAG("MemDrawSurface")

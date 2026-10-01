@@ -11,7 +11,10 @@
 #include <cstdio>
 
 #include "StorageEngine.h"
-#include "util/Log.h"
+#include "../util/Log.h"
+
+
+// TODO: Provide proper Windows implementation, without relying on MinGW compat modules.
 
 
 namespace MINTGGGameEngine
@@ -49,6 +52,11 @@ File::~File()
     close();
 }
 
+std::string File::resolvePath(const std::string& path)
+{
+    return StorageEngine::getInstance().resolvePath(path);
+}
+
 void File::normalizePath()
 {
     while (path.ends_with("/")) {
@@ -58,12 +66,13 @@ void File::normalizePath()
 
 bool File::exists() const
 {
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
-    return stat(path.c_str(), &st) == 0;
+    return stat(rpath.c_str(), &st) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(path, &relPath)) {
+    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
         return SD.exists(relPath.c_str());
     }
     return false;
@@ -74,9 +83,10 @@ bool File::exists() const
 
 bool File::isDirectory() const
 {
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
-    if (stat(path.c_str(), &st) != 0) {
+    if (stat(rpath.c_str(), &st) != 0) {
         return false;
     }
     return S_ISDIR(st.st_mode);
@@ -95,9 +105,10 @@ bool File::isDirectory() const
 
 bool File::isRegularFile() const
 {
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
-    if (stat(path.c_str(), &st) != 0) {
+    if (stat(rpath.c_str(), &st) != 0) {
         return false;
     }
     return S_ISREG(st.st_mode);
@@ -110,9 +121,10 @@ bool File::isRegularFile() const
 
 size_t File::getSize() const
 {
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
-    if (stat(path.c_str(), &st) != 0) {
+    if (stat(rpath.c_str(), &st) != 0) {
         return 0;
     }
     return static_cast<size_t>(st.st_size);
@@ -140,8 +152,9 @@ bool File::listChildren(std::vector<File>& res, bool recursive) const
 {
     size_t oldSize = res.size();
 
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
-    DIR* dir = opendir(path.c_str());
+    DIR* dir = opendir(rpath.c_str());
     while (struct dirent* ent = readdir(dir)) {
         res.emplace_back(*this, ent->d_name);
     }
@@ -173,12 +186,15 @@ bool File::listChildren(std::vector<File>& res, bool recursive) const
 
 bool File::mkdir()
 {
-#ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
-    return ::mkdir(path.c_str(), 0) == 0;
+    const std::string rpath = resolvePath(path);
+#ifdef _WIN32
+    return ::mkdir(rpath.c_str()) == 0;
+#elif defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
+    return ::mkdir(rpath.c_str(), 0) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(path, &relPath)) {
-        return SD.mkdir(path.c_str()) != 0;
+    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
+        return SD.mkdir(relPath.c_str()) != 0;
     }
     return false;
 #endif
@@ -186,12 +202,13 @@ bool File::mkdir()
 
 bool File::remove()
 {
+    const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
-    return ::remove(path.c_str()) == 0;
+    return ::remove(rpath.c_str()) == 0;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(path, &relPath)) {
-        return SD.remove(path.c_str()) != 0;
+    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
+        return SD.remove(relPath.c_str()) != 0;
     }
     return false;
 #endif
@@ -200,6 +217,8 @@ bool File::remove()
 bool File::open(OpenMode mode, const char** outErrmsg)
 {
     close();
+
+    const std::string rpath = resolvePath(path);
 
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     const char* smode;
@@ -216,7 +235,7 @@ bool File::open(OpenMode mode, const char** outErrmsg)
     default:
         return false;
     }
-    fhandle = fopen(path.c_str(), smode);
+    fhandle = fopen(rpath.c_str(), smode);
     if (!fhandle) {
         if (outErrmsg) *outErrmsg = strerror(errno);
         return false;
@@ -225,7 +244,7 @@ bool File::open(OpenMode mode, const char** outErrmsg)
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     // Arduino does not specify data type of mode parameter, so we won't assume...
     std::string relPath;
-    if (!StorageEngine::getInstance().checkSDFilePath(path, &relPath)) {
+    if (!StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
         return false;
     }
     switch (mode) {
@@ -505,8 +524,9 @@ bool File::setTextContent(const std::string& content)
 #if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  &&  !defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
 bool File::openSDFile(::File* outFile) const
 {
+    const std::string rpath = resolvePath(path);
     std::string relPath;
-    if (!StorageEngine::getInstance().checkSDFilePath(path, &relPath)) {
+    if (!StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
         return false;
     }
     *outFile = SD.open(relPath.c_str());

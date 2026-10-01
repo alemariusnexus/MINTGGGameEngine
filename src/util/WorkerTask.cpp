@@ -1,6 +1,7 @@
 #include "WorkerTask.h"
 
 #include "Log.h"
+#include "Util.h"
 
 
 LOG_USE_TAG("WorkerTask")
@@ -9,34 +10,31 @@ LOG_USE_TAG("WorkerTask")
 namespace MINTGGGameEngine
 {
 
-
-void WorkerTaskMain(void* params)
-{
-    static_cast<WorkerTask*>(params)->taskMain();
-}
-
-
 WorkerTask::WorkerTask(size_t stackSizeBytes, unsigned int priority, const char* taskName)
     : stackSizeBytes(stackSizeBytes), priority(priority),
-      taskName(taskName ? taskName : "WorkerTask"), task(nullptr), stopRequested(false)
+      thread(taskName ? taskName : "WorkerTask"), stopRequested(false)
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     workQueueMtx = xSemaphoreCreateMutex();
+#endif
 }
 
 WorkerTask::~WorkerTask()
 {
     stop();
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     vSemaphoreDelete(workQueueMtx);
+#endif
 }
 
 bool WorkerTask::start()
 {
     stopRequested = false;
 
-    BaseType_t res = xTaskCreate(&WorkerTaskMain, taskName, stackSizeBytes,
-            this, priority, &task);
-    if (res != pdPASS) {
-        LogError("ERROR: Unable to create task '%s'.", taskName);
+    bool ok = thread.start([this] { taskMain(); }, stackSizeBytes, priority);
+    if (!ok) {
+        LogError("ERROR: Unable to create task '%s'.", thread.getName().c_str());
         return false;
     }
     return true;
@@ -48,7 +46,7 @@ bool WorkerTask::stop()
 
     // TODO: Make wait time configurable
     while (stopRequested) {
-        vTaskDelay(1);
+        DelayTaskMs(1);
     }
 
     return !stopRequested;
@@ -56,30 +54,30 @@ bool WorkerTask::stop()
 
 void WorkerTask::addWorkItem(const WorkFunc& func)
 {
-    xSemaphoreTake(workQueueMtx, portMAX_DELAY);
+    lockMutex();
 
     workQueue.emplace_back();
     WorkItem& item = workQueue.back();
     item.func = func;
 
-    xSemaphoreGive(workQueueMtx);
+    unlockMutex();
 }
 
 void WorkerTask::taskMain()
 {
     while (!stopRequested) {
-        xSemaphoreTake(workQueueMtx, portMAX_DELAY);
+        lockMutex();
         while (!workQueue.empty()) {
             WorkItem& item = workQueue.front();
-            xSemaphoreGive(workQueueMtx);
+            unlockMutex();
             doItem(item);
-            xSemaphoreTake(workQueueMtx, portMAX_DELAY);
+            lockMutex();
             workQueue.pop_front();
         }
-        xSemaphoreGive(workQueueMtx);
+        unlockMutex();
 
         // TODO: Do something better (e.g. task notification, or proper queue)
-        vTaskDelay(1);
+        DelayTaskMs(1);
     }
 }
 

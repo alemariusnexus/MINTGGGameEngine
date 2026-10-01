@@ -71,6 +71,9 @@ public:
     bool setTextContent(const std::string& content);
 
 private:
+    static std::string resolvePath(const std::string& path);
+
+private:
     void normalizePath();
 
     bool listChildren(std::vector<File>& res, bool recursive) const;

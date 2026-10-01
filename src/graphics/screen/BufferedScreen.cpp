@@ -1,5 +1,13 @@
 #include "BufferedScreen.h"
 
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <QImage>
+#   include <QVBoxLayout>
+#   include <QWidget>
+
+#   include "../../platform/desktop/MainWindow.h"
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -10,7 +18,11 @@ BufferedScreen::BufferedScreen (
     const MemDrawSurface::delete_fn_t& del,
     bool swapEndianness
 )
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    : fb(buffer, width, height, del, false)
+#else
     : fb(buffer, width, height, del, swapEndianness)
+#endif
 {
 }
 
@@ -91,6 +103,26 @@ void BufferedScreen::drawText(const Text& text, int32_t ox, int32_t oy)
 bool BufferedScreen::saveScreenshot(const char* path)
 {
     return fb.saveScreenshot(path);
+}
+
+bool BufferedScreen::init()
+{
+    if (!fb.getBuffer()) {
+        return false;
+    }
+
+    return true;
+}
+
+void BufferedScreen::shutdown()
+{
+}
+
+void BufferedScreen::commit()
+{
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    MainWindow::instance()->displayFrame(fb.getBuffer(), getWidth(), getHeight(), QImage::Format_RGB16);
+#endif
 }
 
 

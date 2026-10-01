@@ -1,18 +1,56 @@
 #pragma once
 
 #include "../Globals.h"
+#include "../util/EngineThread.h"
 #include "AudioClip.h"
+#include "../util/Util.h"
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#   include <driver/ledc.h>
+#endif
 
-#include <driver/ledc.h>
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <QAudioFormat>
+#   include <QAudioSink>
+#   include <QEventLoop>
+#endif
 
 #include <set>
 
 
 namespace MINTGGGameEngine
 {
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+
+class ToneGeneratorDevice : public QIODevice
+{
+public:
+    ToneGeneratorDevice(const QAudioFormat& format);
+
+    bool isSequential() const override { return true; }
+
+    qint64 bytesAvailable() const override;
+
+    void setFrequency(float frequency);
+
+protected:
+    qint64 readData(char *data, qint64 maxlen) override;
+    qint64 writeData(const char *data, qint64 len) override;
+
+private:
+    bool generatePCMData(void* data, size_t numSamples);
+
+    size_t calcSampleSize() const;
+
+private:
+    QAudioFormat format;
+    float frequency;
+    float phase;
+    bool dataReadSinceLastTick;
+};
+
+#endif
 
 /**
  * \brief The audio portion of the game engine.
@@ -71,7 +109,7 @@ private:
     };
     
 public:
-    AudioEngine() : speakerPin(-1), curSpeakerFreq(0), mute(false) {}
+    AudioEngine();
     
     /**
      * \brief Start the audio engine, playing a PWM output at the given pin.
@@ -82,6 +120,11 @@ public:
      * \return true if successful, false otherwise
      */
     bool begin(gpionum_t speakerPin);
+
+    /**
+     * \brief Shut down the AudioEngine.
+     */
+    void shutdown();
     
     /**
      * \brief Play the given audio clip.
@@ -138,12 +181,19 @@ private:
     bool mute;
     
     std::set<AudioState> states;
-    
-    TaskHandle_t audioTask;
+
+    EngineThread audioThread;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     ledc_timer_t ledcTimer;
     ledc_channel_t ledcChannel;
+#endif
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    QEventLoop* evtLoop;
+    QAudioFormat audioFormat;
+    QAudioSink* audioSink;
+    ToneGeneratorDevice* toneGen;
 #endif
 };
 

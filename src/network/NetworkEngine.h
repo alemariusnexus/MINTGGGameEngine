@@ -41,6 +41,8 @@ public:
 
     bool begin();
 
+    void shutdown();
+
     void addWifiConfig(const char* ssid, const char* password);
 
     bool start();

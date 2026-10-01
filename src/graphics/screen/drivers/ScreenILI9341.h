@@ -2,9 +2,11 @@
 
 #include "../../../Globals.h"
 
-#include <driver/spi_master.h>
-#include <esp_lcd_panel_io.h>
-#include <esp_lcd_io_i80.h>
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <driver/spi_master.h>
+#   include <esp_lcd_panel_io.h>
+#   include <esp_lcd_io_i80.h>
+#endif
 
 #include "AbstractMIPIScreen.h"
 
@@ -71,8 +73,10 @@ protected:
 private:
     Config cfg;
 
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     esp_lcd_i80_bus_handle_t busHandle;
     esp_lcd_panel_io_handle_t ioHandle;
+#endif
 };
 
 }

@@ -71,6 +71,12 @@ public:
 
     bool saveScreenshot(const char* path) override;
 
+    bool init() override;
+
+    void shutdown() override;
+
+    void commit() override;
+
 protected:
     MemDrawSurface fb;
 };

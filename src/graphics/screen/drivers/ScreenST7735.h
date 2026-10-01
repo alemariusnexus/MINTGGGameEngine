@@ -1,8 +1,11 @@
 #pragma once
 
 #include "../../../Globals.h"
+#include "../../../core/Engine.h"
 
-#include <driver/spi_master.h>
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <driver/spi_master.h>
+#endif
 
 #include "AbstractMIPIScreen.h"
 
@@ -22,6 +25,8 @@ class ScreenST7735 : public AbstractMIPIScreen
 public:
     struct Config
     {
+        Engine* engine;
+
         uint16_t width;
         uint16_t height;
 
@@ -36,9 +41,6 @@ public:
         bool bgrColors;
 
         uint32_t clockFreqHz;
-
-        spi_host_device_t spiHost;
-        size_t spiMaxTransferSize;
 
         struct
         {
@@ -66,7 +68,9 @@ protected:
 private:
     Config cfg;
 
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     spi_device_handle_t spiDev;
+#endif
 };
 
 }

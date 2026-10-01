@@ -7,6 +7,7 @@
 #include "audio/MIDILoader.h"
 
 #include "core/DefaultEngine.h"
+#include "core/Engine.h"
 #include "core/Game.h"
 #include "core/GameObject.h"
 
@@ -33,6 +34,7 @@
 #include "physics/GameObjectCollision.h"
 #include "physics/GravitySimulator.h"
 
+#include "platform/desktop/MainWindow.h"
 #include "platform/ADCManager.h"
 #include "platform/GPIODevice.h"
 #include "platform/GPIODeviceMCP2300X.h"
@@ -46,6 +48,7 @@
 #include "storage/Reader.h"
 #include "storage/StorageEngine.h"
 
+#include "util/EngineThread.h"
 #include "util/GameObjectStreamer.h"
 #include "util/Log.h"
 #include "util/MathUtils.h"
@@ -61,7 +64,7 @@ namespace MINTGGGameEngine
 /**
  * \mainpage MINTGGGameEngine - A Simple 2D Game Engine for Microcontrollers
  *
- * 
+ *
  * \section sec_overview Overview
  *
  * This is a simple 2D game engine as an Arduino library, intended for larger
@@ -79,7 +82,7 @@ namespace MINTGGGameEngine
  * student courses at the Berufliche Schulen Groß-Gerau and the MINT-Zentrum
  * Groß-Gerau in Germany.
  *
- * 
+ *
  * \section sec_links Links
  *
  * This documentation is for the engine itself. You can find the source code of
@@ -147,7 +150,7 @@ namespace MINTGGGameEngine
  * the player might have the tag TagPlayerBullet. Tagging is useful to later
  * identify what a certain GameObject is, or to fetch all GameObjects of a given
  * type that are currently spawned.
- * 
+ *
  * Tags are bit flags that can be freely defined by the user. It's a good idea
  * to define all tags in a global enum like this:
  *
@@ -272,7 +275,7 @@ namespace MINTGGGameEngine
  *      void onUltraBlast() {
  *          game.despawnObjects(game.getGameObjectsWithTag(TagEnemy)); // Despawn all enemies (BOOM!)
  *      }
- * 
+ *
  *      ...
  *
  *      // Somewhere during game setup (assumes "a", "b" and "start" buttons have been defined):

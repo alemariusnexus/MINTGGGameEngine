@@ -21,7 +21,11 @@ AbstractMIPIScreen::AbstractMIPIScreen (
     : BufferedScreen (
         staticBuffer
             ? staticBuffer
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
             : static_cast<uint8_t*>(heap_caps_malloc(width * height * sizeof(uint16_t), MALLOC_CAP_DMA | MALLOC_CAP_32BIT | MALLOC_CAP_8BIT)),
+#else
+            : static_cast<uint8_t*>(malloc(width * height * sizeof(uint16_t))),
+#endif
         width,
         height,
         &AbstractMIPIScreen::_defaultDelete,
@@ -54,10 +58,11 @@ AbstractMIPIScreen::~AbstractMIPIScreen()
 
 bool AbstractMIPIScreen::init()
 {
-    if (!fb.getBuffer()) {
+    if (!BufferedScreen::init()) {
         return false;
     }
 
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     if (!mipiInitBus()) {
         return false;
     }
@@ -90,6 +95,7 @@ bool AbstractMIPIScreen::init()
         return false;
     }
     DelayTaskMs(200);
+#endif
 
     return true;
 }

@@ -38,10 +38,18 @@ enum LogLevel
 
 bool LogMessageBegin(const char* tag, int level);
 
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#   define LogPrintf(...) Serial.printf(__VA_ARGS__)
+#   define LogPrintln() Serial.println()
+#else
+#   define LogPrintf(...) printf(__VA_ARGS__)
+#   define LogPrintln() printf("\n")
+#endif
+
 #define LogMessage(tag, level, format, ...) do {        \
         if (LogMessageBegin((tag), (level))) {          \
-            Serial.printf((format), ## __VA_ARGS__);    \
-            Serial.println();                           \
+            LogPrintf((format), ## __VA_ARGS__);        \
+            LogPrintln();                               \
         }                                               \
     } while (false)
 

@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "DrawSurface.h"
-#include "util/Util.h"
+#include "../../util/Util.h"
 
 namespace MINTGGGameEngine
 {

@@ -1,5 +1,7 @@
 #include "GameObject.h"
 
+#include <cassert>
+
 #include "Game.h"
 
 

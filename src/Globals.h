@@ -18,13 +18,25 @@
 #   define MINTGGGAMEENGINE_PORT_ARDUINO
 #endif
 
+#if !defined(MINTGGGAMEENGINE_PORT_ESPIDF)  &&  !defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+#   define MINTGGGAMEENGINE_PORT_DESKTOP
+#endif
 
-#if defined(CONFIG_IDF_TARGET_ESP32)
-#   define MINTGGGAMEENGINE_CHIP_ESP32
-#elif defined(CONFIG_IDF_TARGET_ESP32C3)
-#   define MINTGGGAMEENGINE_CHIP_ESP32C3
-#else
-#   error This chip is currently not supported by MINTGGGameEngine!
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   if defined(CONFIG_IDF_TARGET_ESP32)
+#       define MINTGGGAMEENGINE_CHIP_ESP32
+#   elif defined(CONFIG_IDF_TARGET_ESP32C3)
+#       define MINTGGGAMEENGINE_CHIP_ESP32C3
+#   elif defined(CONFIG_IDF_TARGET_ESP32P4)
+#       define MINTGGGAMEENGINE_CHIP_ESP32P4
+#   else
+#       error This chip is currently not supported by MINTGGGameEngine!
+#   endif
+#endif
+
+#ifndef PROGMEM
+#define PROGMEM
 #endif
 
 

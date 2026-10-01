@@ -1,6 +1,8 @@
 #include "GPIODeviceNative.h"
 
-#include <driver/gpio.h>
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#   include <driver/gpio.h>
+#endif
 
 #include "../util/Util.h"
 
@@ -41,6 +43,8 @@ bool GPIODeviceNative::setPinMode(unsigned int pin, uint8_t mode)
         gpio_set_pull_mode(static_cast<gpio_num_t>(pin), GPIO_FLOATING);
     }
     return true;
+#else
+    return false;
 #endif
 }
 
@@ -50,6 +54,8 @@ uint8_t GPIODeviceNative::readPin(unsigned int pin)
 	return ::digitalRead(pin);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
     return gpio_get_level(static_cast<gpio_num_t>(pin));
+#else
+    return 0;
 #endif
 }
 
@@ -59,6 +65,8 @@ void GPIODeviceNative::writePin(unsigned int pin, uint8_t val)
     ::digitalWrite(pin, val);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 	gpio_set_level(static_cast<gpio_num_t>(pin), val);
+#else
+    // Nothing to do (not supported)
 #endif
 }
 

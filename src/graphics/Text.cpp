@@ -1,8 +1,9 @@
 #include "Text.h"
 
 #include <algorithm>
+#include <cassert>
 
-#include "util/Log.h"
+#include "../util/Log.h"
 
 
 LOG_USE_TAG("Text")

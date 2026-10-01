@@ -2,9 +2,11 @@
 
 #include <algorithm>
 
-#include <driver/gpio.h>
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <driver/gpio.h>
+#endif
 
-#include "util/Util.h"
+#include "../../../util/Util.h"
 
 
 LOG_USE_TAG("ScreenST7735")
@@ -16,6 +18,8 @@ namespace MINTGGGameEngine
 
 void ScreenST7735::initConfig(Config& cfg)
 {
+    cfg.engine = nullptr;
+
     cfg.width = 160;
     cfg.height = 128;
 
@@ -30,9 +34,6 @@ void ScreenST7735::initConfig(Config& cfg)
     cfg.bgrColors = false;
 
     cfg.clockFreqHz = 40000000;
-
-    cfg.spiHost = SPI2_HOST;
-    cfg.spiMaxTransferSize = 4092;
 
     cfg.pins.cs = -1;
     cfg.pins.dc = -1;
@@ -64,6 +65,9 @@ ScreenST7735::~ScreenST7735()
 
 void ScreenST7735::commit()
 {
+    BufferedScreen::commit();
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     const auto w = getWidth();
     const auto h = getHeight();
 
@@ -75,10 +79,12 @@ void ScreenST7735::commit()
         return;
     }
     mipiWriteCommandPlusData(MIPI_DCS_WRITE_MEMORY_START, fb.getBuffer(), w * h * sizeof(uint16_t));
+#endif
 }
 
 bool ScreenST7735::mipiInitBus()
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     if (cfg.pins.cs >= 0) {
         gpio_config_t gpioCfg = {
             .pin_bit_mask = 1ull << cfg.pins.cs,
@@ -133,17 +139,21 @@ bool ScreenST7735::mipiInitBus()
         .flags = SPI_DEVICE_NO_DUMMY,
         .queue_size = 8
     };
-    esp_err_t res = spi_bus_add_device(cfg.spiHost, &devCfg, &spiDev);
+    esp_err_t res = spi_bus_add_device(cfg.engine->getESPSPIHostDevice(), &devCfg, &spiDev);
     if (res != ESP_OK) {
         LogError("Error adding SPI device: %s", esp_err_to_name(res));
         return false;
     }
 
     return true;
+#else
+    return false;
+#endif
 }
 
 bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length)
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     spi_transaction_t transaction = {
         .flags = SPI_TRANS_USE_TXDATA,
         .length = 8,
@@ -158,11 +168,13 @@ bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data
         return false;
     }
 
+    const size_t maxTransferSize = cfg.engine->getESPSPIMaxTransferSize();
+
     if (data  &&  length != 0) {
         // Set DC -> data
         gpio_set_level(static_cast<gpio_num_t>(cfg.pins.dc), 1);
-        for (size_t i = 0; i < length; i += cfg.spiMaxTransferSize) {
-            size_t chunk = std::min(cfg.spiMaxTransferSize, length - i);
+        for (size_t i = 0; i < length; i += maxTransferSize) {
+            size_t chunk = std::min(maxTransferSize, length - i);
 
             spi_transaction_t datTransaction = {
                 .flags = 0,
@@ -180,10 +192,14 @@ bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data
     }
 
     return true;
+#else
+    return false;
+#endif
 }
 
 bool ScreenST7735::doHWReset()
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     if (cfg.pins.rst < 0) {
         return false;
     }
@@ -194,6 +210,9 @@ bool ScreenST7735::doHWReset()
     DelayTaskMs(100);
 
     return true;
+#else
+    return false;
+#endif
 }
 
 

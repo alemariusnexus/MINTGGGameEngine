@@ -1,7 +1,5 @@
 #include "MIDILoader.h"
 
-#include "util/Log.h"
-
 extern "C" {
 #include "../3rdparty/eMIDI/src/helpers.h"
 #include "../3rdparty/eMIDI/src/midifile.h"

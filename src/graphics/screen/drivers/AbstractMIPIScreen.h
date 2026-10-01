@@ -2,7 +2,9 @@
 
 #include "../../../Globals.h"
 
-#include <esp_heap_caps.h>
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#   include <esp_heap_caps.h>
+#endif
 
 #include "../BufferedScreen.h"
 
@@ -116,7 +118,14 @@ protected:
     bool mipiSetAddress(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
 
 private:
-    static void _defaultDelete(uint8_t* buf) { heap_caps_free(buf); }
+    static void _defaultDelete(uint8_t* buf)
+    {
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+        heap_caps_free(buf);
+#else
+        free(buf);
+#endif
+    }
 
 private:
     uint8_t addressMode;

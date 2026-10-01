@@ -4,11 +4,12 @@
 
 #include <string>
 
-#include "util/Log.h"
+#include "../util/Log.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-#include <hal/spi_types.h>
-#include <nvs_flash.h>
+#   include <hal/spi_types.h>
+#   include <nvs_flash.h>
+#   include <esp_vfs_fat.h>
 #endif
 
 #ifndef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -16,6 +17,11 @@
 #       include <SD.h>
 #       include <SPI.h>
 #   endif
+#endif
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <unordered_map>
+#   include <QSettings>
 #endif
 
 
@@ -33,6 +39,10 @@ public:
 public:
     bool begin(Game& game);
 
+    void shutdown();
+
+    std::string getConfigDirectory() const;
+
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     bool mountSDCard (
         const char* mountPoint = "/sdcard",
@@ -40,18 +50,26 @@ public:
         gpionum_t csPin = -1,
         uint32_t clkFreq = 20000000
         );
+    void unmountSDCard(const char* mountPoint);
 
     bool mountSPIFFS (
         const char* mountPoint = "/spiffs"
         );
+    void unmountSPIFFS(const char* mountPoint);
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     bool mountSDCard (
         const char* mountPoint = "/sdcard",
         SPIClass& spi = SPI,
         gpionum_t csPin = -1
         );
+    void unmountSDCard(const char* mountPoint);
 
     bool checkSDFilePath(const std::string& path, std::string* outRelPath);
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    bool mountSDCard (
+        const char* mountPoint = "/sdcard"
+        );
+    void unmountSDCard(const char* mountPoint);
 #endif
 
     template <typename ValueT>
@@ -61,6 +79,8 @@ public:
     ValueT readValue(const std::string_view& key, ValueT defaultValue = {}, bool* ok = nullptr);
 
     bool hasValue(const std::string_view& key);
+
+    std::string resolvePath(const std::string& path);
 
 private:
     StorageEngine();
@@ -75,6 +95,10 @@ private:
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     nvs_handle_t nvsHandle;
+    sdmmc_card_t* sdcard;
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    QSettings settings;
+    std::unordered_map<std::string, std::string> sdMountPoints;
 #endif
 };
 
@@ -123,6 +147,10 @@ bool StorageEngine::writeValue(const std::string_view& key, ValueT value)
         return false;
     }
     return commitNVS();
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    settings.setValue(QString::fromUtf8(key.data(), static_cast<qsizetype>(key.length())),
+        QVariant::fromValue<ValueT>(value));
+    return true;
 #else
     // TODO: Implement
     return false;
@@ -192,6 +220,11 @@ ValueT StorageEngine::readValue(const std::string_view& key, ValueT defaultValue
         if (ok) *ok = true;
     }
     return value;
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    QVariant value = settings.value(QString::fromUtf8(key.data(), key.length()),
+        QVariant::fromValue<ValueT>(defaultValue));
+    if (ok) *ok = true;
+    return value.value<ValueT>();
 #else
     // TODO: Implement
     if (ok) *ok = false;

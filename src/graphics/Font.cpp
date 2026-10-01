@@ -3,7 +3,7 @@
 #include <cstring>
 
 #include "../util/Util.h"
-#include "util/Log.h"
+#include "../util/Log.h"
 
 
 LOG_USE_TAG("Font")

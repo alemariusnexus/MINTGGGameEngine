@@ -2,9 +2,11 @@
 
 #include <algorithm>
 
-#include <driver/gpio.h>
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <driver/gpio.h>
+#endif
 
-#include "util/Util.h"
+#include "../../../util/Util.h"
 
 
 LOG_USE_TAG("ScreenILI9341")
@@ -78,6 +80,9 @@ ScreenILI9341::~ScreenILI9341()
 
 void ScreenILI9341::commit()
 {
+    BufferedScreen::commit();
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     auto w = getWidth();
     auto h = getHeight();
 
@@ -110,10 +115,12 @@ void ScreenILI9341::commit()
         y1 += singleTrfH;
         h -= singleTrfH;
     }
+#endif
 }
 
 bool ScreenILI9341::mipiInitBus()
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
 #ifdef LCD_I80_DRIVER_SUPPORTED
     // ********** GPIO SETUP **********
 
@@ -271,10 +278,14 @@ bool ScreenILI9341::mipiInitBus()
     LogError("ILI9341 with parallel interface is not supported on this chip!");
     return false;
 #endif
+#else
+    return false;
+#endif
 }
 
 bool ScreenILI9341::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length)
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     esp_err_t res;
     if (length <= 1) {
         res = esp_lcd_panel_io_tx_param(ioHandle, command, data, length);
@@ -286,10 +297,14 @@ bool ScreenILI9341::mipiWriteCommandPlusData(uint8_t command, const uint8_t* dat
         return false;
     }
     return true;
+#else
+    return false;
+#endif
 }
 
 bool ScreenILI9341::doHWReset()
 {
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     if (cfg.pins.rst < 0) {
         return false;
     }
@@ -300,6 +315,9 @@ bool ScreenILI9341::doHWReset()
     DelayTaskMs(100);
 
     return true;
+#else
+    return false;
+#endif
 }
 
 

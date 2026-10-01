@@ -128,7 +128,7 @@ public:
     ///@}
 
 
-    /// \name Engine Components
+    /// \name Application State
     ///@{
 
     /**
@@ -149,6 +149,30 @@ public:
      * @see setApplicationID()
      */
     const std::string& getApplicationID() const;
+
+    void setApplicationName(const std::string& name);
+
+    const std::string& getApplicationName() const;
+
+    /**
+     * \brief Quit the game.
+     *
+     * This does not immediately cause the game to stop. Instead, the current frame
+     * will be finished, and the game will quit before the next frame would start.
+     *
+     * \see isQuitRequested()
+     */
+    void quit();
+
+    /**
+     * \brief Determine if a game quit was requested.
+     *
+     * A quit can be requested by calling quit().
+     *
+     * \return true if quit was requested, false otherwise.
+     * \see quit()
+     */
+    bool isQuitRequested() const;
 
     ///@}
     
@@ -536,6 +560,9 @@ private:
 
 private:
     std::string appID;
+    std::string appName;
+
+    bool quitRequested;
 
     Screen* screen;
     std::set<GameObject, GOZOrderComparator> gameObjs;

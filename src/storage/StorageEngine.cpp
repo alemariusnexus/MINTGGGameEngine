@@ -4,9 +4,13 @@
 #include "../util/Log.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-#include <esp_err.h>
-#include <esp_spiffs.h>
-#include <esp_vfs_fat.h>
+#   include <esp_err.h>
+#   include <esp_spiffs.h>
+#   include <esp_vfs_fat.h>
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+#   include <QApplication>
+#   include <QFileInfo>
+#   include <QString>
 #endif
 
 
@@ -27,6 +31,9 @@ StorageEngine& StorageEngine::getInstance()
 StorageEngine::StorageEngine()
     : game(nullptr)
 {
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    sdcard = nullptr;
+#endif
 }
 
 bool StorageEngine::begin(Game& game)
@@ -51,11 +58,37 @@ bool StorageEngine::begin(Game& game)
         LogError("Error opening NVS namespace: %s", esp_err_to_name(nvsRes));
         return false;
     }
-
-
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    LogInfo("Value storage path: %s", settings.fileName().toUtf8().constData());
+#else
+    LogWarning("StorageEngine is not currently supported on this platform!");
 #endif
 
     return true;
+}
+
+void StorageEngine::shutdown()
+{
+}
+
+std::string StorageEngine::getConfigDirectory() const
+{
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    const QString cfgDirPathCandidates[] = {
+        QString("%1/config").arg(qApp->applicationDirPath())
+    };
+
+    for (const auto& cfgDirPath : cfgDirPathCandidates) {
+        if (QFileInfo(cfgDirPath).isDir()) {
+            return cfgDirPath.toStdString();
+        }
+    }
+
+    return {};
+#else
+    // TODO: Establish a config directory for other ports
+    return {};
+#endif
 }
 
 
@@ -90,7 +123,6 @@ bool StorageEngine::mountSDCard (
         .use_one_fat = false
     };
 
-    sdmmc_card_t* sdcard;
     esp_err_t res = esp_vfs_fat_sdspi_mount (
         mountPoint,
         &host,
@@ -104,6 +136,21 @@ bool StorageEngine::mountSDCard (
     }
 
     return true;
+}
+
+void StorageEngine::unmountSDCard(const char* mountPoint)
+{
+    if (!mountPoint) {
+        return;
+    }
+    if (!sdcard) {
+        return;
+    }
+
+    esp_err_t res = esp_vfs_fat_sdcard_unmount(mountPoint, sdcard);
+    if (res != ESP_OK) {
+        LogError("Error unmounting SD card: %s", esp_err_to_name(res));
+    }
 }
 
 bool StorageEngine::mountSPIFFS (
@@ -123,6 +170,14 @@ bool StorageEngine::mountSPIFFS (
     }
 
     return true;
+}
+
+void StorageEngine::unmountSPIFFS(const char* mountPoint)
+{
+    esp_err_t res = esp_vfs_spiffs_unregister(nullptr);
+    if (res != ESP_OK) {
+        LogError("Error unregistering SPIFFS: %s", esp_err_to_name(res));
+    }
 }
 
 bool StorageEngine::hasValue(const std::string_view& key)
@@ -162,6 +217,10 @@ bool StorageEngine::mountSDCard (
     return true;
 }
 
+void StorageEngine::unmountSDCard(const char* mountPoint)
+{
+}
+
 bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRelPath)
 {
     if (!path.starts_with(sdMountPath)) {
@@ -192,7 +251,59 @@ bool StorageEngine::hasValue(const std::string_view& key)
     return false;
 }
 
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+
+bool StorageEngine::mountSDCard (
+        const char* mountPoint
+) {
+    if (mountPoint[0] != '/') {
+        return false;
+    }
+
+    std::string mountPointStr(mountPoint);
+    while (!mountPointStr.empty()  &&  mountPointStr.ends_with('/')) {
+        mountPointStr.erase(mountPointStr.length()-1);
+    }
+
+    const QString mountDirCands[] = {
+        QString("%1%2").arg(qApp->applicationDirPath()).arg(QString::fromStdString(mountPointStr))
+    };
+
+    for (const auto& mountDir : mountDirCands) {
+        if (QFileInfo(mountDir).isDir()) {
+            sdMountPoints[mountPointStr] = mountDir.toStdString();
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void StorageEngine::unmountSDCard(const char* mountPoint)
+{
+    sdMountPoints.erase(mountPoint);
+}
+
+bool StorageEngine::hasValue(const std::string_view& key)
+{
+    return settings.contains(QString::fromUtf8(key.data(), key.length()));
+}
+
 #endif
+
+std::string StorageEngine::resolvePath(const std::string& path)
+{
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    using namespace std::string_literals;
+
+    for (const auto& sdMountPoint : sdMountPoints) {
+        if (path.starts_with(sdMountPoint.first)) {
+            return sdMountPoint.second + path.substr(sdMountPoint.first.length());
+        }
+    }
+#endif
+    return path;
+}
 
 
 }

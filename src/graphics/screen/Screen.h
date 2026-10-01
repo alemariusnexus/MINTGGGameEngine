@@ -36,6 +36,11 @@ public:
     virtual bool init() = 0;
 
     /**
+     * \brief Shuts down the screen.
+     */
+    virtual void shutdown() = 0;
+
+    /**
      * \brief Transfer any data to the actual screen if it hasn't been transferred yet.
      */
     virtual void commit() = 0;

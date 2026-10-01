@@ -1,6 +1,6 @@
 #include "Collider.h"
 
-
+#include <cassert>
 #include <cmath>
 
 #include "../util/MathUtils.h"

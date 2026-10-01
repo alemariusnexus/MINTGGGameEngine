@@ -2,7 +2,12 @@
 
 #include "../Globals.h"
 
+#include "Engine.h"
 #include "Game.h"
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <QApplication>
+#endif
 
 
 namespace MINTGGGameEngine
@@ -19,7 +24,7 @@ namespace MINTGGGameEngine
  * If more advanced control over the engine is desired, a custom subclass can be
  * created.
  */
-class DefaultEngine
+class DefaultEngine : public Engine
 {
 public:
     struct SetupConfig
@@ -40,9 +45,21 @@ public:
          *
          * If null, a default value of "mygame" is used.
          *
-         * @see Game::setApplicationID()
+         * \see Game::setApplicationID()
          */
         const char* appID;
+
+        /**
+         * \brief User-readable name for the application/game.
+         *
+         * This is used in places where the game is identified for the
+         * user.
+         *
+         * If null, the application ID is used instead.
+         *
+         * \see Game::setApplicationName()
+         */
+        const char* appName;
 
         /**
          * \brief Mount point for an SD card, if any.
@@ -59,9 +76,6 @@ public:
         const char* internalStorageMountPoint;
 
         Screen* screen;
-
-        spi_host_device_t spiHost;
-        size_t spiMaxTransferSize;
 
         /**
          * \brief Pin configuration.
@@ -92,7 +106,18 @@ public:
              */
             gpionum_t speaker;
         } pins;
+
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+        struct
+        {
+            spi_host_device_t spiHost;
+            size_t spiMaxTransferSize;
+        } pfESPIDF;
+#endif
     };
+
+public:
+    static void initConfig(SetupConfig& cfg);
 
 public:
     DefaultEngine();
@@ -123,8 +148,17 @@ public:
      * A user should call this method exactly once for every frame.
      *
      * @param gameLoopFunc User-defined game loop function. Can be null.
+     * @return true if the game should keep running, false if it should quit.
      */
-    virtual void doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float));
+    virtual bool doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float));
+
+    /**
+     * \brief Shut down the engine.
+     *
+     * This method should be called once when the game has ended, i.e. after doFrame()
+     * has returned false.
+     */
+    virtual void shutdown();
 
     /**
      * \brief Return the game object.
@@ -147,16 +181,35 @@ public:
      */
     void setPrintFrameStatistics(bool print) { printFrameStats = print; }
 
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    spi_host_device_t getESPSPIHostDevice() const override;
+    size_t getESPSPIMaxTransferSize() const override;
+#endif
+
 protected:
     virtual void initSPI(SetupConfig* cfg);
+    virtual void shutdownSPI();
+
     virtual void initAudio(SetupConfig* cfg);
+    virtual void shutdownAudio();
+
     virtual void initInput(SetupConfig* cfg);
+    virtual void shutdownInput();
+
     virtual void initNetwork(SetupConfig* cfg);
+    virtual void shutdownNetwork();
+
     virtual void initStorage(SetupConfig* cfg);
+    virtual void shutdownStorage();
+
     virtual void initScreen(SetupConfig* cfg);
+    virtual void shutdownScreen();
 
     virtual bool mountInternalStorage(SetupConfig* cfg);
+    virtual void unmountInternalStorage();
+
     virtual bool mountSDCard(SetupConfig* cfg);
+    virtual void unmountSDCard();
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     virtual void initSerial();
@@ -164,16 +217,28 @@ protected:
 #endif
 
 protected:
+    SetupConfig setupCfg;
+
     bool earlySetupDone;
     Game* game;
     Screen* screen;
 
     bool printFrameStats;
 
-/*#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    SPIClass* spi;
-    Adafruit_ST7735* tft;
-#endif*/
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    struct
+    {
+        spi_host_device_t spiHost;
+        size_t spiMaxTransferSize;
+    } pfESPIDF;
+#endif
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    struct
+    {
+        QApplication* qapp;
+    } pfDesktop;
+#endif
 };
 
 
@@ -187,7 +252,10 @@ protected:
         }                               \
         void loop()                     \
         {                               \
-            EngineLoop();               \
+            if (!EngineLoop()) {        \
+                EngineShutdown();       \
+                for (;;);               \
+            }                           \
         }
 
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
@@ -197,9 +265,21 @@ protected:
         void app_main()                 \
         {                               \
             EngineSetup();              \
-            for (;;) {                  \
-                EngineLoop();           \
-            }                           \
+            while (EngineLoop());       \
+            EngineShutdown();           \
+        }                               \
+        }
+
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+
+#define MINTGGGAMEENGINE_STARTUP_CODE() \
+        extern "C" {                    \
+        int main(int, char**)           \
+        {                               \
+            EngineSetup();              \
+            while (EngineLoop());       \
+            EngineShutdown();           \
+            return 0;                   \
         }                               \
         }
 

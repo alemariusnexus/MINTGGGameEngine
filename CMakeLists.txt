@@ -1,3 +1,7 @@
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/MINTGGGameEngine.cmake)
+
+MINTGGGameEngine_ComponentPrologue()
+
 list(APPEND SRCS
 
     3rdparty/eMIDI/src/helpers.c
@@ -9,6 +13,7 @@ list(APPEND SRCS
 	audio/MIDILoader.cpp
 
     core/DefaultEngine.cpp
+    core/Engine.cpp
 	core/Game.cpp
 	core/GameObject.cpp
 
@@ -35,6 +40,7 @@ list(APPEND SRCS
 	physics/GameObjectCollision.cpp
 	physics/GravitySimulator.cpp
 
+    platform/desktop/MainWindow.cpp
 	platform/ADCManager.cpp
 	platform/GPIODevice.cpp
 	platform/GPIODeviceMCP2300X.cpp
@@ -48,6 +54,7 @@ list(APPEND SRCS
 	storage/Reader.cpp
 	storage/StorageEngine.cpp
 
+    util/EngineThread.cpp
     util/GameObjectStreamer.cpp
 	util/Log.cpp
 	util/MathUtils.cpp
@@ -61,30 +68,40 @@ foreach(_SRCFILE ${SRCS})
 	list(APPEND SRCS_ABS "src/${_SRCFILE}")
 endforeach()
 
-idf_component_register(
-    SRCS
-		${SRCS_ABS}
-    INCLUDE_DIRS
-		src
-    REQUIRES
-		esp_adc
-        esp_driver_gpio
-        esp_driver_gptimer
-        esp_driver_i2c
-		esp_driver_ledc
-        esp_driver_sdmmc
-        esp_driver_spi
-		esp_http_client
-		esp_lcd
-        esp_wifi
-		fatfs
-		nvs_flash
-		spiffs
-)
 
-# Disable some annoying and unhelpful warnings
-target_compile_options(${COMPONENT_LIB} PRIVATE
-    -Wno-missing-field-initializers
-    -Wno-parentheses                        # For eMidi
-    -Wno-unused-function                    # For eMidi
+if(MINTGGGAMEENGINE_PLATFORM STREQUAL ESPIDF)
+    idf_component_register(
+        SRCS
+            ${SRCS_ABS}
+        INCLUDE_DIRS
+            src
+        REQUIRES
+            esp_adc
+            esp_driver_gpio
+            esp_driver_gptimer
+            esp_driver_i2c
+            esp_driver_ledc
+            esp_driver_sdmmc
+            esp_driver_spi
+            esp_http_client
+            esp_lcd
+            esp_wifi
+            fatfs
+            nvs_flash
+            spiffs
     )
+
+    # Disable some annoying and unhelpful warnings
+    target_compile_options(${COMPONENT_LIB} PRIVATE
+        -Wno-missing-field-initializers
+        -Wno-parentheses                        # For eMidi
+        -Wno-unused-function                    # For eMidi
+        )
+elseif(MINTGGGAMEENGINE_PLATFORM STREQUAL DESKTOP)
+    find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
+    qt_standard_project_setup()
+
+    qt_add_library(MINTGGGameEngine STATIC ${SRCS_ABS})
+    target_compile_features(MINTGGGameEngine PUBLIC cxx_std_20)
+    target_link_libraries(MINTGGGameEngine PUBLIC Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Multimedia)
+endif()

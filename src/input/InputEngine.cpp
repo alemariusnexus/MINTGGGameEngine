@@ -6,6 +6,7 @@
 
 #include "../platform/ADCManager.h"
 #include "../util/Log.h"
+#include "../util/Util.h"
 
 
 LOG_USE_TAG("InputEngine")
@@ -14,26 +15,32 @@ LOG_USE_TAG("InputEngine")
 namespace MINTGGGameEngine
 {
 
-void _InputEngineTaskMain(void* params)
-{
-    ((InputEngine*) params)->inputTaskMain();
-}
-
-
 bool InputEngine::begin(uint8_t debounceCount)
 {
     this->debounceCount = debounceCount;
-    
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     inputMtx = xSemaphoreCreateMutex();
-    
-    BaseType_t res = xTaskCreate(&_InputEngineTaskMain, "InputTask", 4096,
-            this, 1, &inputTask);
-    if (res != pdPASS) {
+    injectedEvtsMtx = xSemaphoreCreateMutex();
+#endif
+
+    bool ok = inputThread.start([this] { inputTaskMain(); }, 4096, 1);
+    if (!ok) {
         LogError("Unable to create InputTask.");
         return false;
     }
     
     return true;
+}
+
+void InputEngine::shutdown()
+{
+    inputThread.stopAndWait();
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+    vSemaphoreDelete(injectedEvtsMtx);
+    vSemaphoreDelete(inputMtx);
+#endif
 }
 
 void InputEngine::inputTaskMain()
@@ -43,9 +50,10 @@ void InputEngine::inputTaskMain()
 	std::vector<unsigned int> pinNums;
 	std::vector<uint8_t> pinValues;
     
-    while (true) {
-		xSemaphoreTake(inputMtx, portMAX_DELAY);
-		
+    while (!inputThread.isStopRequested()) {
+        lockMutex();
+
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
 		for (auto& pair : buttonsByDevice) {
 			GPIODevice* dev = pair.first;
 			
@@ -81,7 +89,7 @@ void InputEngine::inputTaskMain()
 				stateChangedButtons.push_back(def);
 			}
         }
-        
+
         // Read all axis values
         float analogMaxValueFloat = ADCManager::getInstance().getMaxRawValue();
         for (auto it = axes.begin() ; it != axes.end() ; ++it) {
@@ -118,8 +126,32 @@ void InputEngine::inputTaskMain()
             def->rawValue = adcT;
             def->value = value;
         }
-        
-        xSemaphoreGive(inputMtx);
+#endif
+
+        lockInjectedEvtsMutex();
+
+        for (const auto& evt : injectedEvts) {
+            if (evt.type == InjectedEventType::Button) {
+                if (evt.button.pressed != evt.button.def->pressed) {
+                    if (evt.button.pressed) {
+                        evt.button.def->stateChangeFlags |= ButtonStateChangeFlagPressed;
+                    } else {
+                        evt.button.def->stateChangeFlags |= ButtonStateChangeFlagReleased;
+                    }
+                    evt.button.def->pressed = evt.button.pressed;
+                    evt.button.def->debounceCount = 0;
+                    stateChangedButtons.push_back(evt.button.def);
+                }
+            } else if (evt.type == InjectedEventType::Axis) {
+                evt.axis.def->rawValue = evt.axis.rawValue;
+                evt.axis.def->value = evt.axis.value;
+            }
+        }
+        injectedEvts.clear();
+
+        unlockInjectedEvtsMutex();
+
+        unlockMutex();
         
         // Scan for activated button combos
         for (ButtonCombo* combo : buttonCombos) {
@@ -146,8 +178,8 @@ void InputEngine::inputTaskMain()
         }
         
         stateChangedButtons.clear();
-        
-        vTaskDelay(1);
+
+        DelayTaskMs(1);
     }
 }
 
@@ -161,7 +193,7 @@ bool InputEngine::defineButton (
         return false;
     }
     
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
     
     ButtonDef* def = new ButtonDef(id, pin, &gpioDevice, flags);
 	buttonIDs.push_back(id);
@@ -178,7 +210,7 @@ bool InputEngine::defineButton (
 	
 	gpioDevice.setPinMode(pin, pmFlags);
     
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
     
     return true;
 }
@@ -193,14 +225,14 @@ bool InputEngine::undefineButton(const std::string& id)
 	ButtonDef* def = it->second;
 	auto& devButtons = buttonsByDevice[def->dev];
     
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
 	buttonIDs.erase (
 			std::find(buttonIDs.begin(), buttonIDs.end(), id));
 	devButtons.erase (
 			std::find(devButtons.begin(), devButtons.end(), def));
     delete def;
     buttons.erase(it);
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
     
     return true;
 }
@@ -223,7 +255,7 @@ bool InputEngine::defineAxis (
         return false;
     }
     
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
 	
 	axisIDs.push_back(id);
     
@@ -234,7 +266,7 @@ bool InputEngine::defineAxis (
     def->neutralWidth = neutralWidth;
     axes[id] = def;
     
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
     
     return true;
 }
@@ -248,12 +280,12 @@ bool InputEngine::undefineAxis(const std::string& id)
 
     uint8_t pin = it->second->pin;
     
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
 	axisIDs.erase (
 			std::find(axisIDs.begin(), axisIDs.end(), id));
     delete it->second;
     axes.erase(it);
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
 
     ADCManager::getInstance().destroyAnalogPin(pin);
     
@@ -299,12 +331,12 @@ bool InputEngine::isButtonReleasedThisFrame(const std::string& id)
 
 void InputEngine::defineButtonCombo(const std::unordered_set<std::string>& ids, ButtonComboCb cb)
 {
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
     
     ButtonCombo* combo = new ButtonCombo(ids, cb);
     buttonCombos.push_back(combo);
     
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
 }
 
 bool InputEngine::hasAxis(const std::string& id)
@@ -322,6 +354,64 @@ float InputEngine::getAxisRaw(const std::string& id)
 {
     AxisDef* def = getAxisDef(id);
     return def ? def->rawValue : 0.0f;
+}
+
+bool InputEngine::injectButtonPress(const std::string& id)
+{
+    ButtonDef* def = getButtonDef(id);
+    if (!def) {
+        return false;
+    }
+
+    InjectedEvent evt;
+    evt.type = InjectedEventType::Button;
+    evt.button.def = def;
+    evt.button.pressed = true;
+
+    lockInjectedEvtsMutex();
+    injectedEvts.push_back(evt);
+    unlockInjectedEvtsMutex();
+
+    return true;
+}
+
+bool InputEngine::injectButtonRelease(const std::string& id)
+{
+    ButtonDef* def = getButtonDef(id);
+    if (!def) {
+        return false;
+    }
+
+    InjectedEvent evt;
+    evt.type = InjectedEventType::Button;
+    evt.button.def = def;
+    evt.button.pressed = false;
+
+    lockInjectedEvtsMutex();
+    injectedEvts.push_back(evt);
+    unlockInjectedEvtsMutex();
+
+    return true;
+}
+
+bool InputEngine::injectAxis(const std::string& id, float value)
+{
+    AxisDef* def = getAxisDef(id);
+    if (!def) {
+        return false;
+    }
+
+    InjectedEvent evt;
+    evt.type = InjectedEventType::Axis;
+    evt.axis.def = def;
+    evt.axis.value = value;
+    evt.axis.rawValue = (value+1) * 0.5f;
+
+    lockInjectedEvtsMutex();
+    injectedEvts.push_back(evt);
+    unlockInjectedEvtsMutex();
+
+    return true;
 }
 
 InputEngine::ButtonDef* InputEngine::getButtonDef(const std::string& id)
@@ -356,7 +446,7 @@ bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
 
 void InputEngine::notifyBeginFrame()
 {
-    xSemaphoreTake(inputMtx, portMAX_DELAY);
+    lockMutex();
 
     // Buffer and reset state change flags for each button
     for (auto it = buttons.begin() ; it != buttons.end() ; ++it) {
@@ -365,7 +455,7 @@ void InputEngine::notifyBeginFrame()
         def->stateChangeFlags = 0;
     }
 
-    xSemaphoreGive(inputMtx);
+    unlockMutex();
 }
 
 void InputEngine::notifyEndFrame()

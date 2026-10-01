@@ -13,7 +13,7 @@ bool LogMessageBegin(const char* tag, int level)
 {
     timer_mstick_t now = TimerGetTickcountMs();
 
-    const char* levelStr;
+    const char* levelStr = "???";
     switch (level) {
     case LOG_LEVEL_ERROR: levelStr = "ERR"; break;
     case LOG_LEVEL_WARNING: levelStr = "WRN"; break;

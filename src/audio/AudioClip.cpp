@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "MIDILoader.h"
-#include "util/Log.h"
+#include "../util/Log.h"
 
 
 namespace MINTGGGameEngine

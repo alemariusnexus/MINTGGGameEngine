@@ -2,9 +2,13 @@
 
 #include "../Globals.h"
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
-#include <freertos/task.h>
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <mutex>
+#else
+#   include <freertos/FreeRTOS.h>
+#   include <freertos/semphr.h>
+#   include <freertos/task.h>
+#endif
 
 #include <functional>
 #include <string>
@@ -14,6 +18,7 @@
 
 #include "../platform/GPIODevice.h"
 #include "../platform/GPIODeviceNative.h"
+#include "../util/EngineThread.h"
 
 
 namespace MINTGGGameEngine
@@ -126,6 +131,28 @@ private:
         std::unordered_set<std::string> ids;
         ButtonComboCb cb;
     };
+
+    enum class InjectedEventType
+    {
+        Button,
+        Axis
+    };
+
+    struct InjectedEvent
+    {
+        InjectedEventType type;
+        union {
+            struct {
+                ButtonDef* def;
+                bool pressed;
+            } button;
+            struct {
+                AxisDef* def;
+                float value;
+                float rawValue;
+            } axis;
+        };
+    };
     
 public:
     /**
@@ -135,7 +162,7 @@ public:
      *
      * Note that begin() must still be called to initialize it.
      */
-    InputEngine() : debounceCount(0) {}
+    InputEngine() : inputThread("InputTask"), debounceCount(0) {}
     
     /**
      * \brief Initialize the input engine.
@@ -145,6 +172,11 @@ public:
      * \return true if successful, false otherwise.
      */
     bool begin(uint8_t debounceCount = 10);
+
+    /**
+     * \brief Shutdown the input engine.
+     */
+    void shutdown();
     
     
     /// \name Defining Buttons
@@ -309,10 +341,40 @@ public:
      * calculations involving min, max or neutral position.
      *
      * \param id The axis ID.
-     * \param The raw axis value, in range [0.0, 1.0]
      */
     float getAxisRaw(const std::string& id);
     
+    ///@}
+
+
+    /// \name Querying Button State
+    ///@{
+
+    /**
+     * \brief Inform the input engine that a button was just pressed.
+     *
+     * \param id The button ID.
+     * \return true if successful, false otherwise.
+     */
+    bool injectButtonPress(const std::string& id);
+
+    /**
+     * \brief Inform the input engine that a button was just released.
+     *
+     * \param id The button ID.
+     * \return true if successful, false otherwise.
+     */
+    bool injectButtonRelease(const std::string& id);
+
+    /**
+     * \brief Inform the input engine that an axis has changed value.
+     *
+     * \param id The axis ID.
+     * \param value The axis value, in range [-1.0, 1.0].
+     * \return true if successful, false otherwise.
+     */
+    bool injectAxis(const std::string& id, float value);
+
     ///@}
 
 private:
@@ -326,9 +388,30 @@ private:
     void notifyBeginFrame();
     void notifyEndFrame();
 
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    void lockMutex() { inputMtx.lock(); }
+    void unlockMutex() { inputMtx.unlock(); }
+
+    void lockInjectedEvtsMutex() { injectedEvtsMtx.lock(); }
+    void unlockInjectedEvtsMutex() { injectedEvtsMtx.unlock(); }
+#else
+    void lockMutex() { xSemaphoreTake(inputMtx, portMAX_DELAY); }
+    void unlockMutex() { xSemaphoreGive(inputMtx); }
+
+    void lockInjectedEvtsMutex() { xSemaphoreTake(injectedEvtsMtx, portMAX_DELAY); }
+    void unlockInjectedEvtsMutex() { xSemaphoreGive(injectedEvtsMtx); }
+#endif
+
 private:
-    TaskHandle_t inputTask;
+    EngineThread inputThread;
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    std::mutex inputMtx;
+    std::mutex injectedEvtsMtx;
+#else
     SemaphoreHandle_t inputMtx;
+    SemaphoreHandle_t injectedEvtsMtx;
+#endif
     
 	std::vector<std::string> buttonIDs;
     std::unordered_map<std::string, ButtonDef*> buttons;
@@ -340,6 +423,8 @@ private:
     std::vector<ButtonCombo*> buttonCombos;
     
     uint8_t debounceCount;
+
+    std::vector<InjectedEvent> injectedEvts;
 };
 
 }

@@ -64,6 +64,14 @@ MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t cloc
     arduino.i2cBus->setClock(clockFreq);
 }
 
+#else
+
+MCP2300XDevice::MCP2300XDevice(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq, uint8_t i2cAddr)
+{
+    LogWarning("MCP2300X is not supported on this platform.");
+    init();
+}
+
 #endif
 
 

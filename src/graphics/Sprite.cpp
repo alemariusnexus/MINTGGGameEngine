@@ -1,5 +1,6 @@
 #include "Sprite.h"
 
+#include <cassert>
 #include <cmath>
 
 

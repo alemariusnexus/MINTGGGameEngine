@@ -61,6 +61,10 @@ bool NetworkEngine::begin()
     return true;
 }
 
+void NetworkEngine::shutdown()
+{
+}
+
 void NetworkEngine::addWifiConfig(const char* ssid, const char* password)
 {
     wifiConfigs.emplace_back(ssid, password);
@@ -164,6 +168,8 @@ bool NetworkEngine::isConnected() const
     return connected;
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     return WiFi.status() == WL_CONNECTED;
+#else
+    return false;
 #endif
 }
 

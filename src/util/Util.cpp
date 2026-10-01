@@ -1,10 +1,15 @@
 #include "Util.h"
 
-#include <freertos/FreeRTOS.h>
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#   include <freertos/FreeRTOS.h>
 
-#include <driver/gptimer.h>
-#include <esp_err.h>
-#include <soc/soc.h>
+#   include <driver/gptimer.h>
+#   include <esp_err.h>
+#   include <soc/soc.h>
+#else
+#   include <ctime>
+#   include <unistd.h>
+#endif
 
 
 namespace MINTGGGameEngine
@@ -72,6 +77,10 @@ timer_ustick_t TimerGetTickcountUs()
     uint64_t tc;
     ESP_ERROR_CHECK(gptimer_get_raw_count(TimerHandle, &tc));
     return static_cast<timer_ustick_t>(tc);
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((timer_ustick_t) (ts.tv_nsec / 1000)) + ((timer_ustick_t) ts.tv_sec)*1000000;
 #else
     return 0;
 #endif
@@ -101,7 +110,11 @@ void TimerDelaySpinUs(unsigned int us)
 
 void DelayTaskMs(uint32_t delayMs)
 {
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    usleep(static_cast<useconds_t>(delayMs) * 1000);
+#else
     vTaskDelay((delayMs + portTICK_PERIOD_MS-1) / portTICK_PERIOD_MS);
+#endif
 }
 
 void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool* pdEnabled)

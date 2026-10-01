@@ -1,6 +1,6 @@
 #include "ADCManager.h"
 
-#include "util/Log.h"
+#include "../util/Log.h"
 
 
 namespace MINTGGGameEngine
