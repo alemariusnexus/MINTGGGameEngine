@@ -31,7 +31,7 @@ bool EngineThread::start(const MainFunc& main, size_t stackSize, unsigned int pr
     // words (which differs from vanilla FreeRTOS).
     const size_t stackSizeActual = stackSize;
     BaseType_t res = xTaskCreate(&EngineThread::staticMain, name.c_str(), stackSizeActual,
-            nullptr, priority, &task);
+            this, priority, &task);
     if (res != pdPASS) {
         return false;
     }
