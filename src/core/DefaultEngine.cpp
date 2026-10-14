@@ -12,7 +12,6 @@
 #include "DefaultEngine.h"
 
 #include <cassert>
-#include <QFileInfo>
 
 #include "../graphics/Font.h"
 #include "../util/Log.h"
