@@ -23,10 +23,10 @@ public:
 	static GPIODeviceNative& getInstance();
 
 public:
-	bool setPinMode(unsigned int pin, uint8_t mode) override;
+	bool setPinMode(gpionum_t pin, uint8_t mode) override;
 
-    uint8_t readPin(unsigned int pin) override;
-	void writePin(unsigned int pin, uint8_t val) override;
+    uint8_t readPin(gpionum_t pin) override;
+	void writePin(gpionum_t pin, uint8_t val) override;
 };
 
 

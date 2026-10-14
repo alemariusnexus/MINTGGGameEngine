@@ -18,17 +18,31 @@ namespace MINTGGGameEngine
 
 class MainWindow : public QMainWindow
 {
+private:
+    enum class TransformMode
+    {
+        None,
+        Fast,
+        Smooth
+    };
+
 public:
     static void setup(Game* game);
+    static void shutdown(Game* game);
     static MainWindow* instance();
 
 public:
-    void displayFrame(const uint8_t* data, uint16_t width, uint16_t height, QImage::Format format);
+    void displayFrame (
+        const void* data,
+        uint16_t width, uint16_t height,
+        PixelFormat pixelFormat, ByteOrder byteOrder
+        );
 
 protected:
     void closeEvent(QCloseEvent* evt) override;
     void keyPressEvent(QKeyEvent* evt) override;
     void keyReleaseEvent(QKeyEvent* evt) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
 
 private:
     MainWindow(Game* game);
@@ -44,7 +58,8 @@ private:
 
     QGraphicsView* graphicsView;
     QGraphicsScene* graphicsScene;
-    Qt::TransformationMode pixmapTransformMode;
+    TransformMode transformMode;
+    bool keepAspectRatio;
 
     std::unordered_map<Qt::Key, std::string> keymap;
 };

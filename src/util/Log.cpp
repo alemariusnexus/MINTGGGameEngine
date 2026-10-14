@@ -2,6 +2,14 @@
 
 #include "Util.h"
 
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   define LOG_USE_CHRONO
+#endif
+
+#ifdef LOG_USE_CHRONO
+#   include <chrono>
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -11,7 +19,15 @@ namespace MINTGGGameEngine
 
 bool LogMessageBegin(const char* tag, int level)
 {
-    timer_mstick_t now = TimerGetTickcountMs();
+#ifdef LOG_USE_CHRONO
+    const auto now = std::chrono::system_clock::now();
+    const auto timeStr = std::format("{:%Y-%m-%d %H:%M:%S}", now);
+    const char* timeCStr = timeStr.c_str();
+#else
+    char timeCStr[32];
+    const timer_mstick_t now = TimerGetTickcountMs();
+    sprintf(timeCStr, "%lu", static_cast<long unsigned>(now));
+#endif
 
     const char* levelStr = "???";
     switch (level) {
@@ -21,16 +37,16 @@ bool LogMessageBegin(const char* tag, int level)
     case LOG_LEVEL_DEBUG: levelStr = "DBG"; break;
     case LOG_LEVEL_VERBOSE: levelStr = "VRB"; break;
     }
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     Serial.print("[");
     Serial.print(levelStr);
     Serial.print("] (");
-    Serial.print(now);
+    Serial.print(timeCStr);
     Serial.print(") ");
     Serial.print(tag);
     Serial.print(" - ");
 #else
-    printf("[%s] (%lu) %s - ", levelStr, static_cast<unsigned long>(now), tag);
+    printf("[%s] (%s) %s - ", levelStr, timeCStr, tag);
 #endif
     return true;
 }

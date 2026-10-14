@@ -6,7 +6,7 @@
 #   include <driver/gpio.h>
 #endif
 
-#include "../../../util/Util.h"
+#include "../../../../util/Util.h"
 
 
 LOG_USE_TAG("ScreenILI9341")
@@ -25,6 +25,8 @@ namespace MINTGGGameEngine
 
 void ScreenILI9341::initConfig(Config& cfg)
 {
+    cfg.engine = nullptr;
+
     cfg.width = 320;
     cfg.height = 240;
 
@@ -53,20 +55,96 @@ void ScreenILI9341::initConfig(Config& cfg)
     cfg.pins.dat[5] = -1;
     cfg.pins.dat[6] = -1;
     cfg.pins.dat[7] = -1;
+
+#ifdef MGG_SCREEN_MAIN_WIDTH
+    cfg.width = MGG_SCREEN_MAIN_WIDTH;
+#endif
+#ifdef MGG_SCREEN_MAIN_HEIGHT
+    cfg.height = MGG_SCREEN_MAIN_HEIGHT;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_OFFSET_X
+    cfg.offsetX = MGG_SCREEN_MAIN_OFFSET_X;
+#endif
+#ifdef MGG_SCREEN_MAIN_OFFSET_Y
+    cfg.offsetY = MGG_SCREEN_MAIN_OFFSET_Y;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_MIRROR_X
+    cfg.mirrorX = MGG_SCREEN_MAIN_MIRROR_X;
+#endif
+#ifdef MGG_SCREEN_MAIN_MIRROR_Y
+    cfg.mirrorY = MGG_SCREEN_MAIN_MIRROR_Y;
+#endif
+#ifdef MGG_SCREEN_MAIN_SWAP_XY
+    cfg.swapXY = MGG_SCREEN_MAIN_SWAP_XY;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIXEL_FORMAT
+    static_assert (
+            MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565
+        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR565
+        , "Invalid setting for MGG_SCREEN_MAIN_PIXEL_FORMAT. Only RGB565 and BGR565 are allowed");
+    if constexpr (MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565) {
+        cfg.bgrColors = false;
+    } else {
+        cfg.bgrColors = true;
+    }
+#endif
+
+#ifdef MGG_SCREEN_MAIN_PIXEL_CLOCK
+    cfg.clockFreqHz = MGG_SCREEN_MAIN_PIXEL_CLOCK;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_PIN_CS
+    cfg.pins.cs = MGG_SCREEN_MAIN_PIN_CS;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DC
+    cfg.pins.dc = MGG_SCREEN_MAIN_PIN_DC;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_RST
+    cfg.pins.rst = MGG_SCREEN_MAIN_PIN_RST;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_WR
+    cfg.pins.wr = MGG_SCREEN_MAIN_PIN_WR;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_RD
+    cfg.pins.rd = MGG_SCREEN_MAIN_PIN_RD;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT0
+    cfg.pins.dat[0] = MGG_SCREEN_MAIN_PIN_DAT0;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT1
+    cfg.pins.dat[1] = MGG_SCREEN_MAIN_PIN_DAT1;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT2
+    cfg.pins.dat[2] = MGG_SCREEN_MAIN_PIN_DAT2;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT3
+    cfg.pins.dat[3] = MGG_SCREEN_MAIN_PIN_DAT3;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT4
+    cfg.pins.dat[4] = MGG_SCREEN_MAIN_PIN_DAT4;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT5
+    cfg.pins.dat[5] = MGG_SCREEN_MAIN_PIN_DAT5;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT6
+    cfg.pins.dat[6] = MGG_SCREEN_MAIN_PIN_DAT6;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DAT7
+    cfg.pins.dat[7] = MGG_SCREEN_MAIN_PIN_DAT7;
+#endif
 }
 
 
 ScreenILI9341::ScreenILI9341(const Config& cfg)
-    : AbstractMIPIScreen(
+    : AbstractMIPIDCSScreen(
+        cfg.bgrColors ? PixelFormat::BGR565 : PixelFormat::RGB565,
+        ByteOrder::BigEndian,
         cfg.width, cfg.height,
         cfg.offsetX, cfg.offsetY,
         cfg.mirrorX, cfg.mirrorY, cfg.swapXY,
-        cfg.bgrColors,
-#ifdef MINTGGGAMEENGINE_LITTLE_ENDIAN
-        true, // ILI9341 expects big-endian pixel data -> swap endianness
-#else
-        false, // Don't swap endianness
-#endif
+        true,
         cfg.staticBuffer
         ),
       cfg(cfg)
@@ -76,6 +154,26 @@ ScreenILI9341::ScreenILI9341(const Config& cfg)
 ScreenILI9341::~ScreenILI9341()
 {
     // TODO: Cleanup bus
+}
+
+bool ScreenILI9341::init()
+{
+    LogInfo (
+        "Initializing ILI9341 screen (%ux%u+%u+%u, mirrorX: %c, mirrorY: %c, swapXY: %c, bgr: %c, clock: %u, "
+        "cs: %d, dc: %d, rst: %d, wr: %d, rd: %d, dat: %d, %d, %d, %d, %d, %d, %d, %d)",
+        cfg.width, cfg.height, cfg.offsetX, cfg.offsetY,
+        cfg.mirrorX ? '1' : '0', cfg.mirrorY ? '1' : '0', cfg.swapXY ? '1' : '0', cfg.bgrColors ? '1' : '0',
+        cfg.clockFreqHz,
+        cfg.pins.cs, cfg.pins.dc, cfg.pins.rst, cfg.pins.wr, cfg.pins.rd,
+        cfg.pins.dat[0], cfg.pins.dat[1], cfg.pins.dat[2], cfg.pins.dat[3],
+        cfg.pins.dat[4], cfg.pins.dat[5], cfg.pins.dat[6], cfg.pins.dat[7]
+        );
+
+    if (!AbstractMIPIDCSScreen::init()) {
+        return false;
+    }
+
+    return true;
 }
 
 void ScreenILI9341::commit()
@@ -96,7 +194,7 @@ void ScreenILI9341::commit()
     uint16_t x1 = 0;
     uint16_t y1 = 0;
 
-    uint8_t* buffer = fb.getBuffer();
+    auto buffer = reinterpret_cast<uint8_t*>(fb.getBuffer());
 
     while (h != 0) {
         size_t singleTrfH = std::min(static_cast<size_t>(h), maxLinesPerTransfer);
@@ -283,7 +381,7 @@ bool ScreenILI9341::mipiInitBus()
 #endif
 }
 
-bool ScreenILI9341::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length)
+bool ScreenILI9341::mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length)
 {
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     esp_err_t res;

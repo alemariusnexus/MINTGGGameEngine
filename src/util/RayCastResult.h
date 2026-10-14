@@ -62,8 +62,15 @@ public:
      * \brief Draw a ray for debug purposes.
      *
      * This is considered an internal method.
+     *
+     * \param offset Draw offset. Scale factor will NOT be applied to this.
      */
-    static void drawDebugRay(Screen& screen, const Vec2& start, const Vec2& end, const Vec2& offset);
+    static void drawDebugRay (
+        DrawSurface& surface,
+        const Vec2& start, const Vec2& end,
+        const Vec2& offset,
+        float scaleX, float scaleY
+        );
 
 public:
     RayCastResult() : d(std::make_shared<Data>()) {}
@@ -76,8 +83,10 @@ public:
      * \brief Draw the results for debug purposes.
      *
      * This is considered an internal method.
+     *
+     * \param offset Draw offset. Scale factor will NOT be applied to this.
      */
-    void drawDebug(Screen& screen, const Vec2& offset) const;
+    void drawDebug(DrawSurface& surface, const Vec2& offset, float scaleX, float scaleY) const;
     
     /**
      * \brief Return the list of hit points (and their info).

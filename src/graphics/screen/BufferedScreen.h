@@ -34,7 +34,13 @@ public:
      * @param del
      * @param swapEndianness
      */
-    BufferedScreen(uint8_t* buffer, uint16_t width, uint16_t height, const MemDrawSurface::delete_fn_t& del, bool swapEndianness = false);
+    BufferedScreen (
+        PixelFormat pixelFormat,
+        ByteOrder byteOrder,
+        void* buffer,
+        uint16_t width, uint16_t height,
+        const MemDrawSurface::delete_fn_t& del
+        );
 
     /**
      * \brief Destroy this BufferedScreen.
@@ -44,16 +50,40 @@ public:
     uint16_t getWidth() const override;
     uint16_t getHeight() const override;
 
+    PixelFormat getNativePixelFormat() const override;
+    ByteOrder getNativeByteOrder() const override;
+
     void fill(const Color& color, bool honorClipRegion) override;
+
     void drawPixel(int32_t x, int32_t y, const Color& color) override;
+    void drawPixelFast(int32_t x, int32_t y, const Color& color) override;
+    void drawPixelRaw(int32_t x, int32_t y, const void* data) override;
+    void drawPixelFastRaw(int32_t x, int32_t y, const void* data) override;
+    void drawPixelsRaw (
+        uint16_t srcX, uint16_t srcY,
+        uint16_t srcW, uint16_t srcH,
+        uint16_t blockW, uint16_t blockH,
+        int32_t destX, int32_t destY,
+        const void* data
+        ) override;
+
     void drawHLine(int32_t x0, int32_t y0, int32_t w, const Color& color) override;
     void drawVLine(int32_t x0, int32_t y0, int32_t h, const Color& color) override;
     void drawLine(int32_t x0, int32_t y0, int32_t x1, int32_t y1, const Color& color) override;
-    void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Color& color, bool filled) override;
-    void drawCircle(int32_t cx, int32_t cy, int32_t r, const Color& color, bool filled) override;
-    void drawBitmap(int32_t x, int32_t y, const Bitmap& bitmap, FlipDir flipDir) override;
 
-    void setClipRegion(uint16_t cx, uint16_t cy, uint16_t cw, uint16_t ch) override;
+    void drawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Color& color, bool filled) override;
+
+    void drawCircle(int32_t cx, int32_t cy, int32_t r, const Color& color, bool filled) override;
+
+    void drawBitmap (
+        int32_t x, int32_t y,
+        const Bitmap& bitmap,
+        FlipDir flipDir,
+        Rotation rotation,
+        int16_t scaleX, int16_t scaleY
+        ) override;
+
+    void setClipRegion(int16_t cx, int16_t cy, int16_t cw, int16_t ch) override;
     void getClipRegion(uint16_t* cx, uint16_t* cy, uint16_t* cw, uint16_t* ch) override;
 
     /**
@@ -76,6 +106,12 @@ public:
     void shutdown() override;
 
     void commit() override;
+
+    const MemDrawSurface& getBuffer() const { return fb; }
+    MemDrawSurface& getBuffer() { return fb; }
+
+protected:
+    void setBuffer(void* buffer, const MemDrawSurface::delete_fn_t& del);
 
 protected:
     MemDrawSurface fb;

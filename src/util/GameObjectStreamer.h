@@ -65,7 +65,7 @@ private:
         StreamFlagsSpriteBitmapFile = 0x00000001,
         StreamFlagsCustomCallback = 0x00008000,
 
-        StreamFlagsSpriteBitmapMaskOnly = 0x00010000,
+        StreamFlagsSpriteBitmapAlphaOnly = 0x00010000,
         StreamFlagsCustomCallbackInBlocking = 0x00020000,
         StreamFlagsCustomCallbackOutBlocking = 0x00040000,
 
@@ -85,6 +85,8 @@ private:
             uint16_t oy;
             uint16_t w;
             uint16_t h;
+            float scaleX;
+            float scaleY;
         } bmpFile;
 
         struct {
@@ -139,21 +141,24 @@ public:
      * 
      * \param gobj The GameObject to load a sprite for.
      * \param path Path to the sprite's image file.
+     * \param scaleX Scale factor for loading the bitmap (x axis).
+     * \param scaleY Scale factor for loading the bitmap (y axis).
      * \param ox X offset within the image file where the sprite starts, in pixels.
      * \param oy Y offset within the image file where the sprite starts, in pixels.
      * \param w Maximum width of the sprite to load from the image file, in pixels.
      * \param h Maximum height of the sprite to load from the image file, in pixels.
-     * \param maskOnly false to load the image as a regular sprite, i.e. as a color Bitmap. true to load the colors of
-     *      the image file into the Bitmap mask only (i.e. an invisible Bitmap).
+     * \param alphaOnly false to load the image as a regular sprite, i.e. as a color Bitmap. true to load the colors of
+     *      the image file into the Bitmap alpha only (i.e. an invisible Bitmap).
      * \return true if successful, false otherwise (e.g. if the GameObject wasn't registered).
      * \see disableSpriteBitmapFile()
      */
     bool enableSpriteBitmapFile (
         const GameObject& gobj,
         const char* path,
+        float scaleX = 1, float scaleY = 1,
         uint16_t ox = 0, uint16_t oy = 0,
         uint16_t w = UINT16_MAX, uint16_t h = UINT16_MAX,
-        bool maskOnly = false
+        bool alphaOnly = false
         );
 
     /**

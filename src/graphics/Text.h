@@ -56,7 +56,8 @@ private:
         int32_t x;
         int32_t y;
         Font font;
-        uint16_t scaleFactor;
+        uint16_t scaleX;
+        uint16_t scaleY;
         uint8_t explosion;
         Color color;
         Color explosionColor;
@@ -82,7 +83,7 @@ public:
     Text (
         int32_t x = 0, int32_t y = 0,
         const Font& font = Font(),
-        uint16_t scaleFactor = 1,
+        uint16_t scaleX = 1, uint16_t scaleY = 1,
         Color color = Color::BLACK,
         const std::string& text = ""
         );
@@ -91,7 +92,9 @@ public:
     int32_t getX() const { return d->x; }
     int32_t getY() const { return d->y; }
     const Font& getFont() const { return d->font; }
-    uint16_t getScaleFactor() const { return d->scaleFactor; }
+    uint16_t getScaleX() const { return d->scaleX; }
+    uint16_t getScaleY() const { return d->scaleY; }
+    [[deprecated("Use getScaleX()/getScaleY() instead")]] uint16_t getScaleFactor() const { return getScaleX(); }
     uint8_t getExplosion() const { return d->explosion; }
     const Color& getColor() const { return d->color; }
     const Color& getExplosionColor() const { return d->color; }
@@ -101,22 +104,29 @@ public:
     bool isVisible() const { return d->visible; }
     bool isWorldSpace() const { return d->worldSpace; }
     
-    void setPosition(int32_t x, int32_t y) { d->x = x; d->y = y; }
-    void setFont(const Font& font) { d->font = font; }
-    void setScaleFactor(uint16_t scaleFactor) { d->scaleFactor = scaleFactor; }
-    void setExplosion(uint8_t explosion) { d->explosion = explosion; }
-    void setColor(const Color& color) { d->color = color; }
-    void setExplosionColor(const Color& color) { d->explosionColor = color; }
-    void setAnchor(Anchor anchor) { d->anchor = anchor; }
-    void setHAlign(HAlign halign) { d->halign = halign; }
-    void setText(const std::string& text) { d->text = text; }
+    Text& setPosition(int32_t x, int32_t y) { d->x = x; d->y = y; return *this; }
+    Text& setFont(const Font& font) { d->font = font; return *this; }
+    Text& setScale(uint16_t scaleX, uint16_t scaleY) { d->scaleX = scaleX; d->scaleY = scaleY; return *this; }
+    Text& setScale(uint16_t scale) { setScale(scale, scale); return *this; }
+    [[deprecated("Use setScale() instead")]] Text& setScaleFactor(uint16_t scale) { setScale(scale); return *this; }
+    Text& setExplosion(uint8_t explosion) { d->explosion = explosion; return *this; }
+    Text& setColor(const Color& color) { d->color = color; return *this; }
+    Text& setExplosionColor(const Color& color) { d->explosionColor = color; return *this; }
+    Text& setAnchor(Anchor anchor) { d->anchor = anchor; return *this; }
+    Text& setHAlign(HAlign halign) { d->halign = halign; return *this; }
+    Text& setText(const std::string& text) { d->text = text; return *this; }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-    [[deprecated]] void setArduinoText(const String& text) { setText(std::string(text.c_str())); }
+    [[deprecated]] Text& setArduinoText(const String& text) { setText(std::string(text.c_str())); return *this; }
 #endif
-    void setVisible(bool visible) { d->visible = visible; }
-    void setWorldSpace(bool worldSpace) { d->worldSpace = worldSpace; }
+    Text& setVisible(bool visible) { d->visible = visible; return *this; }
+    Text& setWorldSpace(bool worldSpace) { d->worldSpace = worldSpace; return *this; }
 
-    void getTextMetrics(TextMetrics* metrics) const;
+    void calcTextMetrics(TextMetrics* metrics) const;
+    void calcTextBoundingRect (
+        int32_t* x, int32_t* y,
+        uint32_t* width, uint32_t* height,
+        TextMetrics* fromMetrics = nullptr
+        );
 
     void transformAnchorPosition (
         Anchor newAnchor,

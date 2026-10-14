@@ -7,6 +7,7 @@
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
 #   include <QApplication>
+#   include <QCommandLineParser>
 #endif
 
 
@@ -71,40 +72,42 @@ public:
         /**
          * \brief Mount point for internal storage (e.g. SPIFFS for ESP32).
          *
-         * If set to null, a default value of "/storage" is used.
+         * If set to null, a default value of "/data" is used.
          */
         const char* internalStorageMountPoint;
-
-        Screen* screen;
 
         /**
          * \brief Pin configuration.
          */
         struct {
-            /**
-             * \brief MISO pin for the SPI bus, or -1 if unused.
-             */
-            gpionum_t spiMISO;
+            struct {
+                /**
+                 * \brief MISO pin for the SPI bus, or -1 if unused.
+                 */
+                gpionum_t miso;
 
-            /**
-             * \brief MOSI pin for the SPI bus, or -1 if unused.
-             */
-            gpionum_t spiMOSI;
+                /**
+                 * \brief MOSI pin for the SPI bus, or -1 if unused.
+                 */
+                gpionum_t mosi;
 
-            /**
-             * \brief SCK pin for the SPI bus, or -1 if unused.
-             */
-            gpionum_t spiSCK;
+                /**
+                 * \brief SCK pin for the SPI bus, or -1 if unused.
+                 */
+                gpionum_t sck;
 
-            /**
-             * \brief CS pin for the SD card on the SPI bus, or -1 if unused.
-             */
-            gpionum_t sdCardCS;
+                /**
+                 * \brief CS pin for the SD card on the SPI bus, or -1 if unused.
+                 */
+                gpionum_t cs;
+            } sdcard;
 
-            /**
-             * \brief Pin for the piezo speaker, or -1 if unused.
-             */
-            gpionum_t speaker;
+            struct {
+                /**
+                 * \brief Pin for the piezo speaker, or -1 if unused.
+                 */
+                gpionum_t speaker;
+            } audio;
         } pins;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -136,7 +139,7 @@ public:
      * @param cfg Engine configuration.
      * @return true if initialization is successful, false otherwise.
      */
-    virtual bool setup(SetupConfig* cfg);
+    virtual bool setup(SetupConfig* cfg, int argc = 0, char** argv = nullptr);
 
     /**
      * \brief Run the engine loop for a single frame.
@@ -187,6 +190,9 @@ public:
 #endif
 
 protected:
+    virtual void initPlatform(SetupConfig* cfg);
+    virtual void shutdownPlatform();
+
     virtual void initSPI(SetupConfig* cfg);
     virtual void shutdownSPI();
 
@@ -237,53 +243,10 @@ protected:
     struct
     {
         QApplication* qapp;
+        QCommandLineParser cliParser;
+        QString appDir;
     } pfDesktop;
 #endif
 };
-
-
-
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-
-#define MINTGGGAMEENGINE_STARTUP_CODE() \
-        void setup()                    \
-        {                               \
-            EngineSetup();              \
-        }                               \
-        void loop()                     \
-        {                               \
-            if (!EngineLoop()) {        \
-                EngineShutdown();       \
-                for (;;);               \
-            }                           \
-        }
-
-#elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
-
-#define MINTGGGAMEENGINE_STARTUP_CODE() \
-        extern "C" {                    \
-        void app_main()                 \
-        {                               \
-            EngineSetup();              \
-            while (EngineLoop());       \
-            EngineShutdown();           \
-        }                               \
-        }
-
-#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-
-#define MINTGGGAMEENGINE_STARTUP_CODE() \
-        extern "C" {                    \
-        int main(int, char**)           \
-        {                               \
-            EngineSetup();              \
-            while (EngineLoop());       \
-            EngineShutdown();           \
-            return 0;                   \
-        }                               \
-        }
-
-#endif
-
 
 }

@@ -2,6 +2,8 @@
 
 #include "Globals.h"
 
+#include "addons/mipidsi/ScreenRPiTC358762.h"
+
 #include "audio/AudioClip.h"
 #include "audio/AudioEngine.h"
 #include "audio/MIDILoader.h"
@@ -10,16 +12,20 @@
 #include "core/Engine.h"
 #include "core/Game.h"
 #include "core/GameObject.h"
+#include "core/Startup.h"
 
-#include "graphics/screen/drivers/AbstractMIPIScreen.h"
-#include "graphics/screen/drivers/ScreenILI9341.h"
+#include "graphics/screen/drivers/mipidcs/AbstractMIPIDCSScreen.h"
+#include "graphics/screen/drivers/mipidcs/ScreenILI9341.h"
+#include "graphics/screen/drivers/mipidcs/ScreenST7735.h"
+#include "graphics/screen/drivers/mipidsi/AbstractMIPIDSIScreen.h"
 #include "graphics/screen/drivers/ScreenNull.h"
-#include "graphics/screen/drivers/ScreenST7735.h"
 #include "graphics/screen/BufferedScreen.h"
 #include "graphics/screen/Screen.h"
+#include "graphics/surface/BitmapDrawSurface.h"
 #include "graphics/surface/DrawSurface.h"
 #include "graphics/surface/MemDrawSurface.h"
 #include "graphics/Bitmap.h"
+#include "graphics/BitmapRenderer.h"
 #include "graphics/Color.h"
 #include "graphics/Font.h"
 #include "graphics/ImageLoader.h"
@@ -40,6 +46,7 @@
 #include "platform/GPIODeviceMCP2300X.h"
 #include "platform/GPIODeviceNative.h"
 #include "platform/MCP2300XDevice.h"
+#include "platform/PlatformManager.h"
 
 #include "storage/BufferedReader.h"
 #include "storage/File.h"
@@ -56,6 +63,13 @@
 #include "util/Util.h"
 #include "util/Vec2.h"
 #include "util/WorkerTask.h"
+
+
+#if MGG_ENABLE_DEFAULT_USING_STATEMENTS
+    using namespace MINTGGGameEngine;
+    using namespace std::string_literals;
+    using namespace std;
+#endif
 
 
 namespace MINTGGGameEngine

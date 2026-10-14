@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../../../Globals.h"
+#include "../../../../Globals.h"
+#include "../../../../core/Engine.h"
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
 #   include <driver/spi_master.h>
@@ -8,7 +9,7 @@
 #   include <esp_lcd_io_i80.h>
 #endif
 
-#include "AbstractMIPIScreen.h"
+#include "AbstractMIPIDCSScreen.h"
 
 
 namespace MINTGGGameEngine
@@ -24,11 +25,13 @@ namespace MINTGGGameEngine
  * different peripherals for this that may be faster or slower (some chips have a dedicated LCD controller peripheral,
  * while some abuse a special mode in their I2S peripheral. This is hidden behind a driver abstraction of ESP-IDF).
  */
-class ScreenILI9341 : public AbstractMIPIScreen
+class ScreenILI9341 : public AbstractMIPIDCSScreen
 {
 public:
     struct Config
     {
+        Engine* engine;
+
         uint16_t width;
         uint16_t height;
 
@@ -61,12 +64,14 @@ public:
 public:
     ScreenILI9341(const Config& cfg);
     virtual ~ScreenILI9341();
+
+    bool init() override;
     
     void commit() override;
 
 protected:
     bool mipiInitBus() override;
-    bool mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length) override;
+    bool mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length) override;
 
     bool doHWReset() override;
 

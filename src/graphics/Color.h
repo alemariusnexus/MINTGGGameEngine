@@ -56,15 +56,26 @@ public:
     static const Color CYAN;
 
 public:
+    static Color fromRGB565(uint16_t rgb565);
+    static Color fromBGR565(uint16_t bgr565);
+
+    static Color fromBuffer(const void* buf, PixelFormat pixelFormat, ByteOrder byteOrder);
+
+    static void convertBufferToBuffer (
+        const void* fromBuf, PixelFormat fromPixelFormat, ByteOrder fromByteOrder,
+        void* toBuf, PixelFormat toPixelFormat, ByteOrder toByteOrder,
+        size_t numPixels
+        );
+    static void convertBufferToBuffer (
+        const void* fromBuf, PixelFormat fromPixelFormat, ByteOrder fromByteOrder,
+        void* toBuf, PixelFormat toPixelFormat, ByteOrder toByteOrder
+        );
+
+public:
     /**
      * \brief Create black color.
      */
-    Color() : rgb565(0x0000) {}
-    
-    /**
-     * \brief Create color from the given RGB565 value.
-     */
-    Color(uint16_t rgb565) : rgb565(rgb565) {}
+    Color() : r(0), g(0), b(0), a(255) {}
     
     /**
      * \brief Create color from the given RGB888 values.
@@ -73,38 +84,51 @@ public:
      * \param g Green value (range 0-255).
      * \param b Blue value (range 0-255).
      */
-    Color(uint8_t r, uint8_t g, uint8_t b);
+    Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
     
     /**
      * \brief Copy constructor.
      */
-    Color(const Color& other) : rgb565(other.rgb565) {}
+    Color(const Color& other) : r(other.r), g(other.g), b(other.b), a(other.a) {}
+
+    uint8_t getRed() const { return r; }
+    uint8_t getGreen() const { return g; }
+    uint8_t getBlue() const { return b; }
+    uint8_t getAlpha() const { return a; }
 
     /**
      * \brief Return the color in RGB565 format.
      */
-    uint16_t toRGB565() const { return rgb565; }
+    uint16_t toRGB565() const { return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3); }
 
     /**
      * \brief Return the color in BGR565 format.
      */
-    uint16_t toBGR565() const;
-    
-    /**
-     * \brief Return the color in RGB565 format.
-     */
-    operator uint16_t() const { return toRGB565(); }
+    uint16_t toBGR565() const { return ((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3); }
+
+    void toRGB888(uint8_t& r, uint8_t& g, uint8_t& b) const { r = this->r; g = this->g; b = this->b; }
+    void toRGBA8888(uint8_t& r, uint8_t& g, uint8_t& b, uint8_t& a) const
+            { r = this->r; g = this->g; b = this->b; a = this->a; }
+
+    size_t toBuffer(void* buf, PixelFormat pixelFormat, ByteOrder byteOrder) const;
+    size_t toBuffer(void* buf, PixelFormat pixelFormat, ByteOrder byteOrder, size_t numPixels) const;
 
     Color & operator=(const Color &other)
     {
         if (this == &other)
             return *this;
-        rgb565 = other.rgb565;
+        r = other.r;
+        g = other.g;
+        b = other.b;
+        a = other.a;
         return *this;
     }
 
 private:
-    uint16_t rgb565;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    uint8_t a;
 };
 
 }

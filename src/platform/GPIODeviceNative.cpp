@@ -18,8 +18,11 @@ GPIODeviceNative& GPIODeviceNative::getInstance()
 }
 
 
-bool GPIODeviceNative::setPinMode(unsigned int pin, uint8_t mode)
+bool GPIODeviceNative::setPinMode(gpionum_t pin, uint8_t mode)
 {
+    if (pin < 0) {
+        return false;
+    }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 	::pinMode(static_cast<uint8_t>(pin), mode);
     return true;
@@ -48,8 +51,11 @@ bool GPIODeviceNative::setPinMode(unsigned int pin, uint8_t mode)
 #endif
 }
 
-uint8_t GPIODeviceNative::readPin(unsigned int pin)
+uint8_t GPIODeviceNative::readPin(gpionum_t pin)
 {
+    if (pin < 0) {
+        return 0;
+    }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 	return ::digitalRead(pin);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
@@ -59,8 +65,11 @@ uint8_t GPIODeviceNative::readPin(unsigned int pin)
 #endif
 }
 
-void GPIODeviceNative::writePin(unsigned int pin, uint8_t val)
+void GPIODeviceNative::writePin(gpionum_t pin, uint8_t val)
 {
+    if (pin < 0) {
+        return;
+    }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     ::digitalWrite(pin, val);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)

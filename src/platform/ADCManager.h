@@ -31,9 +31,9 @@ private:
 public:
     static ADCManager& getInstance();
 
-    bool setupAnalogPin(uint8_t pin);
-    void destroyAnalogPin(uint8_t pin);
-    uint32_t readRaw(uint8_t pin);
+    bool setupAnalogPin(gpionum_t pin);
+    void destroyAnalogPin(gpionum_t pin);
+    uint32_t readRaw(gpionum_t pin);
 
     uint32_t getMaxRawValue();
 
@@ -47,7 +47,7 @@ private:
 private:
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     std::unordered_map<adc_unit_t, ADCUnitConfig> adcUnitConfigs;
-    std::unordered_map<uint8_t, ADCPinConfig> adcPinConfigs;
+    std::unordered_map<gpionum_t, ADCPinConfig> adcPinConfigs;
 #endif
 };
 

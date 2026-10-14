@@ -58,7 +58,12 @@ bool EngineThread::isStopRequested() const
 void EngineThread::main()
 {
     mainFunc();
+
     stopRequested = false;
+
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    vTaskDelete(nullptr);
+#endif
 }
 
 void EngineThread::staticMain(void* thread)

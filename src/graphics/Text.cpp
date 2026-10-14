@@ -15,7 +15,7 @@ namespace MINTGGGameEngine
 Text::Text (
     int32_t x, int32_t y,
     const Font& font,
-    uint16_t scaleFactor,
+    uint16_t scaleX, uint16_t scaleY,
     Color color, const std::string& text
 )
     : d(std::make_shared<Data>())
@@ -23,7 +23,8 @@ Text::Text (
     d->x = x;
     d->y = y;
     d->font = font;
-    d->scaleFactor = scaleFactor;
+    d->scaleX = scaleX;
+    d->scaleY = scaleY;
     d->explosion = 0;
     d->color = color;
     d->explosionColor = Color::WHITE;
@@ -34,7 +35,7 @@ Text::Text (
     d->worldSpace = false;
 }
 
-void Text::getTextMetrics(TextMetrics* metrics) const
+void Text::calcTextMetrics(TextMetrics* metrics) const
 {
     if (d->text.empty()) {
         metrics->numLines = 0;
@@ -61,6 +62,31 @@ void Text::getTextMetrics(TextMetrics* metrics) const
     metrics->maxGlyphsPerLine = maxGlyphsPerLine;
 }
 
+void Text::calcTextBoundingRect (
+    int32_t* x, int32_t* y,
+    uint32_t* width, uint32_t* height,
+    TextMetrics* fromMetrics
+) {
+    TextMetrics localMetrics;
+    if (!fromMetrics) {
+        calcTextMetrics(&localMetrics);
+        fromMetrics = &localMetrics;
+    }
+
+    if (x) {
+        *x = getX();
+    }
+    if (y) {
+        *y = getY();
+    }
+    if (width) {
+        *width = fromMetrics->maxGlyphsPerLine * d->scaleX * d->font.getGlyphWidth();
+    }
+    if (height) {
+        *height = fromMetrics->numLines * d->scaleY * d->font.getGlyphHeight();
+    }
+}
+
 void Text::transformAnchorPosition (
     Anchor newAnchor,
     int32_t* outX, int32_t* outY,
@@ -73,13 +99,16 @@ void Text::transformAnchorPosition (
         TextMetrics localMetrics;
         if (!metrics) {
             metrics = &localMetrics;
-            getTextMetrics(metrics);
+            calcTextMetrics(metrics);
         }
+
+        const uint16_t effectiveScaleX = d->scaleX;
+        const uint16_t effectiveScaleY = d->scaleY;
 
         // TODO: Handle explosion
 
-        int32_t w = metrics->maxGlyphsPerLine * d->font.getGlyphWidth() * d->scaleFactor;
-        int32_t h = metrics->numLines * d->font.getGlyphHeight() * d->scaleFactor;
+        auto w = static_cast<int32_t>(metrics->maxGlyphsPerLine * d->font.getGlyphWidth() * effectiveScaleX);
+        auto h = static_cast<int32_t>(metrics->numLines * d->font.getGlyphHeight() * effectiveScaleY);
 
         // First convert to top-left position
         int32_t tlX, tlY;

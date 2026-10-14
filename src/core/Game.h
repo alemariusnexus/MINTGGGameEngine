@@ -279,13 +279,14 @@ public:
      *
      * This color is used to fill the entire screen at the start of each frame rendering.
      * Note that if a background bitmap is set, the bitmap takes precedence and the
-     * background color is not used (not even if the background bitmap only partl covers
+     * background color is not used (not even if the background bitmap only partly covers
      * the screen).
      *
      * @param color The background color.
      * @see setBackgroundBitmap()
      */
-    void setBackgroundColor(const Color& color) { backgroundColor = color; backgroundBmp = Bitmap(); }
+    void setBackgroundColor(const Color& color)
+            { backgroundColor = color; backgroundBmp = {}; cachedScaledBackgroundBmp = {}; }
 
     /**
      * \brief Return the background color used for rendering.
@@ -293,6 +294,9 @@ public:
      * @return The background color.
      */
     Color getBackgroundColor() const { return backgroundColor; }
+
+    void setBackgroundSkipped(bool skipped) { backgroundSkipped = skipped; }
+    bool isBackgroundSkipped() const { return backgroundSkipped; }
 
     /**
      * \brief Set a bitmap that is rendered as a background each frame.
@@ -310,7 +314,7 @@ public:
      *  the background bitmap and use a background color instead.
      * @see setBackgroundColor()
      */
-    void setBackgroundBitmap(const Bitmap& bmp) { backgroundBmp = bmp; }
+    void setBackgroundBitmap(const Bitmap& bmp);
 
     /**
      * \brief Return the background bitmap.
@@ -453,7 +457,7 @@ public:
     ///@}
     
     
-    /// \name Camera & Scrolling
+    /// \name Transforms & Camera
     ///@{
     
     /**
@@ -504,6 +508,16 @@ public:
      * \param dy The scroll delta in y direction.
      */
     void scroll(float dx, float dy) { scroll(Vec2(dx, dy)); }
+
+    void setScreenOffset(int16_t ox, int16_t oy) { screenOffsetX = ox; screenOffsetY = oy; }
+
+    int16_t getScreenOffsetX() const { return screenOffsetX; }
+    int16_t getScreenOffsetY() const { return screenOffsetY; }
+
+    void setDrawScale(float scaleX, float scaleY);
+
+    float getDrawScaleX() const { return drawScaleX; }
+    float getDrawScaleY() const { return drawScaleY; }
     
     ///@}
     
@@ -586,9 +600,17 @@ private:
     std::vector<RayCastDrawInfo> rayCastDrawInfos;
     
     Vec2 cameraOffset;
+    int16_t screenOffsetX;
+    int16_t screenOffsetY;
+    float drawScaleX;
+    float drawScaleY;
 
     Color backgroundColor;
     Bitmap backgroundBmp;
+    Bitmap cachedScaledBackgroundBmp;
+    float cachedScaledBackgroundBmpX;
+    float cachedScaledBackgroundBmpY;
+    bool backgroundSkipped;
 };
 
 }

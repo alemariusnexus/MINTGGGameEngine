@@ -1,5 +1,6 @@
 #include "RayCastResult.h"
 
+#include <cmath>
 
 
 
@@ -8,27 +9,32 @@ namespace MINTGGGameEngine
 
 
 void RayCastResult::drawDebugRay (
-        Screen& screen,
+        DrawSurface& surface,
         const Vec2& start, const Vec2& end,
-        const Vec2& offset
+        const Vec2& offset,
+        float scaleX, float scaleY
 ) {
-    screen.drawLine (
-            (int16_t) (start.x() + offset.x() + 0.5f),
-            (int16_t) (start.y() + offset.y() + 0.5f),
-            (int16_t) (end.x() + offset.x() + 0.5f),
-            (int16_t) (end.y() + offset.y() + 0.5f),
-            Color(0x681F)
+    surface.drawLine (
+            static_cast<int32_t>(std::round(start.x()*scaleX + offset.x())),
+            static_cast<int32_t>(std::round(start.y()*scaleY + offset.y())),
+            static_cast<int32_t>(std::round(end.x()*scaleX + offset.x())),
+            static_cast<int32_t>(std::round(end.y()*scaleY + offset.y())),
+            Color::fromRGB565(0x681F)
             );
 }
 
-void RayCastResult::drawDebug(Screen& screen, const Vec2& offset) const
-{
+void RayCastResult::drawDebug (
+    DrawSurface& surface,
+    const Vec2& offset,
+    float scaleX, float scaleY
+) const {
     for (const auto& hit : d->hits) {
-        screen.drawCircle (
-                (int16_t) (hit.hitPoint.x() + offset.x() + 0.5f),
-                (int16_t) (hit.hitPoint.y() + offset.y() + 0.5f),
-                2,
-                hit.entering ? Color(0x681F) : Color(0xF81E),
+        // TODO: Support scaleX != scaleY (which would be an oval)
+        surface.drawCircle (
+                static_cast<int32_t>(std::round(hit.hitPoint.x()*scaleX + offset.x())),
+                static_cast<int32_t>(std::round(hit.hitPoint.y()*scaleY + offset.y())),
+                static_cast<int32_t>(2*scaleX),
+                Color::fromRGB565(hit.entering ? 0x681F : 0xF81E),
                 true
                 );
     }

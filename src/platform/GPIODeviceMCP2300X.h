@@ -38,12 +38,12 @@ public:
 	 */
 	void begin();
 
-	bool setPinMode(unsigned int pin, uint8_t mode) override;
+	bool setPinMode(gpionum_t pin, uint8_t mode) override;
 
-    uint8_t readPin(unsigned int pin) override;
-	void writePin(unsigned int pin, uint8_t val) override;
+    uint8_t readPin(gpionum_t pin) override;
+	void writePin(gpionum_t pin, uint8_t val) override;
 	
-	void readPins(const unsigned int* pins, uint8_t* values, size_t numPins) override;
+	void readPins(const gpionum_t* pins, uint8_t* values, size_t numPins) override;
 	
 private:
 	MCP2300XDevice mcp;

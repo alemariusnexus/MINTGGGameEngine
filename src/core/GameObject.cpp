@@ -10,7 +10,7 @@ namespace MINTGGGameEngine
 
 GameObject GameObject::createCircle(float x, float y, float r, const Color& color, bool filled, bool collider)
 {
-    return GameObject(x, y, Sprite::createCircle(r, color, filled), collider ? Collider::createCircle(r, r, r) : Collider());
+    return GameObject(x, y, Sprite::createCircle(r, color, filled), collider ? Collider::createCircle(0, 0, r) : Collider());
 }
 
 GameObject GameObject::createRect(float x, float y, float w, float h, const Color& color, bool filled, bool collider)
@@ -33,7 +33,7 @@ GameObject GameObject::createBitmap(float x, float y, const Bitmap& bitmap, bool
 
 GameObject GameObject::createColliderCircle(float x, float y, float r)
 {
-    return GameObject(x, y, Sprite(), Collider::createCircle(r, r, r));
+    return GameObject(x, y, Sprite(), Collider::createCircle(0, 0, r));
 }
 
 GameObject GameObject::createColliderRect(float x, float y, float w, float h)
@@ -48,6 +48,9 @@ GameObject::GameObject(float x, float y, const Sprite& sprite, const Collider& c
     d->x = x;
     d->y = y;
     d->moveDir = Vec2();
+    d->scaleX = 1;
+    d->scaleY = 1;
+    d->rotation = Rotation::Rot0;
     d->flipDir = FlipDir::None;
     d->sprite = sprite;
     d->collider = collider;
@@ -63,7 +66,7 @@ Vec2 GameObject::getCenterPosition(bool useSprite) const
 
 void GameObject::setCenterPosition(const Vec2& p, bool useSprite)
 {
-    setPosition(p.x() - getWidth(useSprite)/2, p.y() - getHeight(useSprite)/2);
+    setPosition(p.x() - getWidth(useSprite)*0.5f, p.y() - getHeight(useSprite)*0.5f);
 }
 
 bool GameObject::isLeftOf(const GameObject& other, bool useSprite) const
@@ -86,14 +89,54 @@ bool GameObject::isBelow(const GameObject& other, bool useSprite) const
     return other.isAbove(*this, useSprite);
 }
 
+void GameObject::setScale(float scaleX, float scaleY)
+{
+    if (d) {
+        d->scaleX = std::max<int16_t>(static_cast<int16_t>(std::round(scaleX)), 1);
+        d->scaleY = std::max<int16_t>(static_cast<int16_t>(std::round(scaleY)), 1);
+    }
+}
+
+void GameObject::setScaleAroundCenter(float scaleX, float scaleY)
+{
+    const Vec2 center = getCenterPosition();
+    setScale(scaleX, scaleY);
+    setCenterPosition(center);
+}
+
+void GameObject::setRotationAroundCenter(Rotation rotation)
+{
+    const Vec2 center = getCenterPosition();
+    setRotation(rotation);
+    setCenterPosition(center);
+}
+
 float GameObject::getWidth(bool useSprite) const
 {
-    return useSprite ? d->sprite.getWidth() : d->collider.getWidth();
+    if (!d) return 0;
+    if (useSprite) {
+        return (d->rotation == Rotation::Rot0  ||  d->rotation == Rotation::Rot180)
+                ? d->sprite.getWidth() * static_cast<float>(d->scaleX)
+                : d->sprite.getHeight() * static_cast<float>(d->scaleY);
+    } else {
+        return (d->rotation == Rotation::Rot0  ||  d->rotation == Rotation::Rot180)
+                ? d->collider.getWidth() * static_cast<float>(d->scaleX)
+                : d->collider.getHeight() * static_cast<float>(d->scaleY);
+    }
 }
 
 float GameObject::getHeight(bool useSprite) const
 {
-    return useSprite ? d->sprite.getHeight() : d->collider.getHeight();
+    if (!d) return 0;
+    if (useSprite) {
+        return (d->rotation == Rotation::Rot0  ||  d->rotation == Rotation::Rot180)
+                ? d->sprite.getHeight() * static_cast<float>(d->scaleY)
+                : d->sprite.getWidth() * static_cast<float>(d->scaleX);
+    } else {
+        return (d->rotation == Rotation::Rot0  ||  d->rotation == Rotation::Rot180)
+                ? d->collider.getHeight() * static_cast<float>(d->scaleY)
+                : d->collider.getWidth() * static_cast<float>(d->scaleX);
+    }
 }
 
 void GameObject::setZOrder(uint16_t zorder)
@@ -108,19 +151,31 @@ void GameObject::setZOrder(uint16_t zorder)
 
 Collider GameObject::getWorldCollider() const
 {
-    return getCollider().toWorld(getX(), getY(), getFlipDir());
+    if (!d) return {};
+    return getCollider().toWorld(d->x, d->y, d->scaleX, d->scaleY, d->rotation, d->flipDir);
 }
 
-void GameObject::draw(Screen& screen, const Vec2& offset) const
+void GameObject::draw(DrawSurface& surface, const Vec2& offset, float scaleX, float scaleY) const
 {
     if (isVisible()) {
-        getSprite().draw(screen, getX()+offset.x(), getY()+offset.y(), getFlipDir());
+        getSprite().draw (
+            surface,
+            {d->x*scaleX + offset.x(), d->y*scaleY + offset.y()},
+            scaleX * static_cast<float>(d->scaleX), scaleY * static_cast<float>(d->scaleY),
+            d->rotation,
+            d->flipDir
+            );
     }
 }
 
 bool GameObject::collides(const GameObject& other, float shrink) const
 {
     return getWorldCollider().collides(other.getWorldCollider(), shrink);
+}
+
+void GameObject::updateScaleCache(float scaleX, float scaleY)
+{
+    getSprite().updateScaleCache(scaleX, scaleY);
 }
 
 void GameObject::notifySpawned(Game* game) const

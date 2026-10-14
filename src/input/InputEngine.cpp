@@ -47,7 +47,7 @@ void InputEngine::inputTaskMain()
 {
     std::vector<ButtonDef*> stateChangedButtons;
 	
-	std::vector<unsigned int> pinNums;
+	std::vector<gpionum_t> pinNums;
 	std::vector<uint8_t> pinValues;
     
     while (!inputThread.isStopRequested()) {
@@ -70,7 +70,16 @@ void InputEngine::inputTaskMain()
 			// Store raw state
 			size_t pinIdx = 0;
 			for (ButtonDef* def : pair.second) {
-				def->rawState = pinValues[pinIdx];
+			    if (def->pin >= 0) {
+			        def->rawState = pinValues[pinIdx];
+			    } else {
+			        // Unconnected buttons are released (inactive) by default
+			        if ((def->flags & PinFlagsActiveLow) != 0) {
+			            def->rawState = 1;
+			        } else {
+			            def->rawState = 0;
+			        }
+			    }
 				pinIdx++;
 			}
 		}
@@ -94,7 +103,10 @@ void InputEngine::inputTaskMain()
         float analogMaxValueFloat = ADCManager::getInstance().getMaxRawValue();
         for (auto it = axes.begin() ; it != axes.end() ; ++it) {
             AxisDef* def = it->second;
-            float adcT = ADCManager::getInstance().readRaw(def->pin) / analogMaxValueFloat;
+            float adcT = def->neutralValue;
+            if (def->pin >= 0) {
+                adcT = ADCManager::getInstance().readRaw(def->pin) / analogMaxValueFloat;
+            }
             
             float minVal;
             float maxVal;
@@ -110,7 +122,7 @@ void InputEngine::inputTaskMain()
             }
             
             float value;
-            float distFromNeutral = fabs(adcT - def->neutralValue);
+            const float distFromNeutral = fabs(adcT - def->neutralValue);
             if (distFromNeutral > def->neutralWidth) {
                 if (adcT > def->neutralValue) {
                     value = finalFactor * (distFromNeutral - def->neutralWidth)
@@ -185,7 +197,7 @@ void InputEngine::inputTaskMain()
 
 bool InputEngine::defineButton (
 		const std::string& id,
-		unsigned int pin,
+		gpionum_t pin,
 		GPIODevice& gpioDevice,
 		int flags
 ) {
@@ -195,7 +207,7 @@ bool InputEngine::defineButton (
     
     lockMutex();
     
-    ButtonDef* def = new ButtonDef(id, pin, &gpioDevice, flags);
+    auto def = new ButtonDef(id, pin, &gpioDevice, flags);
 	buttonIDs.push_back(id);
     buttons[id] = def;
 	buttonsByDevice[&gpioDevice].push_back(def);
@@ -243,7 +255,7 @@ std::vector<std::string> InputEngine::getButtonIDs() const
 }
 
 bool InputEngine::defineAxis (
-        const std::string& id, uint8_t pin,
+        const std::string& id, gpionum_t pin,
         float minValue, float maxValue,
         float neutralValue, float neutralWidth
 ) {
@@ -259,7 +271,7 @@ bool InputEngine::defineAxis (
 	
 	axisIDs.push_back(id);
     
-    AxisDef* def = new AxisDef(id, pin);
+    auto def = new AxisDef(id, pin);
     def->minValue = minValue;
     def->maxValue = maxValue;
     def->neutralValue = neutralValue;
@@ -333,7 +345,7 @@ void InputEngine::defineButtonCombo(const std::unordered_set<std::string>& ids, 
 {
     lockMutex();
     
-    ButtonCombo* combo = new ButtonCombo(ids, cb);
+    auto combo = new ButtonCombo(ids, cb);
     buttonCombos.push_back(combo);
     
     unlockMutex();

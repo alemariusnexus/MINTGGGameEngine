@@ -35,8 +35,12 @@ void GPIODeviceMCP2300X::begin()
 {
 }
 
-bool GPIODeviceMCP2300X::setPinMode(unsigned int pin, uint8_t mode)
+bool GPIODeviceMCP2300X::setPinMode(gpionum_t pin, uint8_t mode)
 {
+    if (pin < 0) {
+        return false;
+    }
+
     bool output, puEnabled, pdEnabled;
     ExtractArduinoPinMode(mode, &output, &puEnabled, &pdEnabled);
 
@@ -84,8 +88,11 @@ bool GPIODeviceMCP2300X::setPinMode(unsigned int pin, uint8_t mode)
 	return true;
 }
 
-uint8_t GPIODeviceMCP2300X::readPin(unsigned int pin)
+uint8_t GPIODeviceMCP2300X::readPin(gpionum_t pin)
 {
+    if (pin < 0) {
+        return 0;
+    }
     uint8_t state;
     if (!mcp.readPins(&state)) {
         return 0;
@@ -93,8 +100,11 @@ uint8_t GPIODeviceMCP2300X::readPin(unsigned int pin)
 	return (state & (1 << pin)) != 0;
 }
 
-void GPIODeviceMCP2300X::writePin(unsigned int pin, uint8_t val)
+void GPIODeviceMCP2300X::writePin(gpionum_t pin, uint8_t val)
 {
+    if (pin < 0) {
+        return;
+    }
     uint8_t newState;
     if (!mcp.readPins(&newState)) {
         return;
@@ -107,14 +117,14 @@ void GPIODeviceMCP2300X::writePin(unsigned int pin, uint8_t val)
     mcp.writePins(newState);
 }
 
-void GPIODeviceMCP2300X::readPins(const unsigned int* pins, uint8_t* values, size_t numPins)
+void GPIODeviceMCP2300X::readPins(const gpionum_t* pins, uint8_t* values, size_t numPins)
 {
     uint8_t val8;
     if (!mcp.readPins(&val8)) {
         return;
     }
 	for (size_t i = 0 ; i < numPins ; i++) {
-		if (pins[i] < 8) {
+		if (pins[i] >= 0  &&  pins[i] < 8) {
 			values[i] = ((val8 >> pins[i]) & 0x01) ? HIGH : LOW;
 		} else {
 			values[i] = LOW;

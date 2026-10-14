@@ -54,25 +54,28 @@ bool GameObjectStreamer::unregisterGameObject(const GameObject& gobj)
 bool GameObjectStreamer::enableSpriteBitmapFile (
     const GameObject& gobj,
     const char* path,
+    float scaleX, float scaleY,
     uint16_t ox, uint16_t oy,
     uint16_t w, uint16_t h,
-    bool maskOnly
+    bool alphaOnly
 ) {
     StreamedObject* sobj = findObject(gobj);
     if (!sobj) {
         return false;
     }
     sobj->flags |= StreamFlagsSpriteBitmapFile;
-    if (maskOnly) {
-        sobj->flags |= StreamFlagsSpriteBitmapMaskOnly;
+    if (alphaOnly) {
+        sobj->flags |= StreamFlagsSpriteBitmapAlphaOnly;
     } else {
-        sobj->flags &= ~StreamFlagsSpriteBitmapMaskOnly;
+        sobj->flags &= ~StreamFlagsSpriteBitmapAlphaOnly;
     }
     sobj->bmpFile.path = path;
     sobj->bmpFile.ox = ox;
     sobj->bmpFile.oy = oy;
     sobj->bmpFile.w = w;
     sobj->bmpFile.h = h;
+    sobj->bmpFile.scaleX = scaleX;
+    sobj->bmpFile.scaleY = scaleY;
     return true;
 }
 
@@ -82,7 +85,7 @@ bool GameObjectStreamer::disableSpriteBitmapFile(const GameObject& gobj)
     if (!sobj) {
         return false;
     }
-    sobj->flags &= ~(StreamFlagsSpriteBitmapFile | StreamFlagsSpriteBitmapMaskOnly);
+    sobj->flags &= ~(StreamFlagsSpriteBitmapFile | StreamFlagsSpriteBitmapAlphaOnly);
     sobj->bmpFile.path.clear();
     return true;
 }
@@ -199,9 +202,10 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
             const char* errmsg;
             //timer_mstick_t s = TimerGetTickcountMs();
             Bitmap bmp;
-            if (sobj.flags & StreamFlagsSpriteBitmapMaskOnly) {
-                bmp = Bitmap::loadBMPMaskOnly (
+            if (sobj.flags & StreamFlagsSpriteBitmapAlphaOnly) {
+                bmp = Bitmap::loadBMPAlphaOnly (
                     sobj.bmpFile.path.c_str(),
+                    sobj.bmpFile.scaleX, sobj.bmpFile.scaleY,
                     sobj.bmpFile.ox, sobj.bmpFile.oy,
                     sobj.bmpFile.w, sobj.bmpFile.h,
                     &errmsg
@@ -209,6 +213,7 @@ void GameObjectStreamer::streamIn(StreamedObject& sobj)
             } else {
                 bmp = Bitmap::loadBMP (
                     sobj.bmpFile.path.c_str(),
+                    sobj.bmpFile.scaleX, sobj.bmpFile.scaleY,
                     sobj.bmpFile.ox, sobj.bmpFile.oy,
                     sobj.bmpFile.w, sobj.bmpFile.h,
                     &errmsg

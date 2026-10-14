@@ -35,14 +35,14 @@ public:
 	 * \param mode The pin mode. Takes the same values as Arduino's pinMode() function.
 	 * \return true if successful, false otherwise (e.g. if the mode isn't supported).
 	 */
-	virtual bool setPinMode(unsigned int pin, uint8_t mode) = 0;
+	virtual bool setPinMode(gpionum_t pin, uint8_t mode) = 0;
 	
 	/**
 	 * \brief An alias for setPinMode(), for Arduino compatibility.
 	 *
 	 * \see setPinMode()
 	 */
-	bool pinMode(unsigned int pin, uint8_t mode) { return setPinMode(pin, mode); }
+	bool pinMode(gpionum_t pin, uint8_t mode) { return setPinMode(pin, mode); }
 
 	
 	/**
@@ -55,14 +55,14 @@ public:
 	 * \return HIGH or LOW, depending on the pin's state.
 	 * \see readPins()
 	 */
-    virtual uint8_t readPin(unsigned int pin) = 0;
+    virtual uint8_t readPin(gpionum_t pin) = 0;
 	
 	/**
 	 * \brief An alias for readPin(), for Arduino compatibility.
 	 *
 	 * \see readPin()
 	 */
-	uint8_t digitalRead(unsigned int pin) { return readPin(pin); }
+	uint8_t digitalRead(gpionum_t pin) { return readPin(pin); }
 	
 	/**
 	 * \brief Set the digital value of a single pin, similar to Arduino's digitalWrite().
@@ -70,14 +70,14 @@ public:
 	 * \param pin The GPIO pin number.
 	 * \param val The new pin state, HIGH or LOW.
 	 */
-	virtual void writePin(unsigned int pin, uint8_t val) = 0;
+	virtual void writePin(gpionum_t pin, uint8_t val) = 0;
 	
 	/**
 	 * \brief An alias for writePin(), for Arduino compatibility.
 	 *
 	 * \see writePin()
 	 */
-	void digitalWrite(unsigned int pin, uint8_t value) { return writePin(pin, value); }
+	void digitalWrite(gpionum_t pin, uint8_t value) { return writePin(pin, value); }
 	
 	
 	/**
@@ -90,7 +90,7 @@ public:
 	 * \param values Array of pin values that were read (output parameter).
 	 * \param numPins Number of pins to read (size of the arrays)
 	 */
-	virtual void readPins(const unsigned int* pins, uint8_t* values, size_t numPins);
+	virtual void readPins(const gpionum_t* pins, uint8_t* values, size_t numPins);
 };
 
 

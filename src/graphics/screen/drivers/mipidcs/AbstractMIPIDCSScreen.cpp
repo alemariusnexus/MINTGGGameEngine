@@ -1,35 +1,32 @@
-#include "AbstractMIPIScreen.h"
+#include "AbstractMIPIDCSScreen.h"
 
-#include "../../../util/Log.h"
-#include "../../../util/Util.h"
+#include "../../../../util/Log.h"
 
 
-LOG_USE_TAG("AbstractMIPIScreen")
+LOG_USE_TAG("AbstractMIPIDCSScreen")
 
 
 namespace MINTGGGameEngine
 {
 
 
-AbstractMIPIScreen::AbstractMIPIScreen (
+AbstractMIPIDCSScreen::AbstractMIPIDCSScreen (
+    PixelFormat pixelFormat, ByteOrder byteOrder,
     uint16_t width, uint16_t height,
     uint16_t offsetX, uint16_t offsetY,
-    bool mirrorX, bool mirrorY, bool swapXY, bool bgrColors,
-    bool swapEndianness,
+    bool mirrorX, bool mirrorY, bool swapXY,
+    bool swapRGBAndBGR,
     uint8_t* staticBuffer
 )
     : BufferedScreen (
+        pixelFormat, byteOrder,
         staticBuffer
             ? staticBuffer
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-            : static_cast<uint8_t*>(heap_caps_malloc(width * height * sizeof(uint16_t), MALLOC_CAP_DMA | MALLOC_CAP_32BIT | MALLOC_CAP_8BIT)),
-#else
-            : static_cast<uint8_t*>(malloc(width * height * sizeof(uint16_t))),
-#endif
+            : AdvancedAlloc(width * height * CalcPixelFormatBytesPerPixel(pixelFormat),
+                ADVANCED_ALLOC_FLAG_UNALIGNED_ACCESS | ADVANCED_ALLOC_FLAG_DMA_ACCESSIBLE),
         width,
         height,
-        &AbstractMIPIScreen::_defaultDelete,
-        swapEndianness
+        &AdvancedFree
         ),
       addressMode(0),
       offsetX(offsetX),
@@ -47,16 +44,28 @@ AbstractMIPIScreen::AbstractMIPIScreen (
     if (swapXY) {
         addressMode |= MIPI_DCS_ADDRESS_MODE_SWAP_XY;
     }
-    if (bgrColors) {
+    if (    (   (   pixelFormat == PixelFormat::BGR565
+                ||  pixelFormat == PixelFormat::BGR888
+                ||  pixelFormat == PixelFormat::XBGR8888
+                )
+            &&  !swapRGBAndBGR
+            )
+        ||  (   (   pixelFormat == PixelFormat::RGB565
+                ||  pixelFormat == PixelFormat::RGB888
+                ||  pixelFormat == PixelFormat::RGBX8888
+                )
+            &&  swapRGBAndBGR
+            )
+    ) {
         addressMode |= MIPI_DCS_ADDRESS_MODE_BGR;
     }
 }
 
-AbstractMIPIScreen::~AbstractMIPIScreen()
+AbstractMIPIDCSScreen::~AbstractMIPIDCSScreen()
 {
 }
 
-bool AbstractMIPIScreen::init()
+bool AbstractMIPIDCSScreen::init()
 {
     if (!BufferedScreen::init()) {
         return false;
@@ -81,7 +90,14 @@ bool AbstractMIPIScreen::init()
         return false;
     }
 
-    cmd = MIPI_DCS_PIXEL_FORMAT_16BIT;
+    const auto bytesPerPixel = CalcPixelFormatBytesPerPixel(getNativePixelFormat());
+    if (bytesPerPixel == 2) {
+        cmd = MIPI_DCS_PIXEL_FORMAT_16BIT;
+    } else if (bytesPerPixel == 3) {
+        cmd = MIPI_DCS_PIXEL_FORMAT_24BIT;
+    } else {
+        assert(false);
+    }
     if (!mipiWriteCommandPlusData(MIPI_DCS_SET_PIXEL_FORMAT, &cmd, 1)) {
         return false;
     }
@@ -101,7 +117,7 @@ bool AbstractMIPIScreen::init()
 }
 
 
-bool AbstractMIPIScreen::mipiSetAddress(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
+bool AbstractMIPIDCSScreen::mipiSetAddress(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2)
 {
     uint8_t data[4];
 

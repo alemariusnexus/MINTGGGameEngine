@@ -36,90 +36,107 @@ struct BMPInfoHeader
 
 
 ImageLoader::ImageLoader()
-    : offsetX(0), offsetY(0), maxWidth(UINT16_MAX), maxHeight(UINT16_MAX)
+    : pixelFormat(PixelFormat::RGB565),
+      alphaStorage(AlphaStorage::Bit1),
+      byteOrder(ByteOrder::Native),
+      offsetX(0), offsetY(0), maxWidth(UINT16_MAX), maxHeight(UINT16_MAX),
+      scaleFactorX(1), scaleFactorY(1),
+      errmsg(nullptr),
+      colorAllocFlags(0)
+{
+}
+
+ImageLoader::ImageLoader(DrawSurface& surfaceForFormat)
+    : pixelFormat(surfaceForFormat.getNativePixelFormat()),
+      alphaStorage(AlphaStorage::Bit1),
+      byteOrder(surfaceForFormat.getNativeByteOrder()),
+      offsetX(0), offsetY(0), maxWidth(UINT16_MAX), maxHeight(UINT16_MAX),
+      scaleFactorX(1), scaleFactorY(1),
+      errmsg(nullptr),
+      colorAllocFlags(0)
 {
 }
 
 Bitmap ImageLoader::loadBitmapBMP(Reader& reader)
 {
-    uint16_t* rgb = nullptr;
-    uint8_t* mask = nullptr;
+    void* rgb = nullptr;
+    void* mask = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(reader, &rgb, &mask, &w, &h, 0)) {
+    if (!loadBMPRaw(reader, &rgb, &mask, &w, &h, 0)) {
         return {};
     }
-    return Bitmap::takeOwnership(w, h, rgb, mask);
+    return Bitmap::takeOwnership(w, h, rgb, mask, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
 Bitmap ImageLoader::loadBitmapBMP(const std::string_view& path)
 {
-    uint16_t* rgb = nullptr;
-    uint8_t* mask = nullptr;
+    void* rgb = nullptr;
+    void* mask = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(path, &rgb, &mask, &w, &h, 0)) {
+    if (!loadBMPRaw(path, &rgb, &mask, &w, &h, 0)) {
         return {};
     }
-    return Bitmap::takeOwnership(w, h, rgb, mask);
+    return Bitmap::takeOwnership(w, h, rgb, mask, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
-Bitmap ImageLoader::loadBitmapBMPMaskOnly(Reader& reader)
+Bitmap ImageLoader::loadBitmapBMPAlphaOnly(Reader& reader)
 {
-    uint8_t* mask = nullptr;
+    void* alpha = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(reader, nullptr, &mask, &w, &h, BMPLoadFlagMaskFromColor)) {
+    if (!loadBMPRaw(reader, nullptr, &alpha, &w, &h, BMPLoadFlagAlphaFromColor)) {
         return {};
     }
-    return Bitmap::takeOwnership(w, h, nullptr, mask);
+    return Bitmap::takeOwnership(w, h, nullptr, alpha, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
-Bitmap ImageLoader::loadBitmapBMPMaskOnly(const std::string_view& path)
+Bitmap ImageLoader::loadBitmapBMPAlphaOnly(const std::string_view& path)
 {
-    uint8_t* mask = nullptr;
+    void* alpha = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(path, nullptr, &mask, &w, &h, BMPLoadFlagMaskFromColor)) {
+    if (!loadBMPRaw(path, nullptr, &alpha, &w, &h, BMPLoadFlagAlphaFromColor)) {
         return {};
     }
-    return Bitmap::takeOwnership(w, h, nullptr, mask);
+    return Bitmap::takeOwnership(w, h, nullptr, alpha, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
-Bitmap ImageLoader::loadBitmapBMPSeparateMask(Reader& rgbReader, Reader& maskReader)
+Bitmap ImageLoader::loadBitmapBMPSeparateAlpha(Reader& rgbReader, Reader& maskReader)
 {
-    uint16_t* rgb = nullptr;
+    void* rgb = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(rgbReader, &rgb, nullptr, &w, &h, 0)) {
+    if (!loadBMPRaw(rgbReader, &rgb, nullptr, &w, &h, 0)) {
         return {};
     }
 
-    uint8_t* mask = nullptr;
+    void* alpha = nullptr;
     uint16_t wm, hm;
-    if (!loadBMPRaw565(maskReader, nullptr, &mask, &wm, &hm, BMPLoadFlagMaskFromColor)) {
+    if (!loadBMPRaw(maskReader, nullptr, &alpha, &wm, &hm, BMPLoadFlagAlphaFromColor)) {
         free(rgb);
         return {};
     }
 
     if (wm != w  ||  hm != h) {
         free(rgb);
-        free(mask);
-        setError("mask dimensions mismatch");
+        free(alpha);
+        setError("alpha dimensions mismatch");
         return {};
     }
 
-    return Bitmap::takeOwnership(w, h, rgb, mask);
+    return Bitmap::takeOwnership(w, h, rgb, alpha, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
-Bitmap ImageLoader::loadBitmapBMPSeparateMask (
+Bitmap ImageLoader::loadBitmapBMPSeparateAlpha (
     const std::string_view& rgbPath,
-    const std::string_view& maskPath
+    const std::string_view& alphaPath
 ) {
-    uint16_t* rgb = nullptr;
+    void* rgb = nullptr;
     uint16_t w, h;
-    if (!loadBMPRaw565(rgbPath, &rgb, nullptr, &w, &h, 0)) {
+    if (!loadBMPRaw(rgbPath, &rgb, nullptr, &w, &h, 0)) {
         return {};
     }
 
-    uint8_t* mask = nullptr;
+    void* mask = nullptr;
     uint16_t wm, hm;
-    if (!loadBMPRaw565(maskPath, nullptr, &mask, &wm, &hm, BMPLoadFlagMaskFromColor)) {
+    if (!loadBMPRaw(alphaPath, nullptr, &mask, &wm, &hm, BMPLoadFlagAlphaFromColor)) {
         free(rgb);
         return {};
     }
@@ -127,16 +144,16 @@ Bitmap ImageLoader::loadBitmapBMPSeparateMask (
     if (wm != w  ||  hm != h) {
         free(rgb);
         free(mask);
-        setError("mask dimensions mismatch");
+        setError("alpha dimensions mismatch");
         return {};
     }
 
-    return Bitmap::takeOwnership(w, h, rgb, mask);
+    return Bitmap::takeOwnership(w, h, rgb, mask, pixelFormat, alphaStorage, byteOrder).scaled(scaleFactorX, scaleFactorY);
 }
 
-bool ImageLoader::loadBMPRaw565 (
+bool ImageLoader::loadBMPRaw (
     const std::string_view& path,
-    uint16_t** outRgb, uint8_t** outMask,
+    void** outRgb, void** outAlpha,
     uint16_t* outWidth, uint16_t* outHeight,
     int flags
 ) {
@@ -146,12 +163,12 @@ bool ImageLoader::loadBMPRaw565 (
         return false;
     }
     BufferedReader reader(freader, fbuf, sizeof(fbuf));
-    return loadBMPRaw565(reader, outRgb, outMask, outWidth, outHeight, flags);
+    return loadBMPRaw(reader, outRgb, outAlpha, outWidth, outHeight, flags);
 }
 
-bool ImageLoader::loadBMPRaw565 (
+bool ImageLoader::loadBMPRaw (
     Reader& reader,
-    uint16_t** outRgb, uint8_t** outMask,
+    void** outRgb, void** outAlpha,
     uint16_t* outWidth, uint16_t* outHeight,
     int flags
 ) {
@@ -210,64 +227,67 @@ bool ImageLoader::loadBMPRaw565 (
 
     const uint16_t ey = offsetY+h-1;
 
-    const bool loadMask =
-        outMask
+    const bool loadAlpha =
+        outAlpha
         &&  (   infoHeader.bitsPerPixel == 32
-                ||  ((flags & BMPLoadFlagMaskFromColor) != 0)
+                ||  ((flags & BMPLoadFlagAlphaFromColor) != 0)
             )
         ;
 
-    uint16_t* rgb = nullptr;
-    uint8_t* mask = nullptr;
+    void* rgb = nullptr;
+    uint8_t* alpha = nullptr;
     bool rgbOwned = false;
     bool maskOwned = false;
-    const size_t maskBytesPerLine = Bitmap::calcMaskBytesPerLine(w);
+    const size_t maskBytesPerLine = Bitmap::calcAlphaBytesPerLine(w);
+    const auto outBytesPerPixel = CalcPixelFormatBytesPerPixel(pixelFormat);
+
+    assert(alphaStorage == AlphaStorage::Bit1);
 
     if (outRgb) {
         if (*outRgb) {
             rgb = *outRgb;
         } else {
-            rgb = static_cast<uint16_t*>(malloc(w * h * sizeof(uint16_t)));
+            rgb = Bitmap::allocDataBuffer(w, h, outBytesPerPixel, colorAllocFlags);
             if (!rgb) {
                 return setError("rgb allocation failed");
             }
             rgbOwned = true;
         }
     }
-    if (loadMask) {
-        if (*outMask) {
-            mask = *outMask;
+    if (loadAlpha) {
+        if (*outAlpha) {
+            alpha = static_cast<uint8_t*>(*outAlpha);
         } else {
-            mask = static_cast<uint8_t*>(malloc(maskBytesPerLine * h * sizeof(uint8_t)));
-            if (!mask) {
+            alpha = static_cast<uint8_t*>(malloc(maskBytesPerLine * h * sizeof(uint8_t)));
+            if (!alpha) {
                 if (rgbOwned) free(rgb);
-                return setError("mask allocation failed");
+                return setError("alpha allocation failed");
             }
             maskOwned = true;
         }
-        memset(mask, 0, maskBytesPerLine*h*sizeof(uint8_t));
+        memset(alpha, 0, maskBytesPerLine*h*sizeof(uint8_t));
     }
 
     if (w != 0  &&  h != 0) {
-        const uint8_t bytesPerPixel = infoHeader.bitsPerPixel/8;
+        const uint8_t inBytesPerPixel = infoHeader.bitsPerPixel/8;
 
         // NOTE: The BMP files this was tested with store pixel data bottom-up, in BGR(A) order.
 
         // Size of data for one full line in BMP file
-        ssize_t lineSize = static_cast<ssize_t>(infoHeader.width*bytesPerPixel);
+        ssize_t lineSize = static_cast<ssize_t>(infoHeader.width*inBytesPerPixel);
         if (lineSize%4 != 0) {
             // Lines are padded to multiples of 4 bytes
             lineSize += 4 - (lineSize%4);
         }
 
-        const size_t interLineSkipSize = lineSize - w*bytesPerPixel;
+        const size_t interLineSkipSize = lineSize - w*inBytesPerPixel;
 
         //timer_mstick_t t4 = TimerGetTickcountMs();
 
         bool seekOk = reader.seek (
             bmpOrigin + fileHeader.dataOffset                               // Start of data block
-            + (infoHeader.height-ey-1)*lineSize                             // Bottom lines until `ey`
-            + sx*bytesPerPixel,
+                    + (infoHeader.height-ey-1)*lineSize                     // Bottom lines until `ey`
+                    + sx*inBytesPerPixel,
             File::SeekSet
             );
         if (!seekOk) {
@@ -280,32 +300,70 @@ bool ImageLoader::loadBMPRaw565 (
             uint8_t bgr[3];
             for (uint16_t outY = h-1 ; outY != UINT16_MAX ; outY--) { // Assumes integer underflow, which IS well-defined
                 const size_t maskLineOffset = outY*maskBytesPerLine;
+                uint8_t* rgbPtr = rgb ? static_cast<uint8_t*>(rgb) + outY*w*outBytesPerPixel : nullptr;
                 for (uint16_t outX = 0 ; outX < w ; outX++) {
                     numRead = reader.read(bgr, 3);
                     if (numRead != 3) {
                         if (rgbOwned) free(rgb);
-                        if (maskOwned) free(mask);
+                        if (maskOwned) free(alpha);
                         return setError("premature end of data");
                     }
                     if (rgb) {
-                        rgb[outY*w + outX] =
-                            ((bgr[2] >> 3) << 11)   // R
-                            | ((bgr[1] >> 2) << 5)  // G
-                            | (bgr[0] >> 3);        // B
+                        switch (pixelFormat) {
+                        case PixelFormat::RGB565:
+                            *reinterpret_cast<uint16_t*>(rgbPtr) = FromNativeByteOrder<uint16_t>(
+                                    ((bgr[2] >> 3) << 11)       // R
+                                        | ((bgr[1] >> 2) << 5)  // G
+                                        | (bgr[0] >> 3),        // B
+                                    byteOrder);
+                            break;
+                        case PixelFormat::BGR565:
+                            *reinterpret_cast<uint16_t*>(rgbPtr) = FromNativeByteOrder<uint16_t>(
+                                    ((bgr[0] >> 3) << 11)       // R
+                                        | ((bgr[1] >> 2) << 5)  // G
+                                        | (bgr[2] >> 3),        // B
+                                    byteOrder);
+                            break;
+                        case PixelFormat::RGB888:
+                            rgbPtr[0] = bgr[2];
+                            rgbPtr[1] = bgr[1];
+                            rgbPtr[2] = bgr[0];
+                            break;
+                        case PixelFormat::BGR888:
+                            rgbPtr[0] = bgr[0];
+                            rgbPtr[1] = bgr[1];
+                            rgbPtr[2] = bgr[2];
+                            break;
+                        case PixelFormat::RGBX8888:
+                            rgbPtr[0] = bgr[2];
+                            rgbPtr[1] = bgr[1];
+                            rgbPtr[2] = bgr[0];
+                            rgbPtr[3] = 255;
+                            break;
+                        case PixelFormat::XBGR8888:
+                            rgbPtr[0] = 255;
+                            rgbPtr[1] = bgr[0];
+                            rgbPtr[2] = bgr[1];
+                            rgbPtr[3] = bgr[2];
+                            break;
+                        default:
+                            assert(false);
+                        }
+                        rgbPtr += outBytesPerPixel;
                     }
-                    if (loadMask) {
+                    if (loadAlpha) {
                         uint16_t rgbSum = static_cast<uint16_t>(bgr[0])
                             + static_cast<uint16_t>(bgr[1])
                             + static_cast<uint16_t>(bgr[2]);
                         if (rgbSum > 127*3) {
-                            mask[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
+                            alpha[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
                         }
                     }
                 }
                 if (outY != 0) { // Important, otherwise seek might fail at end of file!
                     if (!reader.seek(interLineSkipSize, File::SeekCur)) {
                         if (rgbOwned) free(rgb);
-                        if (maskOwned) free(mask);
+                        if (maskOwned) free(alpha);
                         return setError("error seeking data");
                     }
                 }
@@ -314,30 +372,68 @@ bool ImageLoader::loadBMPRaw565 (
             uint8_t bgra[4];
             for (uint16_t outY = h-1 ; outY != UINT16_MAX ; outY--) { // Assumes integer underflow, which IS well-defined
                 const size_t maskLineOffset = outY*maskBytesPerLine;
+                uint8_t* rgbPtr = rgb ? static_cast<uint8_t*>(rgb) + outY*w*outBytesPerPixel : nullptr;
                 for (uint16_t outX = 0 ; outX < w ; outX++) {
                     numRead = reader.read(bgra, 4);
                     if (numRead != 4) {
                         if (rgbOwned) free(rgb);
-                        if (maskOwned) free(mask);
+                        if (maskOwned) free(alpha);
                         return setError("premature end of data");
                     }
                     if (rgb) {
-                        rgb[outY*w + outX] =
-                            ((bgra[2] >> 3) << 11)  // R
-                            | ((bgra[1] >> 2) << 5) // G
-                            | (bgra[0] >> 3);       // B
+                        switch (pixelFormat) {
+                        case PixelFormat::RGB565:
+                            *reinterpret_cast<uint16_t*>(rgbPtr) = FromNativeByteOrder<uint16_t>(
+                                    ((bgra[2] >> 3) << 11)      // R
+                                        | ((bgra[1] >> 2) << 5) // G
+                                        | (bgra[0] >> 3),       // B
+                                    byteOrder);
+                            break;
+                        case PixelFormat::BGR565:
+                            *reinterpret_cast<uint16_t*>(rgbPtr) = FromNativeByteOrder<uint16_t>(
+                                    ((bgra[0] >> 3) << 11)      // R
+                                        | ((bgra[1] >> 2) << 5) // G
+                                        | (bgra[2] >> 3),       // B
+                                    byteOrder);
+                            break;
+                        case PixelFormat::RGB888:
+                            rgbPtr[0] = bgra[2];
+                            rgbPtr[1] = bgra[1];
+                            rgbPtr[2] = bgra[0];
+                            break;
+                        case PixelFormat::BGR888:
+                            rgbPtr[0] = bgra[0];
+                            rgbPtr[1] = bgra[1];
+                            rgbPtr[2] = bgra[2];
+                            break;
+                        case PixelFormat::RGBX8888:
+                            rgbPtr[0] = bgra[2];
+                            rgbPtr[1] = bgra[1];
+                            rgbPtr[2] = bgra[0];
+                            rgbPtr[3] = 255;
+                            break;
+                        case PixelFormat::XBGR8888:
+                            rgbPtr[0] = 255;
+                            rgbPtr[1] = bgra[0];
+                            rgbPtr[2] = bgra[1];
+                            rgbPtr[3] = bgra[2];
+                            break;
+                        default:
+                            assert(false);
+                        }
+                        rgbPtr += outBytesPerPixel;
                     }
-                    if (loadMask) {
-                        if ((flags & BMPLoadFlagMaskFromColor) != 0) {
+                    if (loadAlpha) {
+                        if ((flags & BMPLoadFlagAlphaFromColor) != 0) {
                             uint16_t rgbSum = static_cast<uint16_t>(bgra[0])
                                 + static_cast<uint16_t>(bgra[1])
                                 + static_cast<uint16_t>(bgra[2]);
                             if (rgbSum > 127*3) {
-                                mask[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
+                                alpha[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
                             }
                         } else {
                             if (bgra[3] > 127) {
-                                mask[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
+                                alpha[maskLineOffset + (outX>>3)] |= (0x80 >> (outX&7));
                             }
                         }
                     }
@@ -345,7 +441,7 @@ bool ImageLoader::loadBMPRaw565 (
                 if (outY != 0) { // Important, otherwise seek might fail at end of file!
                     if (!reader.seek(interLineSkipSize, File::SeekCur)) {
                         if (rgbOwned) free(rgb);
-                        if (maskOwned) free(mask);
+                        if (maskOwned) free(alpha);
                         return setError("error seeking data");
                     }
                 }
@@ -366,8 +462,8 @@ bool ImageLoader::loadBMPRaw565 (
     if (outRgb  &&  !*outRgb) {
         *outRgb = rgb;
     }
-    if (outMask  &&  !*outMask) {
-        *outMask = mask;
+    if (outAlpha  &&  !*outAlpha) {
+        *outAlpha = alpha;
     }
 
     return true;

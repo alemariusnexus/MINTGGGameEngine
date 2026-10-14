@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../../../Globals.h"
-#include "../../../core/Engine.h"
+#include "../../../../Globals.h"
+#include "../../../../core/Engine.h"
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
 #   include <driver/spi_master.h>
 #endif
 
-#include "AbstractMIPIScreen.h"
+#include "AbstractMIPIDCSScreen.h"
 
 
 namespace MINTGGGameEngine
@@ -20,7 +20,7 @@ namespace MINTGGGameEngine
  * interfaces, but they are not handled by this class.
  * A hardware SPI peripheral is used to communicate with the screen.
  */
-class ScreenST7735 : public AbstractMIPIScreen
+class ScreenST7735 : public AbstractMIPIDCSScreen
 {
 public:
     struct Config
@@ -56,12 +56,14 @@ public:
 public:
     ScreenST7735(const Config& cfg);
     virtual ~ScreenST7735();
+
+    bool init() override;
     
     void commit() override;
 
 protected:
     bool mipiInitBus() override;
-    bool mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length) override;
+    bool mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length) override;
 
     bool doHWReset() override;
 

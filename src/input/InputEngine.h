@@ -92,13 +92,13 @@ private:
 
     struct ButtonDef
     {
-        ButtonDef(const std::string& id, unsigned int pin, GPIODevice* dev, int flags)
+        ButtonDef(const std::string& id, gpionum_t pin, GPIODevice* dev, int flags)
             : id(id), pin(pin), dev(dev), flags(flags), rawState(0), pressed(false),
               stateChangeFlags(0), stateChangeFlagsBuffered(0), debounceCount(0)
             {}
         
         std::string id;
-		unsigned int pin;
+		gpionum_t pin;
         GPIODevice* dev;
         int flags;
         
@@ -111,11 +111,11 @@ private:
     
     struct AxisDef
     {
-        AxisDef(const std::string& id, uint8_t pin) : id(id), pin(pin), minValue(0.0f), maxValue(1.0f),
+        AxisDef(const std::string& id, gpionum_t pin) : id(id), pin(pin), minValue(0.0f), maxValue(1.0f),
                 neutralValue(0.5f), neutralWidth(0.1f), rawValue(0.5f), value(0.5f) {}
         
         std::string id;
-        uint8_t pin;
+        gpionum_t pin;
         float minValue;
         float maxValue;
         float neutralValue;
@@ -195,7 +195,7 @@ public:
      */
     bool defineButton (
 			const std::string& id,
-			unsigned int pin,
+			gpionum_t pin = -1,
 			GPIODevice& gpioDevice = GPIODeviceNative::getInstance(),
 			int flags = PinFlagsActiveLow | PinFlagsPullup
 			);
@@ -250,7 +250,7 @@ public:
      * \return true if successful, false otherwise.
      */
     bool defineAxis (
-            const std::string& id, uint8_t pin,
+            const std::string& id, gpionum_t pin = -1,
             float minValue = 0.0f, float maxValue = 1.0f,
             float neutralValue = 0.5f, float neutralWidth = 0.1f
             );

@@ -2,10 +2,6 @@
 
 #include "../../../Globals.h"
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-#   include <esp_heap_caps.h>
-#endif
-
 #include "../BufferedScreen.h"
 
 
@@ -25,17 +21,10 @@ namespace MINTGGGameEngine
 class ScreenNull : public BufferedScreen
 {
 public:
-    ScreenNull(uint16_t width = 160, uint16_t height = 128);
+    ScreenNull(uint16_t width, uint16_t height);
+    ScreenNull();
 
-private:
-    static void _defaultDelete(uint8_t* buf)
-    {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-        heap_caps_free(buf);
-#else
-        free(buf);
-#endif
-    }
+    bool init() override;
 };
 
 }

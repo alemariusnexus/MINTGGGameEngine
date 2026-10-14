@@ -1,12 +1,14 @@
 #pragma once
 
-#include "../../../Globals.h"
+#include "../../../../Globals.h"
+
+#include "../../../../util/Util.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #   include <esp_heap_caps.h>
 #endif
 
-#include "../BufferedScreen.h"
+#include "../../BufferedScreen.h"
 
 
 // MIPI_DCS defines taken from hagl_hal
@@ -95,37 +97,28 @@ namespace MINTGGGameEngine
  * framebuffer data. Subclasses must still handle the specific hardware interfaces and vendor-specific requirements
  * of individual screen models.
  */
-class AbstractMIPIScreen : public BufferedScreen
+class AbstractMIPIDCSScreen : public BufferedScreen
 {
 public:
-    AbstractMIPIScreen (
+    AbstractMIPIDCSScreen (
+        PixelFormat pixelFormat, ByteOrder byteOrder,
         uint16_t width, uint16_t height,
         uint16_t offsetX = 0, uint16_t offsetY = 0,
-        bool mirrorX = false, bool mirrorY = false, bool swapXY = false, bool bgrColors = false,
-        bool swapEndianness = false,
+        bool mirrorX = false, bool mirrorY = false, bool swapXY = false,
+        bool swapRGBAndBGR = false,
         uint8_t* staticBuffer = nullptr
         );
-    ~AbstractMIPIScreen() override;
+    ~AbstractMIPIDCSScreen() override;
 
     bool init() override;
 
 protected:
     virtual bool mipiInitBus() = 0;
-    virtual bool mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length) = 0;
+    virtual bool mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length) = 0;
 
     virtual bool doHWReset() = 0;
 
     bool mipiSetAddress(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2);
-
-private:
-    static void _defaultDelete(uint8_t* buf)
-    {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-        heap_caps_free(buf);
-#else
-        free(buf);
-#endif
-    }
 
 private:
     uint8_t addressMode;

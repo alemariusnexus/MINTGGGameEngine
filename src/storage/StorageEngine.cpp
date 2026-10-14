@@ -29,7 +29,7 @@ StorageEngine& StorageEngine::getInstance()
 
 
 StorageEngine::StorageEngine()
-    : game(nullptr)
+    : game(nullptr), appRootDir("")
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     sdcard = nullptr;
@@ -71,17 +71,29 @@ void StorageEngine::shutdown()
 {
 }
 
+void StorageEngine::setAppRootDirectory(const std::string& rootDir)
+{
+    if (appRootDir == rootDir) {
+        return;
+    }
+
+    LogInfo("Set app root directory: %s", rootDir.c_str());
+
+    appRootDir = rootDir;
+}
+
+std::string StorageEngine::getAppRootDirectory() const
+{
+    return appRootDir;
+}
+
 std::string StorageEngine::getConfigDirectory() const
 {
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
-    const QString cfgDirPathCandidates[] = {
-        QString("%1/config").arg(qApp->applicationDirPath())
-    };
+    auto configDir = appRootDir + "/config";
 
-    for (const auto& cfgDirPath : cfgDirPathCandidates) {
-        if (QFileInfo(cfgDirPath).isDir()) {
-            return cfgDirPath.toStdString();
-        }
+    if (QFileInfo(QString::fromStdString(configDir)).isDir()) {
+        return configDir;
     }
 
     return {};
@@ -135,6 +147,14 @@ bool StorageEngine::mountSDCard (
         return false;
     }
 
+    auto cardSizeMB = static_cast<uint32_t>(
+        (static_cast<uint64_t>(sdcard->csd.capacity) * sdcard->csd.sector_size) / (1024*1024));
+    LogInfo("SD card mounted successfuly. Mount Point: %s, Name: %s, Size: %luMiB",
+        mountPoint,
+        sdcard->cid.name,
+        static_cast<long unsigned>(cardSizeMB)
+        );
+
     return true;
 }
 
@@ -158,7 +178,7 @@ bool StorageEngine::mountSPIFFS (
 ) {
     esp_vfs_spiffs_conf_t conf = {
         .base_path = mountPoint,
-        .partition_label = NULL,
+        .partition_label = nullptr,
         .max_files = 5,
         .format_if_mount_failed = true
     };
@@ -168,6 +188,20 @@ bool StorageEngine::mountSPIFFS (
         LogError("Error registering SPIFFS: %s", esp_err_to_name(res));
         return false;
     }
+
+    size_t totalSize, usedBytes;
+    res = esp_spiffs_info(nullptr, &totalSize, &usedBytes);
+    if (res != ESP_OK) {
+        LogError("Error fetching SPIFFS info: %s", esp_err_to_name(res));
+        return false;
+    }
+
+    LogInfo("SPIFFS mounted successfully. Mount Point: %s, Size: %uKiB, Used: %uKiB (%.1f%%)",
+        mountPoint,
+        static_cast<unsigned int>(totalSize / 1024),
+        static_cast<unsigned int>(usedBytes / 1024),
+        (static_cast<float>(usedBytes) / static_cast<float>(totalSize)) * 100.0f
+        );
 
     return true;
 }
@@ -253,9 +287,8 @@ bool StorageEngine::hasValue(const std::string_view& key)
 
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
 
-bool StorageEngine::mountSDCard (
-        const char* mountPoint
-) {
+bool StorageEngine::mountPath(const char* mountPoint, const char* targetPath)
+{
     if (mountPoint[0] != '/') {
         return false;
     }
@@ -265,23 +298,28 @@ bool StorageEngine::mountSDCard (
         mountPointStr.erase(mountPointStr.length()-1);
     }
 
-    const QString mountDirCands[] = {
-        QString("%1%2").arg(qApp->applicationDirPath()).arg(QString::fromStdString(mountPointStr))
-    };
-
-    for (const auto& mountDir : mountDirCands) {
-        if (QFileInfo(mountDir).isDir()) {
-            sdMountPoints[mountPointStr] = mountDir.toStdString();
-            return true;
-        }
+    if (!QFileInfo(targetPath).isDir()) {
+        LogError("Failed to mount path '%s' as '%s': No such file or directory", targetPath, mountPoint);
+        return false;
     }
 
-    return false;
+    mountPoints[mountPointStr] = targetPath;
+
+    LogInfo("Mounted path '%s' as '%s' successfully.", targetPath, mountPoint);
+
+    return true;
 }
 
-void StorageEngine::unmountSDCard(const char* mountPoint)
+bool StorageEngine::mountStandardPath(const char* mountPoint, const char* targetDirName)
 {
-    sdMountPoints.erase(mountPoint);
+    using namespace std::string_literals;
+    std::string targetPath = appRootDir + "/"s + targetDirName;
+    return mountPath(mountPoint, targetPath.c_str());
+}
+
+void StorageEngine::unmountPath(const char* mountPoint)
+{
+    mountPoints.erase(mountPoint);
 }
 
 bool StorageEngine::hasValue(const std::string_view& key)
@@ -296,7 +334,7 @@ std::string StorageEngine::resolvePath(const std::string& path)
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     using namespace std::string_literals;
 
-    for (const auto& sdMountPoint : sdMountPoints) {
+    for (const auto& sdMountPoint : mountPoints) {
         if (path.starts_with(sdMountPoint.first)) {
             return sdMountPoint.second + path.substr(sdMountPoint.first.length());
         }

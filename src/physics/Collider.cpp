@@ -20,8 +20,8 @@ Collider::Collider(const Collider& o)
     if (type == Type::Null) {
             // Nothing to do
     } else if (type == Type::Circle) {
-            circle.cx = o.circle.cx;
-            circle.cy = o.circle.cy;
+            circle.x = o.circle.x;
+            circle.y = o.circle.y;
             circle.r = o.circle.r;
     } else if (type == Type::Rect) {
         rect.x = o.rect.x;
@@ -41,8 +41,8 @@ Collider& Collider::operator=(const Collider& o)
         if (type == Type::Null) {
             // Nothing to do
         } else if (type == Type::Circle) {
-            circle.cx = o.circle.cx;
-            circle.cy = o.circle.cy;
+            circle.x = o.circle.x;
+            circle.y = o.circle.y;
             circle.r = o.circle.r;
         } else if (type == Type::Rect) {
             rect.x = o.rect.x;
@@ -79,14 +79,20 @@ float Collider::getHeight() const
 }
 
 
-Collider Collider::toWorld(float px, float py, FlipDir flip) const
+Collider Collider::toWorld(float px, float py, float scaleX, float scaleY, Rotation rotation, FlipDir flip) const
 {
+    (void) flip;
     if (type == Type::Null) {
-        return Collider();
+        return {};
     } else if (type == Type::Circle) {
-        return Collider::createCircle(circle.cx+px, circle.cy+py, circle.r);
+        // TODO: Handle scaleX != scaleY (which results in an oval)
+        return Collider::createCircle(circle.x+px, circle.y+py, circle.r*scaleX);
     } else if (type == Type::Rect) {
-        return Collider::createRect(rect.x+px, rect.y+py, rect.w, rect.h);
+        if (rotation == Rotation::Rot0  ||  rotation == Rotation::Rot180) {
+            return Collider::createRect(rect.x+px, rect.y+py, rect.w*scaleX, rect.h*scaleY);
+        } else {
+            return Collider::createRect(rect.x+px, rect.y+py, rect.h*scaleY, rect.w*scaleX);
+        }
     }
     assert(false);
     return *this;
@@ -98,7 +104,7 @@ Collider Collider::shrunk(float shrink) const
     if (type == Type::Null) {
         return Collider();
     } else if (type == Type::Circle) {
-        return Collider::createCircle(circle.cx, circle.cy, circle.r-shrink);
+        return Collider::createCircle(circle.x+shrink, circle.y+shrink, circle.r-shrink*0.5f);
     } else if (type == Type::Rect) {
         return Collider::createRect(rect.x+shrink, rect.y+shrink, rect.w-2*shrink, rect.h-2*shrink);
     }
@@ -135,12 +141,27 @@ bool Collider::collides(const Collider& other, float shrink) const
 }
 
 
-void Collider::debugDraw(Screen& screen, const Color& color, const Vec2& offset)
+void Collider::debugDraw(DrawSurface& surface, const Color& color, const Vec2& offset, float scaleX, float scaleY)
 {
     if (type == Type::Circle) {
-        screen.drawCircle(circle.cx+offset.x(), circle.cy+offset.y(), circle.r, color, false);
+        auto center = getCenterPosition();
+        surface.drawCircle (
+            // TODO: Support scaleX != scaleY (which would be an oval)
+            static_cast<int32_t>(std::round(center.x()*scaleX + offset.x())),
+            static_cast<int32_t>(std::round(center.y()*scaleY + offset.y())),
+            static_cast<int32_t>(std::round(circle.r * scaleX)),
+            color,
+            false
+            );
     } else if (type == Type::Rect) {
-        screen.drawRect(rect.x+offset.x(), rect.y+offset.y(), rect.w, rect.h, color, false);
+        surface.drawRect (
+            static_cast<int32_t>(std::round(rect.x*scaleX + offset.x())),
+            static_cast<int32_t>(std::round(rect.y*scaleY + offset.y())),
+            static_cast<int32_t>(std::round(rect.w * scaleX)),
+            static_cast<int32_t>(std::round(rect.h * scaleY)),
+            color,
+            false
+            );
     }
 }
 
@@ -155,7 +176,7 @@ size_t Collider::castRay (
     
     if (type == Type::Circle) {
         
-        const Vec2 startToCenter = Vec2(circle.cx, circle.cy) - start;
+        const Vec2 startToCenter = getCenterPosition() - start;
         
         const float distRayFromCenterSin = sinf(direction.angle(startToCenter));
         const float distRayFromCenterSq = startToCenter.lengthSq() * distRayFromCenterSin*distRayFromCenterSin;
@@ -277,11 +298,26 @@ size_t Collider::castRay (
 }
 
 
+Vec2 Collider::getCenterPosition() const
+{
+    if (type == Type::Null) {
+        return {};
+    } else if (type == Type::Circle) {
+        [[likely]]
+        return {circle.x+circle.r, circle.y+circle.r};
+    } else if (type == Type::Rect) {
+        return {rect.x+rect.w*0.5f, rect.y+rect.h*0.5f};
+    }
+    assert(false);
+    return {};
+}
+
+
 bool Collider::collidesCircleCircle(const Collider& a, const Collider& b)
 {
-    float dx = b.circle.cx - a.circle.cx;
-    float dy = b.circle.cy - a.circle.cy;
-    return sqrtf(dx*dx + dy*dy) < a.circle.r+b.circle.r;
+    Vec2 d = b.getCenterPosition() - a.getCenterPosition();
+    float sumR = a.circle.r + b.circle.r;
+    return d.lengthSq() < sumR*sumR;
 }
 
 
@@ -296,21 +332,21 @@ bool Collider::collidesRectRect(const Collider& a, const Collider& b)
 
 bool Collider::collidesCircleRect(const Collider& c, const Collider& r)
 {
-    float rectX = c.circle.cx;
-    float rectY = c.circle.cy;
-    if (c.circle.cx < r.rect.x) {
+    const auto cCenter = c.getCenterPosition();
+    float rectX = cCenter.x();
+    float rectY = cCenter.y();
+    if (cCenter.x() < r.rect.x) {
         rectX = r.rect.x;
-    } else if (c.circle.cx > r.rect.x+r.rect.w) {
+    } else if (cCenter.x() > r.rect.x+r.rect.w) {
         rectX = r.rect.x+r.rect.w;
     }
-    if (c.circle.cy < r.rect.y) {
+    if (cCenter.y() < r.rect.y) {
         rectY = r.rect.y;
-    } else if (c.circle.cy > r.rect.y+r.rect.h) {
+    } else if (cCenter.y() > r.rect.y+r.rect.h) {
         rectY = r.rect.y+r.rect.h;
     }
-    float dx = c.circle.cx - rectX;
-    float dy = c.circle.cy - rectY;
-    return sqrtf(dx*dx + dy*dy) < c.circle.r;
+    Vec2 d(cCenter.x()-rectX, cCenter.y()-rectY);
+    return d.lengthSq() < c.circle.r*c.circle.r;
 }
 
 

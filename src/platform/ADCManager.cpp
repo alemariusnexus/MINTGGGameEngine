@@ -17,8 +17,11 @@ ADCManager::ADCManager()
 {
 }
 
-bool ADCManager::setupAnalogPin(uint8_t pin)
+bool ADCManager::setupAnalogPin(gpionum_t pin)
 {
+    if (pin < 0) {
+        return false;
+    }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     // Nothing to do
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)
@@ -54,13 +57,16 @@ bool ADCManager::setupAnalogPin(uint8_t pin)
     return true;
 }
 
-void ADCManager::destroyAnalogPin(uint8_t pin)
+void ADCManager::destroyAnalogPin(gpionum_t pin)
 {
     // Nothing to do
 }
 
-uint32_t ADCManager::readRaw(uint8_t pin)
+uint32_t ADCManager::readRaw(gpionum_t pin)
 {
+    if (pin < 0) {
+        return 0;
+    }
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     return analogRead(pin);
 #elif defined(MINTGGGAMEENGINE_PORT_ESPIDF)

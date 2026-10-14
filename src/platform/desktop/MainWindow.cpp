@@ -28,6 +28,11 @@ void MainWindow::setup(Game* game)
     inst = new MainWindow(game);
 }
 
+void MainWindow::shutdown(Game* game)
+{
+    inst->close();
+}
+
 MainWindow* MainWindow::instance()
 {
     return inst;
@@ -35,12 +40,9 @@ MainWindow* MainWindow::instance()
 
 
 MainWindow::MainWindow(Game* game)
-    : QMainWindow(), game(game), pixmapTransformMode(Qt::FastTransformation)
+    : QMainWindow(), game(game), transformMode(TransformMode::Fast), keepAspectRatio(true)
 {
     setWindowTitle(QString::fromStdString(game->getApplicationName()));
-
-    qApp->setOrganizationName("MINTGGGameEngine");
-    qApp->setApplicationName(QString::fromStdString(game->getApplicationID()));
 
     setFocusPolicy(Qt::StrongFocus);
 
@@ -60,19 +62,94 @@ MainWindow::MainWindow(Game* game)
 
     loadConfig();
 
+    if (StorageEngine::getInstance().hasValue("_QtMainGeometry")) {
+        auto geom = QByteArray::fromStdString(StorageEngine::getInstance().readValue<std::string>("_QtMainGeometry"));
+        restoreGeometry(geom);
+    }
+
     show();
 }
 
-void MainWindow::displayFrame(const uint8_t* data, uint16_t width, uint16_t height, QImage::Format format)
-{
-    QImage screenImage(data, width, height, format);
+void MainWindow::displayFrame (
+    const void* data,
+    uint16_t width, uint16_t height,
+    PixelFormat pixelFormat, ByteOrder byteOrder
+) {
+    if (pixelFormat == PixelFormat::RGBX8888  ||  pixelFormat == PixelFormat::XBGR8888) {
+        // TODO: Support these formats maybe.
+        return;
+    }
+
+    QImage screenImage;
+
+    auto qimageData = new uchar[width*height*CalcPixelFormatBytesPerPixel(pixelFormat)];
+    bool qimageDataFilled = false;
+
+    if (byteOrder != ByteOrder::Native) {
+        if (pixelFormat == PixelFormat::RGB565  ||  pixelFormat == PixelFormat::BGR565) {
+            // Swap endianness
+            auto data16 = reinterpret_cast<uint16_t*>(const_cast<void*>(data));
+            auto qimageData16 = reinterpret_cast<uint16_t*>(qimageData);
+            for (uint16_t y = 0 ; y < height ; y++) {
+                for (uint16_t x = 0 ; x < width ; x++) {
+                    *qimageData16++ = SwapEndianness(*data16++);
+                }
+            }
+            qimageDataFilled = true;
+        } else if ( pixelFormat == PixelFormat::RGB888
+                ||  pixelFormat == PixelFormat::BGR888
+                ||  pixelFormat == PixelFormat::RGBX8888
+                ||  pixelFormat == PixelFormat::XBGR8888
+        ) {
+            // Byte order doesn't have a meaning for these formats
+        } else {
+            assert(false);
+        }
+    }
+
+    if (!qimageDataFilled) {
+        memcpy(qimageData, data, width*height*CalcPixelFormatBytesPerPixel(pixelFormat));
+    }
+
+    const QImageCleanupFunction cleanupFunc = [](void* d) { delete[] reinterpret_cast<uchar*>(d); };
+    switch (pixelFormat) {
+    case PixelFormat::RGB565:
+        screenImage = QImage(reinterpret_cast<const uchar*>(qimageData), width, height, QImage::Format_RGB16,
+            cleanupFunc, qimageData);
+        break;
+    case PixelFormat::BGR565:
+        screenImage = QImage(reinterpret_cast<const uchar*>(qimageData), width, height, QImage::Format_RGB16,
+            cleanupFunc, qimageData);
+        screenImage.rgbSwap();
+        break;
+    case PixelFormat::RGB888:
+        screenImage = QImage(reinterpret_cast<const uchar*>(qimageData), width, height, QImage::Format_RGB888,
+            cleanupFunc, qimageData);
+        break;
+    case PixelFormat::BGR888:
+        screenImage = QImage(reinterpret_cast<const uchar*>(qimageData), width, height, QImage::Format_BGR888,
+            cleanupFunc, qimageData);
+        break;
+    default:
+        assert(false);
+        delete[] qimageData;
+        return;
+    }
 
     graphicsScene->clear();
 
     QGraphicsPixmapItem* item = graphicsScene->addPixmap(QPixmap::fromImage(screenImage));
-    item->setTransformationMode(pixmapTransformMode);
 
-    graphicsView->fitInView(0, 0, width, height, Qt::KeepAspectRatio);
+    if (transformMode == TransformMode::None) {
+        item->setTransformationMode(Qt::FastTransformation);
+        graphicsView->resetTransform();
+    } else if (transformMode == TransformMode::Fast) {
+        item->setTransformationMode(Qt::FastTransformation);
+        graphicsView->fitInView(0, 0, width, height, keepAspectRatio ? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio);
+    } else if (transformMode == TransformMode::Smooth) {
+        item->setTransformationMode(Qt::SmoothTransformation);
+        graphicsView->fitInView(0, 0, width, height, keepAspectRatio ? Qt::KeepAspectRatio : Qt::IgnoreAspectRatio);
+    }
 }
 
 void MainWindow::loadConfig()
@@ -112,15 +189,22 @@ void MainWindow::loadConfig()
 
         QString transformMode = jdoc.object().value("screen").toObject().value("transformMode").toString().toLower();
         if (transformMode == "smooth") {
-            pixmapTransformMode = Qt::SmoothTransformation;
+            this->transformMode = TransformMode::Smooth;
         } else if (transformMode == "fast") {
-            pixmapTransformMode = Qt::FastTransformation;
+            this->transformMode = TransformMode::Fast;
+        } else if (transformMode == "none") {
+            this->transformMode = TransformMode::None;
         }
+
+        keepAspectRatio = jdoc.object().value("screen").toObject().value("keepAspectRatio").toBool(keepAspectRatio);
     }
 }
 
 void MainWindow::closeEvent(QCloseEvent* evt)
 {
+    QByteArray geom = saveGeometry();
+    StorageEngine::getInstance().writeValue("_QtMainGeometry", geom.toStdString());
+
     game->quit();
 }
 
@@ -149,6 +233,17 @@ void MainWindow::keyReleaseEvent(QKeyEvent* evt)
     std::string buttonID = mapQtKeyToButtonID(static_cast<Qt::Key>(evt->key()));
     if (!buttonID.empty()) {
         game->input().injectButtonRelease(buttonID);
+    }
+}
+
+void MainWindow::mouseDoubleClickEvent(QMouseEvent* evt)
+{
+    QMainWindow::mouseDoubleClickEvent(evt);
+
+    if (isFullScreen()) {
+        showNormal();
+    } else {
+        showFullScreen();
     }
 }
 

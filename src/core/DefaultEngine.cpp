@@ -6,15 +6,21 @@
 #include "../util/Log.h"
 #include "../util/Util.h"
 #include "../graphics/screen/drivers/ScreenNull.h"
-#include "../graphics/screen/drivers/ScreenST7735.h"
+#include "../graphics/screen/drivers/mipidcs/ScreenILI9341.h"
+#include "../graphics/screen/drivers/mipidcs/ScreenST7735.h"
+#include "../addons/mipidsi/ScreenRPiTC358762.h"
+#include "../platform/PlatformManager.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #include "esp_heap_caps.h"
+#include "esp_idf_version.h"
 #include "nvs_flash.h"
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
 #include <QApplication>
+#include <QFileInfo>
+#include <QtVersion>
 
 #include "../platform/desktop/MainWindow.h"
 #endif
@@ -26,8 +32,6 @@ LOG_USE_TAG("DefaultEngine")
 
 namespace MINTGGGameEngine
 {
-
-
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 void HeapCapsAllocFailedHook (
@@ -45,16 +49,18 @@ void HeapCapsAllocFailedHook (
 void DefaultEngine::initConfig(SetupConfig& cfg)
 {
     cfg.game = nullptr;
-    cfg.appID = nullptr;
-    cfg.appName = nullptr;
-    cfg.sdCardMountPoint = nullptr;
-    cfg.internalStorageMountPoint = nullptr;
-    cfg.screen = nullptr;
-    cfg.pins.spiMISO = -1;
-    cfg.pins.spiMOSI = -1;
-    cfg.pins.spiSCK = -1;
-    cfg.pins.sdCardCS = -1;
-    cfg.pins.speaker = -1;
+
+    cfg.appID = MGG_APP_ID;
+    cfg.appName = MGG_APP_NAME;
+
+    cfg.sdCardMountPoint = MGG_STORAGE_SDCARD_MOUNT_POINT;
+    cfg.internalStorageMountPoint = MGG_STORAGE_INTERNAL_MOUNT_POINT;
+
+    cfg.pins.sdcard.miso = MGG_STORAGE_SDCARD_PIN_MISO;
+    cfg.pins.sdcard.mosi = MGG_STORAGE_SDCARD_PIN_MOSI;
+    cfg.pins.sdcard.sck = MGG_STORAGE_SDCARD_PIN_SCK;
+    cfg.pins.sdcard.cs = MGG_STORAGE_SDCARD_PIN_CS;
+    cfg.pins.audio.speaker = MGG_AUDIO_SPEAKER_PIN;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     cfg.pfESPIDF.spiHost = SPI2_HOST;
@@ -73,18 +79,23 @@ DefaultEngine::DefaultEngine()
 
 bool DefaultEngine::earlySetup()
 {
+    DelayTaskMs(500);
+
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
     initSerial();
 #endif
 
-    LogInfo("*** BEGIN ENGINE SETUP ***");
+    DelayTaskMs(500);
+
+    LogInfo("********** BEGIN ENGINE SETUP **********");
+    LogInfo("MINTGGGameEngine version: %s", MINTGGGAMEENGINE_VERSION_STRING);
 
     earlySetupDone = true;
 
     return true;
 }
 
-bool DefaultEngine::setup(SetupConfig* cfg)
+bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
 {
     if (!earlySetupDone) {
         if (!earlySetup()) {
@@ -93,31 +104,34 @@ bool DefaultEngine::setup(SetupConfig* cfg)
         LogWarning("You forgot to call earlySetup() before setup()!");
     }
 
-    if (!cfg->internalStorageMountPoint) {
-        cfg->internalStorageMountPoint = "/storage";
-    }
-    if (!cfg->sdCardMountPoint) {
-        cfg->sdCardMountPoint = "/sdcard";
-    }
-
     setupCfg = *cfg;
 
     game = cfg->game;
-    screen = cfg->screen;
+    screen = nullptr;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    LogInfo("Platform: ESP-IDF");
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    LogInfo("Platform: ESP-IDF (version %s, via Arduino)", esp_get_idf_version());
+#else
+    LogInfo("Platform: ESP-IDF (version %s)", esp_get_idf_version());
+#endif
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     LogInfo("Platform: Arduino");
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-    LogInfo("Platform: Desktop");
+    LogInfo("Platform: Desktop (using Qt %s, compiled for %s)", qVersion(), QT_VERSION_STR);
+#endif
+
+#if MGG_ENABLE_COPYLEFT_ADDONS
+    LogWarning("Engine compiled with copyleft addons. Make sure you follow their licensing terms!");
+#else
+    LogInfo("Engine compiled without copyleft addons.");
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
-    // TODO: Use proper argc and argv here
-    int argc = 0;
-    char** argv = nullptr;
     pfDesktop.qapp = new QApplication(argc, argv);
+
+    pfDesktop.qapp->setOrganizationName("MINTGGGameEngine");
+    pfDesktop.qapp->setApplicationName(QString::fromStdString(game->getApplicationID()));
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -129,12 +143,13 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     TimerInit();
 
-    game->setApplicationID(cfg->appID ? cfg->appID : "mygame");
-    game->setApplicationName(cfg->appName ? cfg->appName : game->getApplicationID());
+    game->setApplicationID(cfg->appID);
+    game->setApplicationName(cfg->appName);
 
-#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
-    MainWindow::setup(game);
-#endif
+    LogInfo("Application: %s (%s)", game->getApplicationName().c_str(), game->getApplicationID().c_str());
+
+    LogInfo("Initializing platform...");
+    initPlatform(cfg);
 
     LogInfo("Initializing SPI bus...");
     initSPI(cfg);
@@ -156,9 +171,13 @@ bool DefaultEngine::setup(SetupConfig* cfg)
 
     mountInternalStorage(cfg);
 
-	mountSDCard(cfg);
+    mountSDCard(cfg);
 
-    LogInfo("*** END ENGINE SETUP ***");
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    MainWindow::setup(game);
+#endif
+
+    LogInfo("********** END ENGINE SETUP **********");
 
     return true;
 }
@@ -227,7 +246,11 @@ void DefaultEngine::shutdown()
 {
     // TODO: Implement proper shutdown
 
-    LogInfo("Shutting down engine...");
+    LogInfo("********** BEGIN ENGINE SHUTDOWN **********");
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    MainWindow::shutdown(game);
+#endif
 
     unmountSDCard();
 
@@ -251,17 +274,24 @@ void DefaultEngine::shutdown()
     LogInfo("Shutting down SPI bus...");
     shutdownSPI();
 
+    LogInfo("Shutting down platform...");
+    shutdownPlatform();
+
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     pfDesktop.qapp->quit();
 #endif
 
-    LogInfo("*** END ENGINE SHUTDOWN ***");
+    LogInfo("********** END ENGINE SHUTDOWN **********");
 }
 
 
 void DefaultEngine::initStorage(SetupConfig* cfg)
 {
     game->storage().begin(*game);
+
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    game->storage().setAppRootDirectory(QFileInfo(pfDesktop.appDir).absolutePath().toStdString());
+#endif
 }
 
 void DefaultEngine::shutdownStorage()
@@ -269,14 +299,43 @@ void DefaultEngine::shutdownStorage()
     game->storage().shutdown();
 }
 
+void DefaultEngine::initPlatform(SetupConfig* cfg)
+{
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    pfDesktop.cliParser.setApplicationDescription(QString("%1 (%2)")
+        .arg(QString::fromStdString(game->getApplicationName()))
+        .arg(QString::fromStdString(game->getApplicationID())));
+    pfDesktop.cliParser.addHelpOption();
+
+    QCommandLineOption appDirOpt (
+        QStringList() << "d" << "appdir",
+        "Path to app directory.",
+        "APPDIR",
+        qApp->applicationDirPath()
+        );
+    pfDesktop.cliParser.addOption(appDirOpt);
+
+    pfDesktop.cliParser.process(*qApp);
+
+    pfDesktop.appDir = pfDesktop.cliParser.value(appDirOpt);
+#endif
+
+    PlatformManager::getInstance().setup();
+}
+
+void DefaultEngine::shutdownPlatform()
+{
+    PlatformManager::getInstance().shutdown();
+}
+
 void DefaultEngine::initSPI(SetupConfig* cfg)
 {
-    if (cfg->pins.spiMOSI >= 0  ||  cfg->pins.spiMISO >= 0  ||  cfg->pins.spiSCK >= 0) {
+    if (cfg->pins.sdcard.mosi >= 0  ||  cfg->pins.sdcard.miso >= 0  ||  cfg->pins.sdcard.sck >= 0) {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
         spi_bus_config_t busCfg = {
-            .mosi_io_num = cfg->pins.spiMOSI,
-            .miso_io_num = cfg->pins.spiMISO,
-            .sclk_io_num = cfg->pins.spiSCK,
+            .mosi_io_num = cfg->pins.sdcard.mosi,
+            .miso_io_num = cfg->pins.sdcard.miso,
+            .sclk_io_num = cfg->pins.sdcard.sck,
             .quadwp_io_num = -1,
             .quadhd_io_num = -1,
             .max_transfer_sz = static_cast<int>(cfg->pfESPIDF.spiMaxTransferSize),
@@ -301,7 +360,7 @@ void DefaultEngine::shutdownSPI()
 
 void DefaultEngine::initAudio(SetupConfig* cfg)
 {
-    game->audio().begin(cfg->pins.speaker);
+    game->audio().begin(cfg->pins.audio.speaker);
 }
 
 void DefaultEngine::shutdownAudio()
@@ -331,6 +390,31 @@ void DefaultEngine::shutdownNetwork()
 
 void DefaultEngine::initScreen(SetupConfig* cfg)
 {
+    screen = nullptr;
+
+#if MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_NULL
+    screen = new ScreenNull;
+#elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7735_SPI
+    ScreenST7735::Config screenCfg;
+    ScreenST7735::initConfig(screenCfg);
+    screenCfg.engine = this;
+    screen = new ScreenST7735(screenCfg);
+#elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ILI9341_8080
+    ScreenILI9341::Config screenCfg;
+    ScreenILI9341::initConfig(screenCfg);
+    screenCfg.engine = this;
+    screen = new ScreenILI9341(screenCfg);
+#elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_RPI_TC358762
+#   if MGG_ENABLE_COPYLEFT_ADDONS
+    ScreenRPiTC358762::Config screenCfg;
+    ScreenRPiTC358762::initConfig(screenCfg);
+    screenCfg.dsi.engine = this;
+    screen = new ScreenRPiTC358762(screenCfg);
+#   else
+#       error "Can't use RPI_TC358762 screen without MGG_ENABLE_COPYLEFT_ADDONS!"
+#   endif
+#endif
+
     Font::loadDefaultFonts();
 
     if (!screen) {
@@ -341,16 +425,22 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
     assert(screen);
 
     if (!screen->init()) {
-        LogError("Error initializing screen. Falling back to ScreenNull.AAA");
+        const auto screenWidth = screen->getWidth();
+        const auto screenHeight = screen->getHeight();
+
+        LogError("Error initializing screen. Falling back to ScreenNull.");
         delete screen;
 
-        screen = new ScreenNull;
+        screen = new ScreenNull(screenWidth, screenHeight);
         if (!screen->init()) {
             LogError("Error initializing fallback screen as well. Giving up.");
         }
     }
 
     if (screen) {
+        // Fill the screen once to avoid uninitialized data if Game::setBackgroundSkipped(true) is used.
+        screen->fill(Color::BLACK, false);
+
         game->begin(*screen);
     }
 }
@@ -364,10 +454,12 @@ void DefaultEngine::shutdownScreen()
 
 bool DefaultEngine::mountInternalStorage(SetupConfig* cfg)
 {
+    LogInfo("Mounting internal storage...");
+
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    LogInfo("Mounting SPIFFS...");
-    game->storage().mountSPIFFS(cfg->internalStorageMountPoint);
-    return true;
+    return game->storage().mountSPIFFS(cfg->internalStorageMountPoint);
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    return game->storage().mountStandardPath(cfg->internalStorageMountPoint, "data");
 #endif
 
     return false;
@@ -375,31 +467,33 @@ bool DefaultEngine::mountInternalStorage(SetupConfig* cfg)
 
 void DefaultEngine::unmountInternalStorage()
 {
+    LogInfo("Unmounting internal storage...");
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    LogInfo("Unmounting SPIFFS...");
     game->storage().unmountSPIFFS(setupCfg.internalStorageMountPoint);
+#elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
+    game->storage().unmountPath(setupCfg.internalStorageMountPoint);
 #endif
 }
 
 bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 {
-    if (cfg->pins.sdCardCS >= 0) {
+    if (cfg->pins.sdcard.cs >= 0) {
         LogInfo("Mounting SD card...");
         bool sdMountOk = false;
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
         sdMountOk = game->storage().mountSDCard (
             cfg->sdCardMountPoint,
             cfg->pfESPIDF.spiHost,
-            cfg->pins.sdCardCS
+            cfg->pins.sdcard.cs
             );
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
         sdMountOk = game->storage().mountSDCard (
             cfg->sdCardMountPoint,
             *spi,
-            cfg->pins.sdCardCS
+            cfg->pins.sdcard.cs
             );
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-        sdMountOk = game->storage().mountSDCard(cfg->sdCardMountPoint);
+        sdMountOk = game->storage().mountStandardPath(cfg->sdCardMountPoint, "sdcard");
 #endif
         if (!sdMountOk) {
             LogError("Error mounting SD card. Trying to continue anyway...");
@@ -418,7 +512,7 @@ void DefaultEngine::unmountSDCard()
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     game->storage().unmountSDCard(setupCfg.sdCardMountPoint);
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-    game->storage().unmountSDCard(setupCfg.sdCardMountPoint);
+    game->storage().unmountPath(setupCfg.sdCardMountPoint);
 #endif
 }
 
@@ -445,6 +539,5 @@ void DefaultEngine::initSerial()
 }
 
 #endif
-
 
 }

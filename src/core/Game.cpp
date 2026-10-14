@@ -6,6 +6,10 @@
 #include "../util/Log.h"
 #include "../util/Util.h"
 
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+#   include <esp_task_wdt.h>
+#endif
+
 
 LOG_USE_TAG("Game")
 
@@ -21,7 +25,10 @@ Game::Game()
       collisionCb(nullptr),
       drawColliders(false), drawRayCasts(false),
       frameTime(1000/40), lastFrameTime(0),
-      backgroundColor(Color(0xFFFF))
+      screenOffsetX(0), screenOffsetY(0), drawScaleX(1.0f), drawScaleY(1.0f),
+      backgroundColor(Color(255, 255, 255)),
+      cachedScaledBackgroundBmpX(0), cachedScaledBackgroundBmpY(0),
+      backgroundSkipped(false)
 {
 }
 
@@ -140,25 +147,38 @@ void Game::drawBegin(DrawStats* stats)
     if (!screen) {
         return;
     }
-    
-    Vec2 drawOffset = -cameraOffset;
+
+    const Vec2 worldOffset = -cameraOffset;
+    const Vec2 combinedOffset (
+        worldOffset.x()*drawScaleX + static_cast<float>(screenOffsetX),
+        worldOffset.y()*drawScaleY + static_cast<float>(screenOffsetY)
+        );
 
     timer_ustick_t timeFill = TimerGetTickcountUs();
-    if (backgroundBmp) {
-        screen->drawBitmap(0, 0, backgroundBmp, FlipDir::None);
-    } else {
-        screen->fill(backgroundColor, false);
+    if (!backgroundSkipped) {
+        if (backgroundBmp) {
+            screen->drawBitmap (
+                screenOffsetX, screenOffsetY,
+                cachedScaledBackgroundBmp,
+                FlipDir::None,
+                Rotation::Rot0,
+                1, 1
+                );
+        } else {
+            screen->fill(backgroundColor, false);
+        }
     }
 
     timer_ustick_t timeObjects = TimerGetTickcountUs();
     for (const GameObject& obj : gameObjs) {
-        obj.draw(*screen, drawOffset);
+        obj.draw(*screen, combinedOffset, drawScaleX, drawScaleY);
     }
 
     timer_ustick_t timeColliders = TimerGetTickcountUs();
     if (drawColliders) {
         for (const GameObject& obj : gameObjs) {
-            obj.getWorldCollider().debugDraw(*screen, 0xF81D, drawOffset);
+            obj.getWorldCollider().debugDraw(*screen, Color::fromRGB565(0xF81D), combinedOffset,
+                drawScaleX, drawScaleY);
         }
     }
     
@@ -166,8 +186,8 @@ void Game::drawBegin(DrawStats* stats)
     // selectively enable/disable it for individual ray casts.
     timer_ustick_t timeRays = TimerGetTickcountUs();
     for (const auto& info : rayCastDrawInfos) {
-        RayCastResult::drawDebugRay(*screen, info.rayStart, info.rayEnd, drawOffset);
-        info.result.drawDebug(*screen, drawOffset);
+        RayCastResult::drawDebugRay(*screen, info.rayStart, info.rayEnd, combinedOffset, drawScaleX, drawScaleY);
+        info.result.drawDebug(*screen, combinedOffset, drawScaleX, drawScaleY);
     }
     rayCastDrawInfos.clear();
 
@@ -187,15 +207,53 @@ void Game::drawFinish(DrawStats* stats)
         return;
     }
     
-    Vec2 drawOffset = -cameraOffset;
+    const Vec2 worldOffset = -cameraOffset;
+    const Vec2 combinedOffset (
+        worldOffset.x()*drawScaleX + static_cast<float>(screenOffsetX),
+        worldOffset.y()*drawScaleY + static_cast<float>(screenOffsetY)
+        );
+
+    const auto uDrawScaleX = static_cast<uint16_t>(drawScaleX);
+    const auto uDrawScaleY = static_cast<uint16_t>(drawScaleY);
 
     timer_ustick_t timeTexts = TimerGetTickcountUs();
     for (const Text& text : texts) {
         if (text.isVisible()) {
-            if (text.isWorldSpace()) {
-                screen->drawText(text, (int16_t) (drawOffset.x()+0.5f), (int16_t) (drawOffset.y()+0.5f));
+            if (uDrawScaleX == 1  &&  uDrawScaleY == 1) {
+                if (text.isWorldSpace()) {
+                    screen->drawText (
+                        text,
+                        static_cast<int16_t>(std::round(combinedOffset.x())),
+                        static_cast<int16_t>(std::round(combinedOffset.y()))
+                        );
+                } else {
+                    screen->drawText(text, screenOffsetX, screenOffsetY);
+                }
             } else {
-                screen->drawText(text, 0, 0);
+                const auto origX = text.getX();
+                const auto origY = text.getY();
+                const auto origScaleX = text.getScaleX();
+                const auto origScaleY = text.getScaleY();
+                const auto origExplosion = text.getExplosion();
+
+                Text& ncText = const_cast<Text&>(text);
+                ncText.setPosition(origX*uDrawScaleX, origY*uDrawScaleY);
+                ncText.setScale(origScaleX*uDrawScaleX, origScaleY*uDrawScaleY);
+                ncText.setExplosion(origExplosion*uDrawScaleX);
+
+                if (text.isWorldSpace()) {
+                    screen->drawText (
+                        text,
+                        static_cast<int16_t>(std::round(combinedOffset.x())),
+                        static_cast<int16_t>(std::round(combinedOffset.y()))
+                        );
+                } else {
+                    screen->drawText(text, screenOffsetX, screenOffsetY);
+                }
+
+                ncText.setPosition(origX, origY);
+                ncText.setScale(origScaleX, origScaleY);
+                ncText.setExplosion(origExplosion);
             }
         }
     }
@@ -212,12 +270,29 @@ void Game::drawFinish(DrawStats* stats)
 }
 
 
+void Game::setBackgroundBitmap(const Bitmap& bmp)
+{
+    if (    bmp == backgroundBmp
+        &&  cachedScaledBackgroundBmpX == drawScaleX
+        &&  cachedScaledBackgroundBmpY == drawScaleY
+    ) {
+        return;
+    }
+    backgroundBmp = bmp;
+    cachedScaledBackgroundBmp = {}; // Do this first to free up memory
+    cachedScaledBackgroundBmp = bmp.scaled(drawScaleX, drawScaleY);
+    cachedScaledBackgroundBmpX = drawScaleX;
+    cachedScaledBackgroundBmpY = drawScaleY;
+}
+
+
 bool Game::spawnObject(const GameObject& obj)
 {
     if (obj.isSpawned()) {
         return false;
     }
     gameObjs.insert(obj);
+    const_cast<GameObject&>(obj).updateScaleCache(drawScaleX, drawScaleY);
     obj.notifySpawned(this);
     return true;
 }
@@ -332,6 +407,26 @@ RayCastResult Game::castRay (
 }
 
 
+void Game::setDrawScale(float scaleX, float scaleY)
+{
+    // Right now, only integer up-scaling is supported
+    scaleX = std::max(std::round(scaleX), 1.0f);
+    scaleY = std::max(std::round(scaleY), 1.0f);
+
+    if (drawScaleX == scaleX  &&  drawScaleY == scaleY) {
+        return;
+    }
+
+    drawScaleX = scaleX;
+    drawScaleY = scaleY;
+
+    setBackgroundBitmap(getBackgroundBitmap());
+    for (const GameObject& obj : gameObjs) {
+        const_cast<GameObject&>(obj).updateScaleCache(scaleX, scaleY);
+    }
+}
+
+
 void Game::sleepNextFrame()
 {
     long now = TimerGetTickcountMs();
@@ -344,7 +439,19 @@ void Game::sleepNextFrame()
         delayTimeMs = frameTime - (now-lastFrameTime);
     }
 
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    TickType_t delayTicks = (delayTimeMs + portTICK_PERIOD_MS-1) / portTICK_PERIOD_MS;
+    if (delayTicks == 0) {
+        // Needed to yield to lower-priority tasks like the FreeRTOS idle task once in a while. This is a bit of a
+        // waste of time, but seems to be the best solution for now. taskYIELD() is NOT enough, since it doesn't
+        // yield to lower-priority tasks.
+        // TODO: Maybe find a better way.
+        delayTicks = 1;
+    }
+    vTaskDelay(delayTicks);
+#else
     DelayTaskMs(delayTimeMs);
+#endif
     
     lastFrameTime = TimerGetTickcountMs();
 }

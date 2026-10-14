@@ -41,24 +41,25 @@ public:
 
     void shutdown();
 
+    void setAppRootDirectory(const std::string& rootDir);
+
+    std::string getAppRootDirectory() const;
     std::string getConfigDirectory() const;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     bool mountSDCard (
-        const char* mountPoint = "/sdcard",
+        const char* mountPoint,
         spi_host_device_t spiHost = SPI2_HOST,
         gpionum_t csPin = -1,
         uint32_t clkFreq = 20000000
         );
     void unmountSDCard(const char* mountPoint);
 
-    bool mountSPIFFS (
-        const char* mountPoint = "/spiffs"
-        );
+    bool mountSPIFFS(const char* mountPoint);
     void unmountSPIFFS(const char* mountPoint);
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
     bool mountSDCard (
-        const char* mountPoint = "/sdcard",
+        const char* mountPoint,
         SPIClass& spi = SPI,
         gpionum_t csPin = -1
         );
@@ -66,10 +67,9 @@ public:
 
     bool checkSDFilePath(const std::string& path, std::string* outRelPath);
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-    bool mountSDCard (
-        const char* mountPoint = "/sdcard"
-        );
-    void unmountSDCard(const char* mountPoint);
+    bool mountPath(const char* mountPoint, const char* targetPath);
+    bool mountStandardPath(const char* mountPoint, const char* targetDirName);
+    void unmountPath(const char* mountPoint);
 #endif
 
     template <typename ValueT>
@@ -91,6 +91,7 @@ private:
 
 private:
     Game* game;
+    std::string appRootDir;
     std::string sdMountPath;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -98,7 +99,7 @@ private:
     sdmmc_card_t* sdcard;
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
     QSettings settings;
-    std::unordered_map<std::string, std::string> sdMountPoints;
+    std::unordered_map<std::string, std::string> mountPoints;
 #endif
 };
 
@@ -148,8 +149,15 @@ bool StorageEngine::writeValue(const std::string_view& key, ValueT value)
     }
     return commitNVS();
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-    settings.setValue(QString::fromUtf8(key.data(), static_cast<qsizetype>(key.length())),
-        QVariant::fromValue<ValueT>(value));
+    auto qkey = QString::fromUtf8(key.data(), static_cast<qsizetype>(key.length()));
+    if constexpr (
+            std::is_same_v<ValueT, std::string>
+        ||  std::is_same_v<ValueT, std::string_view>
+    ) {
+        settings.setValue(qkey, QVariant::fromValue(QByteArray::fromStdString(value)));
+    } else {
+        settings.setValue(qkey, QVariant::fromValue<ValueT>(value));
+    }
     return true;
 #else
     // TODO: Implement
@@ -221,10 +229,19 @@ ValueT StorageEngine::readValue(const std::string_view& key, ValueT defaultValue
     }
     return value;
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
-    QVariant value = settings.value(QString::fromUtf8(key.data(), key.length()),
-        QVariant::fromValue<ValueT>(defaultValue));
-    if (ok) *ok = true;
-    return value.value<ValueT>();
+    auto qkey = QString::fromUtf8(key.data(), key.length());
+    if constexpr (
+            std::is_same_v<ValueT, std::string>
+        ||  std::is_same_v<ValueT, std::string_view>
+    ) {
+        QVariant value = settings.value(qkey, QVariant::fromValue(QByteArray::fromStdString(defaultValue)));
+        if (ok) *ok = true;
+        return value.value<QByteArray>().toStdString();
+    } else {
+        QVariant value = settings.value(qkey, QVariant::fromValue<ValueT>(defaultValue));
+        if (ok) *ok = true;
+        return value.value<ValueT>();
+    }
 #else
     // TODO: Implement
     if (ok) *ok = false;

@@ -6,7 +6,7 @@
 #   include <driver/gpio.h>
 #endif
 
-#include "../../../util/Util.h"
+#include "../../../../util/Util.h"
 
 
 LOG_USE_TAG("ScreenST7735")
@@ -38,20 +38,66 @@ void ScreenST7735::initConfig(Config& cfg)
     cfg.pins.cs = -1;
     cfg.pins.dc = -1;
     cfg.pins.rst = -1;
+
+#ifdef MGG_SCREEN_MAIN_WIDTH
+    cfg.width = MGG_SCREEN_MAIN_WIDTH;
+#endif
+#ifdef MGG_SCREEN_MAIN_HEIGHT
+    cfg.height = MGG_SCREEN_MAIN_HEIGHT;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_OFFSET_X
+    cfg.offsetX = MGG_SCREEN_MAIN_OFFSET_X;
+#endif
+#ifdef MGG_SCREEN_MAIN_OFFSET_Y
+    cfg.offsetY = MGG_SCREEN_MAIN_OFFSET_Y;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_MIRROR_X
+    cfg.mirrorX = MGG_SCREEN_MAIN_MIRROR_X;
+#endif
+#ifdef MGG_SCREEN_MAIN_MIRROR_Y
+    cfg.mirrorY = MGG_SCREEN_MAIN_MIRROR_Y;
+#endif
+#ifdef MGG_SCREEN_MAIN_SWAP_XY
+    cfg.swapXY = MGG_SCREEN_MAIN_SWAP_XY;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIXEL_FORMAT
+    static_assert (
+            MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565
+        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR565
+        , "Invalid setting for MGG_SCREEN_MAIN_PIXEL_FORMAT. Only RGB565 and BGR565 are allowed");
+    if constexpr (MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565) {
+        cfg.bgrColors = false;
+    } else {
+        cfg.bgrColors = true;
+    }
+#endif
+
+#ifdef MGG_SCREEN_MAIN_SPI_CLOCK
+    cfg.clockFreqHz = MGG_SCREEN_MAIN_SPI_CLOCK;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_PIN_CS
+    cfg.pins.cs = MGG_SCREEN_MAIN_PIN_CS;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_DC
+    cfg.pins.dc = MGG_SCREEN_MAIN_PIN_DC;
+#endif
+#ifdef MGG_SCREEN_MAIN_PIN_RST
+    cfg.pins.rst = MGG_SCREEN_MAIN_PIN_RST;
+#endif
 }
 
 
 ScreenST7735::ScreenST7735(const Config& cfg)
-    : AbstractMIPIScreen (
+    : AbstractMIPIDCSScreen (
+        cfg.bgrColors ? PixelFormat::BGR565 : PixelFormat::RGB565,
+        ByteOrder::BigEndian,
         cfg.width, cfg.height,
         cfg.offsetX, cfg.offsetY,
         cfg.mirrorX, cfg.mirrorY, cfg.swapXY,
-        cfg.bgrColors,
-#ifdef MINTGGGAMEENGINE_LITTLE_ENDIAN
-        true, // ST7735 expects big-endian pixel data -> swap endianness
-#else
         false,
-#endif
         cfg.staticBuffer
         ),
       cfg(cfg)
@@ -61,6 +107,24 @@ ScreenST7735::ScreenST7735(const Config& cfg)
 ScreenST7735::~ScreenST7735()
 {
     // TODO: Cleanup bus
+}
+
+bool ScreenST7735::init()
+{
+    LogInfo (
+        "Initializing ST7735 screen (%ux%u+%u+%u, mirrorX: %c, mirrorY: %c, swapXY: %c, bgr: %c, clock: %u, "
+        "cs: %d, dc: %d, rst: %d)",
+        cfg.width, cfg.height, cfg.offsetX, cfg.offsetY,
+        cfg.mirrorX ? '1' : '0', cfg.mirrorY ? '1' : '0', cfg.swapXY ? '1' : '0', cfg.bgrColors ? '1' : '0',
+        cfg.clockFreqHz,
+        cfg.pins.cs, cfg.pins.dc, cfg.pins.rst
+        );
+
+    if (!AbstractMIPIDCSScreen::init()) {
+        return false;
+    }
+
+    return true;
 }
 
 void ScreenST7735::commit()
@@ -151,7 +215,7 @@ bool ScreenST7735::mipiInitBus()
 #endif
 }
 
-bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data, size_t length)
+bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length)
 {
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     spi_transaction_t transaction = {
@@ -179,8 +243,8 @@ bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const uint8_t* data
             spi_transaction_t datTransaction = {
                 .flags = 0,
                 .length = chunk * 8,
-                .tx_buffer = data + i,
-                .rx_buffer = NULL
+                .tx_buffer = reinterpret_cast<const uint8_t*>(data) + i,
+                .rx_buffer = nullptr
             };
 
             res = spi_device_polling_transmit(spiDev, &datTransaction);

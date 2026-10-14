@@ -60,6 +60,9 @@ private:
         float x;
         float y;
         Vec2 moveDir;
+        int16_t scaleX;
+        int16_t scaleY;
+        Rotation rotation;
         FlipDir flipDir;
         Sprite sprite;
         Collider collider;
@@ -90,6 +93,8 @@ public:
      * \see createColliderCircle()
      */
     static GameObject createCircle(float x, float y, float r, const Color& color, bool filled = true, bool collider = true);
+    static GameObject createCircle(const Vec2& pos, float r, const Color& color, bool filled = true, bool collider = true)
+            { return createCircle(pos.x(), pos.y(), r, color, filled, collider); }
     
     /**
      * \brief Create a GameObject with a rectangle as sprite and collider.
@@ -108,6 +113,8 @@ public:
      * \see createColliderRect()
      */
     static GameObject createRect(float x, float y, float w, float h, const Color& color, bool filled = true, bool collider = true);
+    static GameObject createRect(const Vec2& pos, const Vec2& size, const Color& color, bool filled = true, bool collider = true)
+            { return createRect(pos.x(), pos.y(), size.x(), size.y(), color, filled, collider); }
     
     /**
      * \brief Create a GameObject with a Bitmap as sprite and a rectangular
@@ -126,6 +133,8 @@ public:
      * \see Sprite
      */
     static GameObject createBitmap(float x, float y, const Bitmap& bitmap = Bitmap(), bool collider = true);
+    static GameObject createBitmap(const Vec2& pos, const Bitmap& bitmap = Bitmap(), bool collider = true)
+            { return createBitmap(pos.x(), pos.y(), bitmap, collider); }
     
     
     /**
@@ -140,6 +149,8 @@ public:
      * \see createCircle()
      */
     static GameObject createColliderCircle(float x, float y, float r);
+    static GameObject createColliderCircle(const Vec2& pos, float r)
+            { return createColliderCircle(pos.x(), pos.y(), r); }
     
     /**
      * \brief Create a GameObject with a rectangle as collider and no sprite.
@@ -152,6 +163,8 @@ public:
      * \see createRect()
      */
     static GameObject createColliderRect(float x, float y, float w, float h);
+    static GameObject createColliderRect(const Vec2& pos, const Vec2& size)
+            { return createColliderRect(pos.x(), pos.y(), size.x(), size.y()); }
     
     ///@}
 
@@ -429,6 +442,8 @@ public:
     /**
      * \brief Get the width of this GameObject.
      *
+     * This returns the width after applying transforms like rotation and scaling.
+     *
      * \param useSprite true to use the sprite's width, false to use the
      *      collider's width.
      * \return The width.
@@ -438,6 +453,8 @@ public:
     /**
      * \brief Get the height of this GameObject.
      *
+     * This returns the height after applying transforms like rotation and scaling.
+     *
      * \param useSprite true to use the sprite's height, false to use the
      *      collider's height.
      * \return The height.
@@ -446,6 +463,8 @@ public:
     
     /**
      * \brief Get the width and height of this GameObject.
+     *
+     * This returns the size after applying transforms like rotation and scaling.
      *
      * \param useSprite true to use the sprite's size, false to use the
      *      collider's size.
@@ -475,6 +494,19 @@ public:
      * @return true if spawned, false otherwise.
      */
     bool isSpawned() const { return getGame() != nullptr; }
+
+    float getScaleX() const { return d ? d->scaleX : 1; }
+    float getScaleY() const { return d ? d->scaleY : 1; }
+    void setScale(float scaleX, float scaleY);
+    void setScale(float scale) { setScale(scale, scale); }
+    void setScaleX(float scale) { setScale(scale, getScaleY()); }
+    void setScaleY(float scale) { setScale(getScaleX(), scale); }
+    void setScaleAroundCenter(float scaleX, float scaleY);
+    void setScaleAroundCenter(float scale) { setScaleAroundCenter(scale, scale); }
+
+    Rotation getRotation() const { return d ? d->rotation : Rotation::Rot0; }
+    void setRotation(Rotation rotation) { if (d) d->rotation = rotation; }
+    void setRotationAroundCenter(Rotation rotation);
     
     /**
      * \brief Return the direction that the object is flipped.
@@ -575,16 +607,16 @@ public:
     void setCollider(const Collider collider) { if (d) d->collider = collider; }
     
     /**
-     * \brief Draw the object on the given screen.
+     * \brief Draw the object on the given surface.
      *
      * This method **should not be called by the user**. It is automatically
      * called by Game.draw().
      *
-     * \param screen The screen to draw on.
-     * \param offset Position offset, e.g. to apply camera transform.
+     * \param surface The surface to draw on.
+     * \param offset Position offset, e.g. to apply camera transform. Scale factor will NOT be applied to this.
      * \see Game.draw()
      */
-    void draw(Screen& screen, const Vec2& offset = Vec2()) const;
+    void draw(DrawSurface& surface, const Vec2& offset = Vec2(), float scaleX = 1.0f, float scaleY = 1.0f) const;
 
     /**
      * \brief Check whether this GameObjects collides with another.
@@ -717,6 +749,8 @@ public:
 private:
     void notifySpawned(Game* game) const;
     void notifyDespawned(Game* game) const;
+
+    void updateScaleCache(float scaleX, float scaleY);
 
 private:
     std::shared_ptr<Data> d;

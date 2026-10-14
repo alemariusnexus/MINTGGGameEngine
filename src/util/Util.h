@@ -2,9 +2,8 @@
 
 #include "../Globals.h"
 
+#include <cassert>
 
-// TODO: Actually detect it. Currently we're just assuming.
-#define MINTGGGAMEENGINE_LITTLE_ENDIAN
 
 #if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  ||  defined(MINTGGGAMEENGINE_PORT_ESPIDF)
 #   define MINTGGGAMEENGINE_TIMER_HAVE_US_RESOLUTION
@@ -18,6 +17,14 @@ namespace MINTGGGameEngine
 typedef int64_t timer_mstick_t;
 typedef int64_t timer_ustick_t;
 
+enum AdvancedAllocFlags
+{
+    ADVANCED_ALLOC_FLAG_UNALIGNED_ACCESS    = 0x00000001,
+    ADVANCED_ALLOC_FLAG_DMA_ACCESSIBLE      = 0x00000002,
+    ADVANCED_ALLOC_FLAG_EXTERNAL_RAM        = 0x00000004,
+    ADVANCED_ALLOC_FLAG_INTERNAL_RAM        = 0x00000008
+};
+
 
 void TimerInit();
 void TimerShutdown();
@@ -30,6 +37,11 @@ void TimerDelaySpinUs(unsigned int us);
 
 
 void DelayTaskMs(uint32_t delayMs);
+
+
+void* AdvancedAlloc(size_t size, uint32_t flags);
+void* AdvancedAlignedAlloc(size_t alignment, size_t size, uint32_t flags);
+void AdvancedFree(void* d);
 
 
 void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool* pdEnabled);
@@ -80,5 +92,51 @@ inline uint64_t SwapEndianness(uint64_t v)
 #   define ToBigEndian() (v)
 #   define FromBigEndian() (v)
 #endif
+
+template <typename IntT>
+inline IntT ToNativeByteOrder(IntT v, ByteOrder fromByteOrder)
+{
+#ifdef MINTGGGAMEENGINE_LITTLE_ENDIAN
+    switch (fromByteOrder) {
+    case ByteOrder::BigEndian:
+        return SwapEndianness(v);
+    default:
+        return v;
+    }
+#else
+    switch (fromByteOrder) {
+    case ByteOrder::LittleEndian:
+        return SwapEndianness(v);
+    default:
+        return v;
+    }
+#endif
+}
+
+template <typename IntT>
+inline IntT FromNativeByteOrder(IntT v, ByteOrder toByteOrder)
+{
+    return ToNativeByteOrder<IntT>(v, toByteOrder);
+}
+
+inline uint8_t CalcPixelFormatBytesPerPixel(PixelFormat pixelFormat)
+{
+    switch (pixelFormat) {
+    case PixelFormat::RGB565:
+    case PixelFormat::BGR565:
+        return 2;
+    case PixelFormat::RGB888:
+    case PixelFormat::BGR888:
+        return 3;
+    case PixelFormat::RGBX8888:
+    case PixelFormat::XBGR8888:
+        return 4;
+    default:
+        assert(false);
+        return 0;
+    }
+}
+
+const char* PixelFormatToString(PixelFormat pixelFormat);
 
 }

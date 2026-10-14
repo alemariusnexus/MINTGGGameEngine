@@ -110,4 +110,6 @@ private:
     float px, py;
 };
 
+inline Vec2 operator*(float s, const Vec2& v) { return v * s; }
+
 }

@@ -5,11 +5,14 @@
 
 #   include <driver/gptimer.h>
 #   include <esp_err.h>
+#   include <esp_heap_caps.h>
 #   include <soc/soc.h>
 #else
 #   include <ctime>
 #   include <unistd.h>
 #endif
+
+#include <cstdlib>
 
 
 namespace MINTGGGameEngine
@@ -117,6 +120,83 @@ void DelayTaskMs(uint32_t delayMs)
 #endif
 }
 
+
+static bool CheckAdvancedAllocFlags(uint32_t flags)
+{
+    if (    (flags & ADVANCED_ALLOC_FLAG_EXTERNAL_RAM) != 0
+        &&  (flags & ADVANCED_ALLOC_FLAG_INTERNAL_RAM) != 0
+    ) {
+        // These are mutually exclusive
+        return false;
+    }
+    return true;
+}
+
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+static uint32_t ESPCalcHeapCapsFromAdvancedAllocFlags(uint32_t flags)
+{
+    uint32_t caps = 0;
+    if ((flags & ADVANCED_ALLOC_FLAG_UNALIGNED_ACCESS) != 0) {
+        caps |= MALLOC_CAP_8BIT;
+    }
+    if ((flags & ADVANCED_ALLOC_FLAG_DMA_ACCESSIBLE) != 0) {
+        caps |= MALLOC_CAP_DMA;
+    }
+    if ((flags & ADVANCED_ALLOC_FLAG_EXTERNAL_RAM) != 0) {
+        caps |= MALLOC_CAP_SPIRAM;
+    }
+    if ((flags & ADVANCED_ALLOC_FLAG_INTERNAL_RAM) != 0) {
+        caps |= MALLOC_CAP_INTERNAL;
+    }
+    return caps;
+}
+#endif
+
+void* AdvancedAlloc(size_t size, uint32_t flags)
+{
+    if (!CheckAdvancedAllocFlags(flags)) {
+        return nullptr;
+    }
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    return heap_caps_malloc(size, ESPCalcHeapCapsFromAdvancedAllocFlags(flags));
+#else
+    return malloc(size);
+#endif
+}
+
+void* AdvancedAlignedAlloc(size_t alignment, size_t size, uint32_t flags)
+{
+    if (!CheckAdvancedAllocFlags(flags)) {
+        return nullptr;
+    }
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    return heap_caps_aligned_alloc(alignment, size, ESPCalcHeapCapsFromAdvancedAllocFlags(flags));
+#elif defined(_WIN32)
+    // Yes, we silently allocate non-aligned memory on Windows.
+    // Yes, that's terrible.
+    // The problem is that MSVC doesn't implement std::aligned_alloc(), because that function is required by the C++
+    // standard to work with free(), which Microsoft are too dumb to implement. So instead, they provide
+    // _aligned_malloc(), which has to be freed using _aligned_free(). Using free() with it instead can lead to bugs.
+    // We don't use _aligned_malloc() because then we would have to force the user to use a specialized free function,
+    // but ONLY use that specialized free function for aligned allocations. That would mean requiring caller-defined
+    // free functions in basically any code where you could potentially pass in an aligned buffer, and that is just not
+    // happening.
+    // Fucking Microsoft. Can't make this shit up.
+    return malloc(size);
+#else
+    return std::aligned_alloc(alignment, size);
+#endif
+}
+
+void AdvancedFree(void* d)
+{
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    heap_caps_free(d);
+#else
+    free(d);
+#endif
+}
+
 void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool* pdEnabled)
 {
     if (output) {
@@ -142,5 +222,17 @@ void ExtractArduinoPinMode(uint8_t pinMode, bool* output, bool* puEnabled, bool*
     }
 }
 
+const char* PixelFormatToString(PixelFormat pixelFormat)
+{
+    switch (pixelFormat) {
+    case PixelFormat::RGB888:       return "RGB888";
+    case PixelFormat::BGR888:       return "BGR888";
+    case PixelFormat::RGB565:       return "RGB565";
+    case PixelFormat::BGR565:       return "BGR565";
+    case PixelFormat::RGBX8888:     return "RGBX8888";
+    case PixelFormat::XBGR8888:     return "XBGR8888";
+    default:                        return "[invalid]";
+    }
+}
 
 }

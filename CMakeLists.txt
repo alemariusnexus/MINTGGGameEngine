@@ -1,11 +1,13 @@
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/MINTGGGameEngine.cmake)
 
-MINTGGGameEngine_ComponentPrologue()
+MGG_ComponentPrologue()
 
 list(APPEND SRCS
 
     3rdparty/eMIDI/src/helpers.c
     3rdparty/eMIDI/src/midifile.c
+
+    addons/mipidsi/ScreenRPiTC358762.cpp
 
     audio/internal/emidi_hal_mintgggameengine.cpp
 	audio/AudioClip.cpp
@@ -16,16 +18,20 @@ list(APPEND SRCS
     core/Engine.cpp
 	core/Game.cpp
 	core/GameObject.cpp
+	core/Startup.cpp
 
-    graphics/screen/drivers/AbstractMIPIScreen.cpp
-    graphics/screen/drivers/ScreenILI9341.cpp
+    graphics/screen/drivers/mipidcs/AbstractMIPIDCSScreen.cpp
+    graphics/screen/drivers/mipidcs/ScreenILI9341.cpp
+    graphics/screen/drivers/mipidcs/ScreenST7735.cpp
+    graphics/screen/drivers/mipidsi/AbstractMIPIDSIScreen.cpp
     graphics/screen/drivers/ScreenNull.cpp
-    graphics/screen/drivers/ScreenST7735.cpp
     graphics/screen/BufferedScreen.cpp
     graphics/screen/Screen.cpp
+    graphics/surface/BitmapDrawSurface.cpp
     graphics/surface/DrawSurface.cpp
     graphics/surface/MemDrawSurface.cpp
 	graphics/Bitmap.cpp
+    graphics/BitmapRenderer.cpp
 	graphics/Color.cpp
 	graphics/Font.cpp
 	graphics/ImageLoader.cpp
@@ -46,6 +52,7 @@ list(APPEND SRCS
 	platform/GPIODeviceMCP2300X.cpp
 	platform/GPIODeviceNative.cpp
 	platform/MCP2300XDevice.cpp
+	platform/PlatformManager.cpp
 
     storage/BufferedReader.cpp
 	storage/File.cpp
@@ -69,10 +76,19 @@ foreach(_SRCFILE ${SRCS})
 endforeach()
 
 
-if(MINTGGGAMEENGINE_PLATFORM STREQUAL ESPIDF)
+if(MGG_PLATFORM STREQUAL ESPIDF)
+    list(APPEND SRCS_ESPIDF
+        #3rdparty/esp_lcd_touch/esp_lcd_touch.c
+        #3rdparty/esp_lcd_touch_ft5x06/esp_lcd_touch_ft5x06.c
+    )
+    foreach(_SRCFILE ${SRCS_ESPIDF})
+        list(APPEND SRCS_ESPIDF_ABS "src/${_SRCFILE}")
+    endforeach()
+
     idf_component_register(
         SRCS
             ${SRCS_ABS}
+            ${SRCS_ESPIDF_ABS}
         INCLUDE_DIRS
             src
         REQUIRES
@@ -89,6 +105,11 @@ if(MINTGGGAMEENGINE_PLATFORM STREQUAL ESPIDF)
             fatfs
             nvs_flash
             spiffs
+
+            esp_mm
+            esp_driver_ppa
+
+            main
     )
 
     # Disable some annoying and unhelpful warnings
@@ -97,11 +118,15 @@ if(MINTGGGAMEENGINE_PLATFORM STREQUAL ESPIDF)
         -Wno-parentheses                        # For eMidi
         -Wno-unused-function                    # For eMidi
         )
-elseif(MINTGGGAMEENGINE_PLATFORM STREQUAL DESKTOP)
+    target_compile_features(${COMPONENT_LIB} PUBLIC cxx_std_20)
+elseif(MGG_PLATFORM STREQUAL DESKTOP)
     find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Multimedia)
     qt_standard_project_setup()
 
     qt_add_library(MINTGGGameEngine STATIC ${SRCS_ABS})
+    target_include_directories(MINTGGGameEngine PUBLIC "${CMAKE_SOURCE_DIR}/main")
     target_compile_features(MINTGGGameEngine PUBLIC cxx_std_20)
     target_link_libraries(MINTGGGameEngine PUBLIC Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Multimedia)
+else()
+    message(SEND_ERROR "Unsupported platform for engine!")
 endif()

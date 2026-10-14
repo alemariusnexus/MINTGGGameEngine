@@ -12,7 +12,7 @@ namespace MINTGGGameEngine
 
 class GameObject;
 class RayCastHit;
-class Screen;
+class DrawSurface;
 
 /**
  * \brief A two-dimensional shape used for collision checking.
@@ -42,26 +42,26 @@ public:
     /**
      * \brief Create a circular collider.
      *
-     * \param c The center coordinates of the circle.
+     * \param corner The coordinates of the top-left corner of the circle's bounding rectangle (**not the center!**)
      * \param r The radius of the circle.
      * \return The collider.
      */
-    static Collider createCircle(const Vec2& c, float r)
-            { return createCircle(c.x(), c.y(), r); }
+    static Collider createCircle(const Vec2& corner, float r)
+            { return createCircle(corner.x(), corner.y(), r); }
     
     /**
      * \brief Create a circular collider.
      *
-     * \param cx The center x coordinate of the circle.
-     * \param cy The center y coordinate of the circle.
+     * \param cornerX x coordinate of the top-lft corner of the circle's bounding rectangle (**not the center!**)
+     * \param cornerY y coordinate of the top-lft corner of the circle's bounding rectangle (**not the center!**)
      * \param r The radius of the circle.
      * \return The collider.
      */
-    static Collider createCircle(float cx, float cy, float r)
+    static Collider createCircle(float cornerX, float cornerY, float r)
     {
         Collider c(Type::Circle);
-        c.circle.cx = cx;
-        c.circle.cy = cy;
+        c.circle.x = cornerX;
+        c.circle.y = cornerY;
         c.circle.r = r;
         return c;
     }
@@ -108,14 +108,17 @@ public:
     /**
      * \brief Convert all coordinates to the world coordinate system.
      *
-     * This will apply translation and flip to the collider.
+     * This will apply the affine transforms to the collider.
      *
      * \param px The x offset of the collider.
      * \param py The y offset of the collider.
+     * \param scaleX The x scale factor.
+     * \param scaleY The y scale factor.
+     * \param rotation The rotation.
      * \param flip The flip direction (does not matter for the currently
      *      supported collider types).
      */
-    Collider toWorld(float px, float py, FlipDir flip) const;
+    Collider toWorld(float px, float py, float scaleX, float scaleY, Rotation rotation, FlipDir flip) const;
     
     /**
      * \brief Convert all coordinates to the world coordinate system.
@@ -123,14 +126,18 @@ public:
      * This will apply translation and flip to the collider.
      *
      * \param pos The offset of the collider.
+     * \param scale The scale factors.
+     * \param rotation The rotation.
      * \param flip The flip direction (does not matter for the currently
      *      supported collider types).
      */
-    Collider toWorld(const Vec2& pos, FlipDir flip) const
-            { return toWorld(pos.x(), pos.y(), flip); }
+    Collider toWorld(const Vec2& pos, const Vec2& scale, Rotation rotation, FlipDir flip) const
+            { return toWorld(pos.x(), pos.y(), scale.x(), scale.y(), rotation, flip); }
     
     /**
      * \brief Returns a copy of the collider shrunken by the given amount.
+     *
+     * Shrinking occurs towards the center of the collider, so shrinking changes its position as well.
      */
     Collider shrunk(float shrink) const;
 
@@ -143,9 +150,16 @@ public:
     bool collides(const Collider& other, float shrink = 0.0f) const;
 
     /**
-     * \brief Draws the outline of the collider to a screen.
+     * \brief Draws the outline of the collider to a surface.
+     *
+     * \param offset Offset to draw the collider at. Scale factor will NOT be applied to this.
      */
-    void debugDraw(Screen& screen, const Color& color, const Vec2& offset);
+    void debugDraw (
+        DrawSurface& surface,
+        const Color& color,
+        const Vec2& offset,
+        float scaleX, float scaleY
+        );
 
     /**
      * \brief Checks whether this is a valid collider (i.e. not a Null one).
@@ -166,6 +180,8 @@ public:
 private:
     Collider(Type type) : type(type) {}
 
+    Vec2 getCenterPosition() const;
+
     static bool collidesCircleCircle(const Collider& a, const Collider& b);
     static bool collidesRectRect(const Collider& a, const Collider& b);
     static bool collidesCircleRect(const Collider& c, const Collider& r);
@@ -174,8 +190,8 @@ private:
     Type type;
     union {
         struct {
-            float cx;
-            float cy;
+            float x; // Corner coordinate, NOT center!
+            float y; // Corner coordinate, NOT center!
             float r;
         } circle;
 
