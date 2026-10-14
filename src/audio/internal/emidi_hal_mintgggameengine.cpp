@@ -11,6 +11,8 @@
 
 #include "../../Globals.h"
 
+#if __has_include("../../3rdparty/eMIDI/src/midifile.h")
+
 #include <cstring>
 
 #include "../../storage/BufferedReader.h"
@@ -90,3 +92,5 @@ int eMidi_printf(const char* pFormat, ...)
 }
 
 }
+
+#endif

@@ -11,10 +11,16 @@
 
 #include "MIDILoader.h"
 
+#if __has_include("../3rdparty/eMIDI/src/midifile.h")
+#   define MGG_MIDILOADER_EMIDI_SUPPORTED
+#endif
+
+#ifdef MGG_MIDILOADER_EMIDI_SUPPORTED
 extern "C" {
 #include "../3rdparty/eMIDI/src/helpers.h"
 #include "../3rdparty/eMIDI/src/midifile.h"
 }
+#endif
 
 
 namespace MINTGGGameEngine
@@ -58,6 +64,7 @@ AudioClip MIDILoader::loadMIDIFile(const std::string_view& path)
 {
     loadSuccessful = false;
 
+#ifdef MGG_MIDILOADER_EMIDI_SUPPORTED
     MidiFile midi;
     Error err = eMidi_open(&midi, path.data());
     if (err != EMIDI_OK) {
@@ -132,6 +139,10 @@ AudioClip MIDILoader::loadMIDIFile(const std::string_view& path)
     loadSuccessful = true;
     errmsg = {};
     return clip;
+#else
+    setError("MIDILoader requires eMidi, which is missing!");
+    return {};
+#endif
 }
 
 void MIDILoader::setError(const std::string_view &errmsg)

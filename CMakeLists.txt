@@ -13,9 +13,6 @@ MGG_ComponentPrologue()
 
 list(APPEND SRCS
 
-    3rdparty/eMIDI/src/helpers.c
-    3rdparty/eMIDI/src/midifile.c
-
     addons/mipidsi/rpi_tc358762/ScreenRPiTC358762.cpp
 
     audio/internal/emidi_hal_mintgggameengine.cpp
@@ -79,6 +76,15 @@ list(APPEND SRCS
 	util/Vec2.cpp
 	util/WorkerTask.cpp
 	)
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/src/3rdparty/eMIDI/src/midifile.c")
+    list(APPEND SRCS
+        3rdparty/eMIDI/src/helpers.c
+        3rdparty/eMIDI/src/midifile.c
+        )
+else()
+    message(STATUS "eMidi not found. MIDI file handling will be disabled.")
+endif()
 
 foreach(_SRCFILE ${SRCS})
 	list(APPEND SRCS_ABS "src/${_SRCFILE}")
