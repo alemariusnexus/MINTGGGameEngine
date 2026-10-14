@@ -12,6 +12,7 @@
 #include "DefaultEngine.h"
 
 #include <cassert>
+#include <QFileInfo>
 
 #include "../graphics/Font.h"
 #include "../util/Log.h"
@@ -30,6 +31,7 @@
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
 #include <QApplication>
+#include <QDir>
 #include <QFileInfo>
 #include <QtVersion>
 
@@ -97,6 +99,8 @@ bool DefaultEngine::earlySetup()
 #endif
 
     DelayTaskMs(500);
+
+    LogInit();
 
     LogInfo("********** BEGIN ENGINE SETUP **********");
     LogInfo("MINTGGGameEngine version: %s", MINTGGGAMEENGINE_VERSION_STRING);
@@ -303,6 +307,24 @@ void DefaultEngine::initStorage(SetupConfig* cfg)
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     game->storage().setAppRootDirectory(QFileInfo(pfDesktop.appDir).absolutePath().toStdString());
+
+    const QString typicalAppDirEntries[] = {
+        "config/desktop.json",
+        "data",
+        "sdcard"
+    };
+
+    bool anyTypicalAppDirEntryFound = false;
+    for (auto entry : typicalAppDirEntries) {
+        if (QFileInfo(QDir(QString::fromStdString(game->storage().getAppRootDirectory())), entry).exists()) {
+            anyTypicalAppDirEntryFound = true;
+            break;
+        }
+    }
+
+    if (!anyTypicalAppDirEntryFound) {
+        LogWarning("All typical app root directory files are missing. Did you forget the '-d APP_ROOT' CLI option?");
+    }
 #endif
 }
 

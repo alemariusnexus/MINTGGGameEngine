@@ -208,6 +208,8 @@ void MainWindow::loadConfig()
         }
 
         keepAspectRatio = jdoc.object().value("screen").toObject().value("keepAspectRatio").toBool(keepAspectRatio);
+    } else {
+        LogWarning("Desktop config not found. You can create one at %s...", desktopCfgPath.toUtf8().constData());
     }
 }
 

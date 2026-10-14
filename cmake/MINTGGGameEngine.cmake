@@ -8,7 +8,14 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 cmake_path(GET CMAKE_CURRENT_LIST_DIR PARENT_PATH MGG_ENGINE_ROOT)
+
 set(MGG_APP_ROOT "${CMAKE_SOURCE_DIR}")
+
+cmake_path (
+    RELATIVE_PATH MGG_ENGINE_ROOT
+    BASE_DIRECTORY "${MGG_APP_ROOT}"
+    OUTPUT_VARIABLE MGG_ENGINE_ROOT_PROJECT_RELATIVE
+    )
 
 macro(MGG_ProjectPrologue)
     if(ESP_PLATFORM OR DEFINED IDF_TARGET)
@@ -72,7 +79,7 @@ endmacro()
 
 macro(MGG_SetupProject)
     if(NOT MGG_PLATFORM STREQUAL ESPIDF)
-        add_subdirectory(components/MINTGGGameEngine)
+        add_subdirectory("${MGG_ENGINE_ROOT_PROJECT_RELATIVE}" MINTGGGameEngine)
         add_subdirectory(main)
     endif()
 endmacro()
@@ -99,7 +106,7 @@ macro(MGG_SetupApplication)
     elseif(MGG_PLATFORM STREQUAL DESKTOP)
         add_executable("${CMAKE_PROJECT_NAME}" ${SRCS})
         target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE MINTGGGameEngine)
-        target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC ../components/MINTGGGameEngine/src)
+        target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "../${MGG_ENGINE_ROOT_PROJECT_RELATIVE}/src")
         target_compile_features("${CMAKE_PROJECT_NAME}" PUBLIC cxx_std_20)
 
         set(MGG_APP_MAIN_TARGET "${CMAKE_PROJECT_NAME}")

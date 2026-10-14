@@ -691,6 +691,7 @@ void MemDrawSurface::drawRect(int32_t x, int32_t y, int32_t w, int32_t h, const 
             assert(false);
         }
     } else {
+        // TODO: Check for off-by-one errors
         drawHLine(x, y, w, color);
         drawHLine(x, y+h, w, color);
         drawVLine(x, y, h, color);

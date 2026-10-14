@@ -24,6 +24,7 @@
 #endif
 
 #include <cstdlib>
+#include <format>
 
 
 namespace MINTGGGameEngine
@@ -36,6 +37,15 @@ static bool TimerInitialized = false;
 static gptimer_handle_t TimerHandle;
 #endif
 
+
+std::string FloatToString(float value, int precision)
+{
+    if (precision >= 0) {
+        return std::format("{:.{}f}", value, precision);
+    } else {
+        return std::to_string(value);
+    }
+}
 
 void TimerInit()
 {

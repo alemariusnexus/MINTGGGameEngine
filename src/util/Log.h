@@ -37,6 +37,9 @@ enum LogLevel
 };
 
 
+void LogInit();
+
+
 #if defined(MINTGGGAMEENGINE_PORT_ESPIDF)  &&  !defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 #define LogError(format, ...) ESP_LOGE(TAG, format, ## __VA_ARGS__)
@@ -48,6 +51,7 @@ enum LogLevel
 #else
 
 bool LogMessageBegin(const char* tag, int level);
+void LogMessageEnd(const char* tag, int level);
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO
 #   define LogPrintf(...) Serial.printf(__VA_ARGS__)
@@ -60,7 +64,7 @@ bool LogMessageBegin(const char* tag, int level);
 #define LogMessage(tag, level, format, ...) do {        \
         if (LogMessageBegin((tag), (level))) {          \
             LogPrintf((format), ## __VA_ARGS__);        \
-            LogPrintln();                               \
+            LogMessageEnd((tag), (level));              \
         }                                               \
     } while (false)
 

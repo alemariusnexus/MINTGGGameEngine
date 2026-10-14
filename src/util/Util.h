@@ -36,6 +36,7 @@ enum AdvancedAllocFlags
     ADVANCED_ALLOC_FLAG_INTERNAL_RAM        = 0x00000008
 };
 
+std::string FloatToString(float value, int precision = -1);
 
 void TimerInit();
 void TimerShutdown();

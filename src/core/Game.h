@@ -245,6 +245,8 @@ public:
      * \param drawColliders true to draw colliders, false to disable drawing.
      */
     void setDrawColliders(bool drawColliders) { this->drawColliders = drawColliders; }
+
+    bool isDrawColliders() const { return drawColliders; }
     
     /**
      * \brief Enable or disable debug drawing of ray casts and results.
@@ -252,6 +254,8 @@ public:
      * \param drawRayCasts true to draw ray casts and results, false to disable.
      */
     void setDrawRayCasts(bool drawRayCasts) { this->drawRayCasts = drawRayCasts; }
+
+    bool isDrawRayCasts() const { return drawRayCasts; }
     
     /**
      * \brief Run collision detection on all objects.
