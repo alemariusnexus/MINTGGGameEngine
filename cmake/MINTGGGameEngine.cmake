@@ -1,3 +1,12 @@
+# This file is part of MINTGGGameEngine.
+#
+# Copyright 2025-2026 David Lerch
+# SPDX-License-Identifier: MPL-2.0
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 cmake_path(GET CMAKE_CURRENT_LIST_DIR PARENT_PATH MGG_ENGINE_ROOT)
 set(MGG_APP_ROOT "${CMAKE_SOURCE_DIR}")
 

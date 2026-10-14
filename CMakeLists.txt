@@ -1,3 +1,12 @@
+# This file is part of MINTGGGameEngine.
+#
+# Copyright 2025-2026 David Lerch
+# SPDX-License-Identifier: MPL-2.0
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/MINTGGGameEngine.cmake)
 
 MGG_ComponentPrologue()
@@ -7,7 +16,7 @@ list(APPEND SRCS
     3rdparty/eMIDI/src/helpers.c
     3rdparty/eMIDI/src/midifile.c
 
-    addons/mipidsi/ScreenRPiTC358762.cpp
+    addons/mipidsi/rpi_tc358762/ScreenRPiTC358762.cpp
 
     audio/internal/emidi_hal_mintgggameengine.cpp
 	audio/AudioClip.cpp

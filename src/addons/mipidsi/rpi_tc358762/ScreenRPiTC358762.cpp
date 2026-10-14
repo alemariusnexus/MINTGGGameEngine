@@ -1,3 +1,31 @@
+/*
+ * This file is part of the TC358762 display driver addon.
+ *
+ * A driver addon for Raspberry Pi compatible displays based on the
+ * TC358762 DSI-to-DPI bridge.
+ *
+ * Copyright 2026 David Lerch
+ * SPDX-License-Identifier: GPL-2.0-only
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; version 2.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see
+ * <https://www.gnu.org/licenses/>.
+ */
+
+// Large parts of the following code are adapted from the ESP-IDF component esp_lcd_rpi_dsi by Kuro, published under
+// the GPLv2. That is why this code is released under GPLv2 as well.
+//
+//      https://github.com/kurozz/esp_lcd_rpi_dsi
+
 #include "ScreenRPiTC358762.h"
 
 
@@ -5,8 +33,8 @@
 
 #include <cassert>
 
-#include "../../util/Log.h"
-#include "../../util/Util.h"
+#include "../../../util/Log.h"
+#include "../../../util/Util.h"
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
 #   include <driver/i2c_master.h>
@@ -16,12 +44,6 @@
 #   include <esp_lcd_panel_io.h>
 #   include <esp_lcd_panel_ops.h>
 #endif
-
-
-// Large parts of the following code are adapted from the ESP-IDF component esp_lcd_rpi_dsi by Kuro, published under
-// the GPLv2. That is why this code is released under GPLv2 as well.
-//
-//      https://github.com/kurozz/esp_lcd_rpi_dsi
 
 
 // Register map of the ATtiny that's installed along the TC358762

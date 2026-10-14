@@ -1,3 +1,14 @@
+/*
+ * This file is part of MINTGGGameEngine.
+ *
+ * Copyright 2025-2026 David Lerch
+ * SPDX-License-Identifier: MPL-2.0
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 #include "DefaultEngine.h"
 
 #include <cassert>
@@ -8,7 +19,7 @@
 #include "../graphics/screen/drivers/ScreenNull.h"
 #include "../graphics/screen/drivers/mipidcs/ScreenILI9341.h"
 #include "../graphics/screen/drivers/mipidcs/ScreenST7735.h"
-#include "../addons/mipidsi/ScreenRPiTC358762.h"
+#include "../addons/mipidsi/rpi_tc358762/ScreenRPiTC358762.h"
 #include "../platform/PlatformManager.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -121,6 +132,7 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
     LogInfo("Platform: Desktop (using Qt %s, compiled for %s)", qVersion(), QT_VERSION_STR);
 #endif
 
+    LogInfo("Most of this engine is released under the MPL-2.0.");
 #if MGG_ENABLE_COPYLEFT_ADDONS
     LogWarning("Engine compiled with copyleft addons. Make sure you follow their licensing terms!");
 #else
