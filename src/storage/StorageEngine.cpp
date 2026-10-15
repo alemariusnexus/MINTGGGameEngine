@@ -80,6 +80,7 @@ bool StorageEngine::begin(Game& game)
 
 void StorageEngine::shutdown()
 {
+    sync();
 }
 
 void StorageEngine::setAppRootDirectory(const std::string& rootDir)
@@ -240,6 +241,11 @@ bool StorageEngine::commitNVS()
     return true;
 }
 
+void StorageEngine::sync()
+{
+    commitNVS();
+}
+
 #elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
 
 bool StorageEngine::mountSDCard (
@@ -296,6 +302,10 @@ bool StorageEngine::hasValue(const std::string_view& key)
     return false;
 }
 
+void StorageEngine::sync()
+{
+}
+
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
 
 bool StorageEngine::mountPath(const char* mountPoint, const char* targetPath)
@@ -336,6 +346,11 @@ void StorageEngine::unmountPath(const char* mountPoint)
 bool StorageEngine::hasValue(const std::string_view& key)
 {
     return settings.contains(QString::fromUtf8(key.data(), key.length()));
+}
+
+void StorageEngine::sync()
+{
+    settings.sync();
 }
 
 #endif

@@ -91,6 +91,8 @@ public:
 
     bool hasValue(const std::string_view& key);
 
+    void sync();
+
     std::string resolvePath(const std::string& path);
 
 private:

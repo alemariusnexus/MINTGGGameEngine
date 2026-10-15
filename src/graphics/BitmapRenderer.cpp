@@ -12,6 +12,7 @@
 #include "BitmapRenderer.h"
 
 #include <cassert>
+#include <cstddef>
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 #   include <esp_cache.h>

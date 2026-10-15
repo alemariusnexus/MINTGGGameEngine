@@ -254,6 +254,8 @@ bool AbstractMIPIDSIScreen::initTripleBuffering()
         return false;
     }
 #else
+    (void) plfData;
+
     // Allocate a dummy rendering framebuffer. We won't use it ourselves, but e.g. the desktop port uses it to display
     // any type of screen in its main window.
     const size_t bytesPerPixel = CalcPixelFormatBytesPerPixel(cfg.pixelFormat);
