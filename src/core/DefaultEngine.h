@@ -164,7 +164,7 @@ public:
      * @param gameLoopFunc User-defined game loop function. Can be null.
      * @return true if the game should keep running, false if it should quit.
      */
-    virtual bool doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float));
+    virtual bool doFrame(void (*gameLoopFunc)(float));
 
     /**
      * \brief Shut down the engine.

@@ -110,7 +110,7 @@ public:
 
     void drawText(const Text& text, int32_t ox, int32_t oy) override;
 
-    bool saveScreenshot(const char* path) override;
+    bool saveScreenshot(const std::string_view& path) override;
 
     bool init() override;
 

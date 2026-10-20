@@ -93,7 +93,7 @@ public:
 
     void sync();
 
-    std::string resolvePath(const std::string& path);
+    std::string resolvePath(const std::string_view& path);
 
 private:
     StorageEngine();

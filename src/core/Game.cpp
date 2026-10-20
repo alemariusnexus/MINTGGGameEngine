@@ -32,8 +32,8 @@ namespace MINTGGGameEngine
 
 
 Game::Game()
-    : quitRequested(false), screen(nullptr), randGen(randDev()),
-      collisionCb(nullptr),
+    : quitRequested(false), mainScreen(nullptr), randGen(randDev()),
+      postDrawCb(nullptr), collisionCb(nullptr),
       drawColliders(false), drawRayCasts(false),
       frameTime(1000/40), lastFrameTime(0),
       screenOffsetX(0), screenOffsetY(0), drawScaleX(1.0f), drawScaleY(1.0f),
@@ -48,15 +48,15 @@ void Game::begin(Screen& screen, uint16_t fps)
 {
     TimerInit();
 
-    this->screen = &screen;
+    this->mainScreen = &screen;
     frameTime = 1000 / fps;
     lastFrameTime = TimerGetTickcountMs();
 }
 
 
-Screen& Game::getScreen()
+Screen& Game::screen()
 {
-    return *screen;
+    return *mainScreen;
 }
 
 
@@ -155,7 +155,7 @@ void Game::draw(DrawStats* stats)
 
 void Game::drawBegin(DrawStats* stats)
 {
-    if (!screen) {
+    if (!mainScreen) {
         return;
     }
 
@@ -168,7 +168,7 @@ void Game::drawBegin(DrawStats* stats)
     timer_ustick_t timeFill = TimerGetTickcountUs();
     if (!backgroundSkipped) {
         if (backgroundBmp) {
-            screen->drawBitmap (
+            mainScreen->drawBitmap (
                 screenOffsetX, screenOffsetY,
                 cachedScaledBackgroundBmp,
                 FlipDir::None,
@@ -176,19 +176,19 @@ void Game::drawBegin(DrawStats* stats)
                 1, 1
                 );
         } else {
-            screen->fill(backgroundColor, false);
+            mainScreen->fill(backgroundColor, false);
         }
     }
 
     timer_ustick_t timeObjects = TimerGetTickcountUs();
     for (const GameObject& obj : gameObjs) {
-        obj.draw(*screen, combinedOffset, drawScaleX, drawScaleY);
+        obj.draw(*mainScreen, combinedOffset, drawScaleX, drawScaleY);
     }
 
     timer_ustick_t timeColliders = TimerGetTickcountUs();
     if (drawColliders) {
         for (const GameObject& obj : gameObjs) {
-            obj.getWorldCollider().debugDraw(*screen, Color::fromRGB565(0xF81D), combinedOffset,
+            obj.getWorldCollider().debugDraw(*mainScreen, Color::fromRGB565(0xF81D), combinedOffset,
                 drawScaleX, drawScaleY);
         }
     }
@@ -197,8 +197,8 @@ void Game::drawBegin(DrawStats* stats)
     // selectively enable/disable it for individual ray casts.
     timer_ustick_t timeRays = TimerGetTickcountUs();
     for (const auto& info : rayCastDrawInfos) {
-        RayCastResult::drawDebugRay(*screen, info.rayStart, info.rayEnd, combinedOffset, drawScaleX, drawScaleY);
-        info.result.drawDebug(*screen, combinedOffset, drawScaleX, drawScaleY);
+        RayCastResult::drawDebugRay(*mainScreen, info.rayStart, info.rayEnd, combinedOffset, drawScaleX, drawScaleY);
+        info.result.drawDebug(*mainScreen, combinedOffset, drawScaleX, drawScaleY);
     }
     rayCastDrawInfos.clear();
 
@@ -214,7 +214,7 @@ void Game::drawBegin(DrawStats* stats)
 
 void Game::drawFinish(DrawStats* stats)
 {
-    if (!screen) {
+    if (!mainScreen) {
         return;
     }
     
@@ -232,13 +232,13 @@ void Game::drawFinish(DrawStats* stats)
         if (text.isVisible()) {
             if (uDrawScaleX == 1  &&  uDrawScaleY == 1) {
                 if (text.isWorldSpace()) {
-                    screen->drawText (
+                    mainScreen->drawText (
                         text,
                         static_cast<int16_t>(std::round(combinedOffset.x())),
                         static_cast<int16_t>(std::round(combinedOffset.y()))
                         );
                 } else {
-                    screen->drawText(text, screenOffsetX, screenOffsetY);
+                    mainScreen->drawText(text, screenOffsetX, screenOffsetY);
                 }
             } else {
                 const auto origX = text.getX();
@@ -253,13 +253,13 @@ void Game::drawFinish(DrawStats* stats)
                 ncText.setExplosion(origExplosion*uDrawScaleX);
 
                 if (text.isWorldSpace()) {
-                    screen->drawText (
+                    mainScreen->drawText (
                         text,
                         static_cast<int16_t>(std::round(combinedOffset.x())),
                         static_cast<int16_t>(std::round(combinedOffset.y()))
                         );
                 } else {
-                    screen->drawText(text, screenOffsetX, screenOffsetY);
+                    mainScreen->drawText(text, screenOffsetX, screenOffsetY);
                 }
 
                 ncText.setPosition(origX, origY);
@@ -269,13 +269,19 @@ void Game::drawFinish(DrawStats* stats)
         }
     }
 
+    timer_ustick_t timePostDraw = TimerGetTickcountUs();
+    if (postDrawCb) {
+        postDrawCb();
+    }
+
     timer_ustick_t timeCommit = TimerGetTickcountUs();
-    screen->commit();
+    mainScreen->commit();
 
     timer_ustick_t timeEnd = TimerGetTickcountUs();
 
     if (stats) {
-        stats->timeTextsUs = (uint32_t) (timeCommit-timeTexts);
+        stats->timeTextsUs = (uint32_t) (timePostDraw-timeTexts);
+        stats->timePostDrawUs = (uint32_t) (timeCommit-timePostDraw);
         stats->timeCommitUs = (uint32_t) (timeEnd-timeCommit);
     }
 }

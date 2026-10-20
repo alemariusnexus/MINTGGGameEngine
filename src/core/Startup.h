@@ -27,5 +27,4 @@ extern Game game;
 
 extern void gameSetup();
 extern void gameLoop(float dt);
-extern void postDraw(float dt);
 extern void onCollision(const MINTGGGameEngine::GameObjectCollision& coll);

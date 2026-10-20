@@ -13,7 +13,13 @@
 
 #include <cassert>
 
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include <QImage>
+#   include <QString>
+#endif
+
 #include "../../storage/File.h"
+#include "../../storage/StorageEngine.h"
 #include "../../util/MathUtils.h"
 
 
@@ -63,8 +69,25 @@ void DrawSurface::drawText(const Text& text, int32_t ox, int32_t oy)
     }
 }
 
-bool DrawSurface::saveScreenshot(const char* path)
+bool DrawSurface::saveScreenshot(const std::string_view& path)
 {
+#ifdef MINTGGGAMEENGINE_PORT_DESKTOP
+    const auto w = getWidth();
+    const auto h = getHeight();
+
+    QImage screenImg(w, h, QImage::Format_RGB888);
+
+    for (uint16_t y = 0 ; y < h ; y++) {
+        for (uint16_t x = 0 ; x < w ; x++) {
+            Color pixel = readPixel(x, y);
+            screenImg.setPixelColor(x, y, QColor(pixel.getRed(), pixel.getGreen(), pixel.getBlue()));
+        }
+    }
+
+    return screenImg.save(QString::fromStdString(
+        StorageEngine::getInstance().resolvePath(path)
+        ));
+#else
     // TODO: Support writing BMP files (based on extension maybe)
     File f(path);
     if (!f.open(File::WriteOnly)) {
@@ -81,6 +104,7 @@ bool DrawSurface::saveScreenshot(const char* path)
     f.flush();
     f.close();
     return true;
+#endif
 }
 
 void DrawSurface::drawGlyph (

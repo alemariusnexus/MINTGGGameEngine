@@ -161,7 +161,7 @@ void BufferedScreen::drawText(const Text& text, int32_t ox, int32_t oy)
     fb.drawText(text, ox, oy);
 }
 
-bool BufferedScreen::saveScreenshot(const char* path)
+bool BufferedScreen::saveScreenshot(const std::string_view& path)
 {
     return fb.saveScreenshot(path);
 }

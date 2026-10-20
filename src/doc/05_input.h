@@ -5,7 +5,7 @@ namespace MINTGGGameEngine
 
 /**
 
-\page Input
+\page input Input
 
 
 \section input_overview Overview

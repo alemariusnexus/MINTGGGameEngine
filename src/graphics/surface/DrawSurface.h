@@ -13,6 +13,8 @@
 
 #include "../../Globals.h"
 
+#include <string_view>
+
 #include "../Bitmap.h"
 #include "../Color.h"
 #include "../Text.h"
@@ -286,7 +288,7 @@ public:
      * \param path The path to save the screenshot to.
      * \return true if successful, false otherwise.
      */
-    virtual bool saveScreenshot(const char* path);
+    virtual bool saveScreenshot(const std::string_view& path);
 
     ///@}
 

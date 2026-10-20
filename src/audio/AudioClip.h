@@ -25,13 +25,13 @@ namespace MINTGGGameEngine
  *      tuning.
  *
  * The english notation for note names is used here, and frequencies are
- * reounded to the nearest integer value.
+ * rounded to the nearest integer value.
  * 
  * A small letter s in the note name indicates the sharp version of the note.
  * For flat notes, the enharmonic sharp equivalent must be used (example:
  * NOTE_Fs4 is F sharp 4, alias G flat 4, at ~370Hz).
  */
-enum Note
+enum AudioNote
 {
     NOTE_A0  = 28,
     NOTE_As0 = 29,

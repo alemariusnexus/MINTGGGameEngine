@@ -69,6 +69,8 @@ public:
      */
     typedef void (*CollisionCb)(const GameObjectCollision& coll);
 
+    typedef void (*PostDrawCb)();
+
     struct DrawStats
     {
         uint32_t timeFillUs;
@@ -76,6 +78,7 @@ public:
         uint32_t timeCollidersUs;
         uint32_t timeRaysUs;
         uint32_t timeTextsUs;
+        uint32_t timePostDrawUs;
         uint32_t timeCommitUs;
     };
 
@@ -106,7 +109,10 @@ public:
      *
      * @return The game screen.
      */
-    Screen& getScreen();
+    Screen& screen();
+
+    Screen& getScreen() { return screen(); }
+
 
     /**
      * \brief Return a reference to the storage engine.
@@ -337,6 +343,8 @@ public:
      * @return The background bitmap.
      */
     Bitmap getBackgroundBitmap() const { return backgroundBmp; }
+
+    void setPostDrawCallback(PostDrawCb cb) { postDrawCb = cb; }
     
     ///@}
     
@@ -593,7 +601,7 @@ private:
 
     bool quitRequested;
 
-    Screen* screen;
+    Screen* mainScreen;
     std::set<GameObject, GOZOrderComparator> gameObjs;
     std::list<Text> texts;
 
@@ -604,6 +612,7 @@ private:
     InputEngine inputEng;
     NetworkEngine networkEng;
 
+    PostDrawCb postDrawCb;
     CollisionCb collisionCb;
 
     bool drawColliders;

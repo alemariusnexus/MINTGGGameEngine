@@ -45,7 +45,7 @@ static void EngineSetup(int argc = 0, char** argv = nullptr)
 
 static bool EngineLoop()
 {
-    return engine.doFrame(&gameLoop, &postDraw);
+    return engine.doFrame(&gameLoop);
 }
 
 static void EngineShutdown()

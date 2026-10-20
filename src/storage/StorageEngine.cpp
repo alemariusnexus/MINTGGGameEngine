@@ -355,18 +355,18 @@ void StorageEngine::sync()
 
 #endif
 
-std::string StorageEngine::resolvePath(const std::string& path)
+std::string StorageEngine::resolvePath(const std::string_view& path)
 {
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     using namespace std::string_literals;
 
     for (const auto& sdMountPoint : mountPoints) {
         if (path.starts_with(sdMountPoint.first)) {
-            return sdMountPoint.second + path.substr(sdMountPoint.first.length());
+            return sdMountPoint.second + std::string(path.substr(sdMountPoint.first.length()));
         }
     }
 #endif
-    return path;
+    return std::string(path);
 }
 
 

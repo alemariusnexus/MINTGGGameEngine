@@ -197,7 +197,7 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
     return true;
 }
 
-bool DefaultEngine::doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(float))
+bool DefaultEngine::doFrame(void (*gameLoopFunc)(float))
 {
     game->beginFrame();
 
@@ -220,9 +220,6 @@ bool DefaultEngine::doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(fl
 
     // GameObjects zeichnen
     game->drawBegin(&drawStats);
-    if (postDrawFunc) {
-        postDrawFunc(dt);
-    }
     game->drawFinish(&drawStats);
 
     const timer_ustick_t endTime = TimerGetTickcountUs();
@@ -232,7 +229,7 @@ bool DefaultEngine::doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(fl
     if (printFrameStats) {
         LogInfo(
             "Frame Stats   -   total: %uus (~%.2f FPS)   -   gameLoop: %uus, checkCollisions: %uus, draw: %uus   -   "
-            "fill: %uus, objs: %uus, colls: %uus, rays: %uus, texts: %uus, comm: %uus",
+            "fill: %uus, objs: %uus, colls: %uus, rays: %uus, texts: %uus, post: %uus, comm: %uus",
 
             (uint32_t) (endTime-gameLoopTime),
             fps,
@@ -246,13 +243,14 @@ bool DefaultEngine::doFrame(void (*gameLoopFunc)(float), void (*postDrawFunc)(fl
             drawStats.timeCollidersUs,
             drawStats.timeRaysUs,
             drawStats.timeTextsUs,
+            drawStats.timePostDrawUs,
             drawStats.timeCommitUs
             );
     }
 
     game->endFrame();
 
-    game->sleepNextFrame(); // Warten bis zum nächsten Frame
+    game->sleepNextFrame(); // Wait until the next frame
 
     return !game->isQuitRequested();
 }
