@@ -40,7 +40,7 @@ namespace MINTGGGameEngine
  * things like pin configurations, screen setup, and other hardware- and
  * platform-specific settings.
  *
- * For this reason, every game project must have a file called **_mgg_config.h_**, which
+ * For this reason, every game project must have a file called ***mgg_config.h***, which
  * the engine itself will include. This file (or files included by it) should setup all
  * the necessary configuration values. For most configuration options, a sensible default
  * value is provided, so you only have to add your own configuration values if you want
@@ -101,7 +101,7 @@ namespace MINTGGGameEngine
  * pages.
  *
  * To actually become active in the game (e.g. be displayed on screen or participate in the
- * physics calculations), a game object must be **_spawned_** into the game using
+ * physics calculations), a game object must be ***spawned*** into the game using
  * \ref Game::spawnObject(). When it is no longer needed, it can be **despawned** using
  * \ref Game::despawnObject().
  *
@@ -142,7 +142,7 @@ namespace MINTGGGameEngine
  *
  * \subsection core_gameobject_collider Colliders
  *
- * The \ref Collider class controls a game object's **_hit box_** for the physics parts
+ * The \ref Collider class controls a game object's ***hit box*** for the physics parts
  * of the engine, like **collision detection or ray casting**, and is optimized for
  * fast calculations. It is separate from the object's sprite. Currently, only very
  * simple colliders are supported (axis-aligned rectangles and circles). See the
@@ -161,7 +161,7 @@ namespace MINTGGGameEngine
  * identify *what* a certain GameObject is, or to fetch all GameObjects of a given
  * type that are currently spawned.
  *
- * Tags are **_bit flags_** that can be freely defined by the user. It's a good idea
+ * Tags are ***bit flags*** that can be freely defined by the user. It's a good idea
  * to define all tags in a global enum like this:
  *
  * \code{.cpp}
@@ -231,7 +231,7 @@ namespace MINTGGGameEngine
  *
  * The game's screen can be passed when loading the bitmap, to convert to bitmap
  * into the screen's native pixel format. This is not necessary, but makes drawing
- * the bitmap significantly faster, and is thus **_strongly_ recommended** for
+ * the bitmap significantly faster, and is thus <b><i>strongly</i> recommended</b> for
  * bitmaps that may be drawn every frame.
  *
  * If an SD card or similar file storage medium is not available, a bitmap can also
@@ -251,7 +251,7 @@ namespace MINTGGGameEngine
  *
  * To simplify game code and shield game programmers from the notoriously
  * beginner-unfriendly topic of C/C++ pointers, many (but not all!) of the core game
- * classes use **_Implicit Sharing_**. This means that **copies of such objects will
+ * classes use ***Implicit Sharing***. This means that **copies of such objects will
  * still refer to the same object**, and will not create new objects. Consider the
  * following code:
  *
@@ -262,7 +262,7 @@ namespace MINTGGGameEngine
  *
  * In C++ jargon, the second line create a *copy* of the object from `player`, and
  * stores this object in the new variable `player2`. However, since GameObject uses
- * *implicit sharing*, `player` and `player2` still both refer to the **_same_**
+ * *implicit sharing*, `player` and `player2` still both refer to the ***same***
  * game object. So the code above does **not** actually create a second player, but
  * just makes the same player object known under two different "names", `player`
  * and `player2`.

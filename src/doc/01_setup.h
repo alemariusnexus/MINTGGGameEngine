@@ -94,7 +94,7 @@ namespace MINTGGGameEngine
  *
  *  1. By **double-clicking the file** _MINTGGGameEngine_MyGame &rarr; main &rarr;
  *     **main.ino**_. This should automatically start Arduino IDE and open the project.
- *  2. By opening Arduino IDE, choosing **_%File &rarr; Open..._**, then selecting the file
+ *  2. By opening Arduino IDE, choosing ***%File &rarr; Open...***, then selecting the file
  *     main.ino from there.
  *
  * You should then see Arduino IDE open the project, and show you the contents of the
@@ -120,21 +120,21 @@ namespace MINTGGGameEngine
  * everything works.
  *
  * First, **connect the device** you want to develop for (e.g. an ESP32) to the PC via a
- * USB cable. Then click the big checkbox at the top of Arduino IDE that says **_Select
- * Board_**. and select your board from it. You may have to search for the exact name of
+ * USB cable. Then click the big checkbox at the top of Arduino IDE that says ***Select
+ * Board***. and select your board from it. You may have to search for the exact name of
  * the board and select the USB port, or Arduino IDE might recognize the board automatically.
  * If no device is recognized at all, check that appears in the Windows Device Manager under
  * *Ports (COM & LPT)*. Otherwise, you might have to install a driver for it first, the
  * procedure for which varies depending on your board.
  *
- * Then, you can click the **_Upload_ button** left of the *Select board* box (arrow
+ * Then, you can click the <b><i>Upload</i> button</b> left of the *Select board* box (arrow
  * pointing to the right). This will compile the game code, and upload it to the board. This
- * may take a while, especially on the first upload. If you see a message like **_Hard
- * resetting via RTS pin..._** at the end, that means it worked, and you can now start
+ * may take a while, especially on the first upload. If you see a message like ***Hard
+ * resetting via RTS pin...*** at the end, that means it worked, and you can now start
  * developing your game. If you get an error message, you will have to try fixing it first.
  *
- * Whenever you write new code and want to test it on the device, you have to **use the
- * _Upload_ button again** to build and transfer your game to the device.
+ * Whenever you write new code and want to test it on the device, you have to <b>use the
+ * <i>Upload</i> button again</b> to build and transfer your game to the device.
  *
  *
  * \section setup_espidf Option B: Setup for ESP-IDF
@@ -285,15 +285,15 @@ namespace MINTGGGameEngine
  * \image html setup_espidf_clion_toolchain.svg "Setup for the Toolchain in CLion" width=80%
  *
  * You have to configure a toolchain, which tells CLion which compilers and other general settings
- * to use for your ESP-IDF projects. In the CLion settings, go to **_Build, Execution, Deployment
- * &rarr; Toolchains_**. Click the *+* sign above the toolchain list and choose *System*. Then you
+ * to use for your ESP-IDF projects. In the CLion settings, go to ***Build, Execution, Deployment
+ * &rarr; Toolchains***. Click the *+* sign above the toolchain list and choose *System*. Then you
  * need to setup some paths on the right.
  *
  * Give your toolchain a name, e.g. *ESP32-Xtensa*. Then click *Add environment*, and **enter the
  * _Environment file_**. This is necessary to set up various environment variables, which is what
  * e.g. the *IDF Powershell* does automatically. The environment file can be found in the tools
  * directory of your ESP-IDF installation. It should be something like the following on Windows
- * (but make sure to choose the correct path for **_your_** system):
+ * (but make sure to choose the correct path for ***your*** system):
  *
  * \code
  * C:\Espressif\tools\Microsoft.v6.1.PowerShell_profile.ps1
@@ -326,7 +326,7 @@ namespace MINTGGGameEngine
  * If you want to use **CLion's built-in terminal** to run the command-line ESP-IDF tools like
  * *idf.py* (which can be useful to see the game's log messages, or for fixing the build when things
  * go wrong), you have to tell it to set up the ESP-IDF environment as well. You can do this in the
- * CLion settings under **_Tools &rarr; Terminal &rarr; Application Settings &rarr; Shell path_**.
+ * CLion settings under ***Tools &rarr; Terminal &rarr; Application Settings &rarr; Shell path***.
  * For Windows, enter the following command there (which includes the path you set up during
  * \ref setup_espidf_clion_toolchain for the environment file. Adjust it for your system):
  *
@@ -341,7 +341,7 @@ namespace MINTGGGameEngine
  * Now that the global CLion setup is done, you can **open the skeleton project**. In CLion, just
  * use *File &rarr; Open*, and select the directory MINTGGGameEngine_MyGame. CLion might show you
  * the CMake configuration dialog automatically. If not, open it now in the CLion settings under
- * **_Build, Execution, Deployment &rarr; CMake_**. Add a new profile using the *+* button, then
+ * ***Build, Execution, Deployment &rarr; CMake***. Add a new profile using the *+* button, then
  * configure it as follows.
  *
  * Choose any name you want for it, e.g. *ESP32-Debug*. For now, you can set the *Build type* to
@@ -436,10 +436,10 @@ namespace MINTGGGameEngine
  *
  *  1. You will need **at least Qt 6.8**. On Windows, you specifically need **the MinGW version**. The
  *     MSVC or LLVM versions are currently **not** supported by the engine, but might be in the future.
- *  2. Under **_Additional Libraries_**, make sure to include **_Qt Multimedia_**, which the engine
+ *  2. Under ***Additional Libraries***, make sure to include ***Qt Multimedia***, which the engine
  *     needs for audio output (and builds will currently fail without it, even if you don't use audio in
  *     your game).
- *  3. Under **_Qt for Development_**, make sure to include **_Build Tools &rarr; MinGW_** in the version
+ *  3. Under ***Qt for Development***, make sure to include ***Build Tools &rarr; MinGW*** in the version
  *     that the Qt version you chose was built for. These are the compilers Qt itself was built with, and
  *     you **must** use the same ones (in the **same version!**) to build your game, or building might
  *     fail.
@@ -469,15 +469,15 @@ namespace MINTGGGameEngine
  *
  * Here are the **important differences** from the setup described for ESP-IDF:
  *
- *  1. On Windows, when you create the toolchain, choose **_MinGW_ instead of _System_** for the
+ *  1. On Windows, when you create the toolchain, choose <b><i>MinGW</i> instead of <i>System</i></b> for the
  *     toolchain type.
  *  2. You **don't need an environment file** for the desktop platform.
- *  3. The **_C Compiler_ and _C++ Compiler_** can be found in the Qt installation directory. The exact
+ *  3. The <b><i>C Compiler</i> and <i>C++ Compiler</i></b> can be found in the Qt installation directory. The exact
  *     path depends on your Qt and MinGW version, but should look something like *Tools &rarr;
  *     mingw1310_64 &rarr; bin &rarr; gcc.exe* and *g++.exe*, respectively. If these files don't exist,
  *     you probably forgot to include the MinGW tools during Qt installation.
  *  4. You don't need to setup anything special for the CLion terminal.
- *  5. In the **_CMake configuration_**, again choose the **toolchain** you created for Qt-MinGW.
+ *  5. In the ***CMake configuration***, again choose the **toolchain** you created for Qt-MinGW.
  *  6. In the CMake configuration, you **don't need the _-DIDF_TARGET=esp32_ definition** in the *CMake
  *     options*. Instead, you have to provide the path to the core CMake files of your Qt installation.
  *     <b>Use the following for your _CMake options_</b>, adjusted for your system again:
@@ -501,21 +501,21 @@ namespace MINTGGGameEngine
  * To do this, **click the _Build target_ box next to the _Build_ button**, and choose *Edit
  * configurations...*. There, you have to configure two things:
  *
- *  1. Under **_Program arguments_**, you have to put *-d ..*. This tells the game where to find its *app
+ *  1. Under ***Program arguments***, you have to put *-d ..*. This tells the game where to find its *app
  *     root directory*, which is the directory where it looks for things like the *data* and *config*
  *     folder.
- *  2. More importantly, under **_Environment variables_**, you have to change the value of the PATH
+ *  2. More importantly, under ***Environment variables***, you have to change the value of the PATH
  *     variable that the system uses to find libraries that the program depends on. In this case, that
  *     means the Qt libraries. This step **should only be necessary on Windows**, where the program will
  *     immediately crash without any output if you leave it out.
  *     The value for the *Environment variables* should look like this, again adjusting to your Qt
  *     installation directory:
  *     <i>PATH=C:\Qt\6.12.0\mingw_64\bin</i>
- *  3. This is optional, but while you're at it, you can check the box that says **_Emulate terminal in
- *     the output console_**, which is needed to correctly display the colored log outputs from your game
+ *  3. This is optional, but while you're at it, you can check the box that says ***Emulate terminal in
+ *     the output console***, which is needed to correctly display the colored log outputs from your game
  *     in CLion's console.
  *
- * Finally, to run your game, you now **use the regular _Run_ button** (the green triangle) instead of the
+ * Finally, to run your game, you now <b>use the regular <i>Run</i> button</b> (the green triangle) instead of the
  * *Build* button.
  *
  *

@@ -65,8 +65,8 @@ namespace MINTGGGameEngine
  * but can ignore them.
  *
  * The rest of the code defines three **C++ functions**. These are blocks of code
- * with a name. Each function starts with its **_header_** (e.g. `void gameSetup()`), and
- * continues with its **_body_**, which is always surrounded by braces (`{}`). We don't
+ * with a name. Each function starts with its ***header*** (e.g. `void gameSetup()`), and
+ * continues with its ***body***, which is always surrounded by braces (`{}`). We don't
  * care about the header for now, other than the fact that it contains the function's name.
  *
  * The three functions in the file are named *gameSetup*, *gameLoop* and *onCollision*.
@@ -77,7 +77,7 @@ namespace MINTGGGameEngine
  * The thing we care about right now is the *body* of these functions. As you can see,
  * **it is currently empty**, as there is no code between the braces (whitespace like
  * empty lines is ignored in C++). If there was code there, it would be executed by the
- * processor when the function is **_called_**. The three functions in this file are
+ * processor when the function is ***called***. The three functions in this file are
  * special functions that are *called* by the engine automatically.
  *
  * \subsection tutorial_simple_skelcode_functions The Main Game Functions
@@ -86,16 +86,16 @@ namespace MINTGGGameEngine
  * one is called at different times, and serves different purposes. We will learn more
  * about them in the following sections, but here is a quick overview:
  *
- *  - **_gameSetup()_**: Called **once when the game starts** (e.g. when the microcontroller
+ *  - ***gameSetup()***: Called **once when the game starts** (e.g. when the microcontroller
  *    gets powered on, or when the game application starts). All the setup code like
  *    spawning the player, loading sprites, defining buttons, or loading the first level
  *    will happen here.
- *  - **_gameLoop()_**: Called **once every _frame_** that the game is running, after
+ *  - ***gameLoop()***: Called **once every _frame_** that the game is running, after
  *    *gameSetup()* has finished. This function will be called multiple times per second,
  *    until the game is ended. It usually contains the main game logic, like "move the
  *    player two pixels to the right" or "spawn an enemy behind the player 20 seconds
  *    after the game starts".
- *  - **_onCollision()_**: Called whenever the engine notices that **two game objects
+ *  - ***onCollision()***: Called whenever the engine notices that **two game objects
  *    collide with each other**, e.g. a player with an enemy, a player with a pickup, or
  *    an enemy with a bullet. Can be used to decide what should happen when these objects
  *    collide, like scoring a point, or subtracting a life from the player.
@@ -118,7 +118,7 @@ namespace MINTGGGameEngine
  * GameObject player;
  * \endcode
  *
- * **IMPORTANT**: Because it is a **_global_** variable, this code must be placed **outside**
+ * **IMPORTANT**: Because it is a ***global*** variable, this code must be placed **outside**
  * any functions. Specifically, it should be placed on its own line, somewhere **before**
  * the first function in the file (e.g. between `LOG_USE_TAG("main")` and `void gameSetup()`),
  *
@@ -240,7 +240,7 @@ namespace MINTGGGameEngine
  *
  * There are a few new C++ constructs in this code:
  *
- *  1. The sequence `//` start a **_single-line comment_**. This means that all text
+ *  1. The sequence `//` start a ***single-line comment***. This means that all text
  *     following these slashes until the end of the line is ignored by the compiler, so you
  *     can write anything you want there without changing what your game does. Comments are
  *     used to describe sections of code for humans that read it, the computer doesn't care
@@ -310,7 +310,7 @@ namespace MINTGGGameEngine
  * *width of the player* (which is twice its radius for circles) and the *width of the
  * screen*. The reason is that for the right screen edge, **we have to check if the _right_
  * edge** of the player is outside the screen, not the left edge. Similarly, the *setX()*
- * function changes the x coordinate of the player's **_left_ edge** (remember: GameObject
+ * function changes the x coordinate of the player's <b><i>left</i> edge</b> (remember: GameObject
  * coordinates are always for their top-left corner), so we have to calculate the maximum
  * "allowable" x coordinate from the screen's and the player's width.
  *
@@ -361,7 +361,7 @@ namespace MINTGGGameEngine
  *
  * One detail is noteworthy: The first line in the *body* starts with
  * `GameObject pickup = ...`. This time, we have the data type in front of out variable
- * name `pickup`. The reason is that this is a **_local_ variable**, i.e. it is only
+ * name `pickup`. The reason is that this is a <b><i>local</i> variable</b>, i.e. it is only
  * valid within this function. This line just combines the two separate lines
  * `GameObject pickup;` and `pickup = GameObject::createCircle(50, -10, 2, Color::GREEN);`
  * into one line to be more compact.
@@ -377,7 +377,7 @@ namespace MINTGGGameEngine
  * are also responsible for calling it.
  *
  * When the game starts, we want to spawn the first pickup immediately. To do this, we
- * **_call_ the function from gameSetup()** like this:
+ * <b><i>call</i> the function from gameSetup()</b> like this:
  *
  * \code{.cpp}
  * spawnPickup();
@@ -463,7 +463,7 @@ namespace MINTGGGameEngine
  * we only have one, but we might have more than one at the same time in the future. We
  * want to write code that moves **all of the pickups** every frame.
  *
- * To do this, we use a **_loop_**. A loop is a construct in C++ that is similar to the
+ * To do this, we use a ***loop***. A loop is a construct in C++ that is similar to the
  * *if statement* we already saw, in that it executes a bunch of code only if a condition
  * is true. Unlike the *if statement* however, a loop will **keep executing that code
  * over and over** as long as the condition stays true.
@@ -594,7 +594,7 @@ namespace MINTGGGameEngine
  *
  * Its header, i.e. the first line, is a bit longer and more complex than the one for the
  * other functions we used before. Of interest is now the part
- * `const GameObjectCollision& coll`, which is called the **_parameter_** of the function.
+ * `const GameObjectCollision& coll`, which is called the ***parameter*** of the function.
  * This parameter is a variable with name *coll* whose value is set when the function is
  * called. This function is called by the engine itself, so it fills the variable with a
  * sensible value. The *coll* variable has the data type *GameObjectCollision*, which is
@@ -728,7 +728,7 @@ namespace MINTGGGameEngine
  * be displayed (`"Score: "s`). Such fixed text (a *string literal*) must always be
  * inclosed in double quotation marks (`"..."`). Then after it, we have to add the
  * score. To do this, we have to convert the score (which has the data type `int`) to
- * a **_string_** first. *string* is the technical term for a bunch of characters that
+ * a ***string*** first. *string* is the technical term for a bunch of characters that
  * are arranged one after the other (short for *string of characters*). Or in plain
  * English: text. The conversion from *int* to *string* is done using the *to_string()*
  * function. The `+` operator puts two *strings* together to create a new, longer
