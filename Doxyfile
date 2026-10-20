@@ -54,7 +54,7 @@ PROJECT_NUMBER         =
 # for a project that appears at the top of each page and should give viewers a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Arduino library for a simple 2D game engine used at MINT-Zentrum Groß Gerau"
+PROJECT_BRIEF          = "A simple C++ 2D game engine, mainly intended for microcontrollers like the ESP32"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
