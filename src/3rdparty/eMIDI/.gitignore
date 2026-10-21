@@ -1,0 +1,10 @@
+*.swp
+*.gch
+*.out
+*.o
+*.nc
+bin
+doc/html
+doc/latex
+build
+

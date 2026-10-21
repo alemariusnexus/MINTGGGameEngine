@@ -2,6 +2,10 @@ The bulk of the engine is released under the Mozilla Public License 2.0 (MPL-2.0
 
 The following components are instead licensed differently:
 
+    * src/3rdparty/eMIDI
+      The eMIDI library is licensed under the MIT license.
+    * src/3rdparty/esp_lcd_st7701
+      The ESP-IDF ST7701 component is licensed under the Apache License 2.0.
     * src/addons/mipidsi/rpi_tc358762
       The driver for Raspberry Pi compatible displays based on TC358762 is released under the GPL-2.0-only.
 
@@ -9,4 +13,5 @@ These components are by default NOT compiled into the engine, to avoid the licen
 combined with user code into an executable/firmware. To enable them, you have to enable the configuration option
 MGG_ENABLE_STRONG_COPYLEFT_ADDONS in your project.
 
-The full text of the relevant licenses can be found in the other LICENSE-* files in this directory.
+The full text of the relevant licenses can be found either in the other LICENSE-* files in this directory, or
+in separate license files in the directories of the components listed above.
