@@ -62,7 +62,7 @@ public:
     };
 
 public:
-    static void initConfig(Config& cfg);
+    static void initConfig(Config& cfg, bool useMainScreenConfig = false);
 
 public:
     ScreenST7735(const Config& cfg);
@@ -71,6 +71,8 @@ public:
     bool init() override;
     
     void commit() override;
+
+    std::string getModelID() override { return "st7735"; }
 
 protected:
     bool mipiInitBus() override;

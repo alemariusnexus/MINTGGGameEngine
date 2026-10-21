@@ -33,7 +33,8 @@
 
 // ********** SCREEN **********
 
-#define MGG_SCREEN_TYPE_NULL            0
-#define MGG_SCREEN_TYPE_ST7735_SPI      1
-#define MGG_SCREEN_TYPE_ILI9341_8080    2
-#define MGG_SCREEN_TYPE_RPI_TC358762    3
+#define MGG_SCREEN_TYPE_NULL                                    0
+#define MGG_SCREEN_TYPE_ST7735_SPI                              1
+#define MGG_SCREEN_TYPE_ILI9341_8080                            2
+#define MGG_SCREEN_TYPE_RPI_TC358762                            3
+#define MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A         4

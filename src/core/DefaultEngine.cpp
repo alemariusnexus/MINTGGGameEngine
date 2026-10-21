@@ -19,6 +19,7 @@
 #include "../graphics/screen/drivers/ScreenNull.h"
 #include "../graphics/screen/drivers/mipidcs/ScreenILI9341.h"
 #include "../graphics/screen/drivers/mipidcs/ScreenST7735.h"
+#include "../graphics/screen/drivers/mipidsi/ScreenWaveshare4_3_DSI_TOUCH_A.h"
 #include "../addons/mipidsi/rpi_tc358762/ScreenRPiTC358762.h"
 #include "../platform/PlatformManager.h"
 
@@ -427,23 +428,28 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
     screen = new ScreenNull;
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7735_SPI
     ScreenST7735::Config screenCfg;
-    ScreenST7735::initConfig(screenCfg);
+    ScreenST7735::initConfig(screenCfg, true);
     screenCfg.engine = this;
     screen = new ScreenST7735(screenCfg);
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ILI9341_8080
     ScreenILI9341::Config screenCfg;
-    ScreenILI9341::initConfig(screenCfg);
+    ScreenILI9341::initConfig(screenCfg, true);
     screenCfg.engine = this;
     screen = new ScreenILI9341(screenCfg);
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_RPI_TC358762
 #   if MGG_ENABLE_COPYLEFT_ADDONS
     ScreenRPiTC358762::Config screenCfg;
-    ScreenRPiTC358762::initConfig(screenCfg);
+    ScreenRPiTC358762::initConfig(screenCfg, true);
     screenCfg.dsi.engine = this;
     screen = new ScreenRPiTC358762(screenCfg);
 #   else
 #       error "Can't use RPI_TC358762 screen without MGG_ENABLE_COPYLEFT_ADDONS!"
 #   endif
+#elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A
+    ScreenWaveshare4_3_DSI_TOUCH_A::Config screenCfg;
+    ScreenWaveshare4_3_DSI_TOUCH_A::initConfig(screenCfg, true);
+    screenCfg.dsi.engine = this;
+    screen = new ScreenWaveshare4_3_DSI_TOUCH_A(screenCfg);
 #endif
 
     Font::loadDefaultFonts();
@@ -469,6 +475,8 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
     }
 
     if (screen) {
+        LogInfo("Main screen model: %s", screen->getModelID().data());
+
         // Fill the screen once to avoid uninitialized data if Game::setBackgroundSkipped(true) is used.
         screen->fill(Color::BLACK, false);
 

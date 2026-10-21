@@ -80,7 +80,7 @@ LOG_USE_TAG("ScreenRPiTC358762")
 namespace MINTGGGameEngine
 {
 
-void ScreenRPiTC358762::initConfig(Config& cfg)
+void ScreenRPiTC358762::initConfig(Config& cfg, bool useMainScreenConfig)
 {
     // TODO: We could actually support BGR565 and RGB888 on ESP32-P4 using the PPA's color conversion.
     //  AbstractMIPIDSIScreen already contains a path that uses the PPA with its "final transform pass". We could
@@ -104,6 +104,10 @@ void ScreenRPiTC358762::initConfig(Config& cfg)
         .swapXY = false
     };
 
+    if (!useMainScreenConfig) {
+        return;
+    }
+
 #ifdef MGG_SCREEN_MAIN_WIDTH
     cfg.dsi.width = MGG_SCREEN_MAIN_WIDTH;
 #endif
@@ -112,10 +116,9 @@ void ScreenRPiTC358762::initConfig(Config& cfg)
 #endif
 
 #ifdef MGG_SCREEN_MAIN_PIXEL_FORMAT
-    static_assert (
+    assert (
             MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565
-        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR888,
-        "Invalid setting for MGG_SCREEN_MAIN_PIXEL_FORMAT. Only RGB565 and BGR565 are allowed");
+        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR888);
     cfg.dsi.pixelFormat = MGG_SCREEN_MAIN_PIXEL_FORMAT;
 #endif
 

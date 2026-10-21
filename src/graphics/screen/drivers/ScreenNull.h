@@ -36,6 +36,8 @@ public:
     ScreenNull();
 
     bool init() override;
+
+    std::string getModelID() override { return "null"; }
 };
 
 }

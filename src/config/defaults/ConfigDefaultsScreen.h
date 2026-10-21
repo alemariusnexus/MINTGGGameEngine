@@ -218,6 +218,34 @@
 #   endif
 
 
+#elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A
+
+
+#   ifndef      MGG_SCREEN_MAIN_WIDTH
+#       define  MGG_SCREEN_MAIN_WIDTH       480
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_HEIGHT
+#       define  MGG_SCREEN_MAIN_HEIGHT      800
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_PIXEL_FORMAT
+#       define  MGG_SCREEN_MAIN_PIXEL_FORMAT    PixelFormat::RGB565
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_MIRROR_X
+#       define  MGG_SCREEN_MAIN_MIRROR_X        0
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_MIRROR_Y
+#       define  MGG_SCREEN_MAIN_MIRROR_Y        0
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_SWAP_XY
+#       define  MGG_SCREEN_MAIN_SWAP_XY         0
+#   endif
+
+
 #else
 
 #   error Invalid value for MGG_SCREEN_MAIN_TYPE!

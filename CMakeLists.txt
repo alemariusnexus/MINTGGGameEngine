@@ -30,6 +30,8 @@ list(APPEND SRCS
     graphics/screen/drivers/mipidcs/ScreenILI9341.cpp
     graphics/screen/drivers/mipidcs/ScreenST7735.cpp
     graphics/screen/drivers/mipidsi/AbstractMIPIDSIScreen.cpp
+	graphics/screen/drivers/mipidsi/ScreenST7701.cpp
+	graphics/screen/drivers/mipidsi/ScreenWaveshare4_3_DSI_TOUCH_A.cpp
     graphics/screen/drivers/ScreenNull.cpp
     graphics/screen/BufferedScreen.cpp
     graphics/screen/Screen.cpp
@@ -93,8 +95,9 @@ endforeach()
 
 if(MGG_PLATFORM STREQUAL ESPIDF)
     list(APPEND SRCS_ESPIDF
-        #3rdparty/esp_lcd_touch/esp_lcd_touch.c
-        #3rdparty/esp_lcd_touch_ft5x06/esp_lcd_touch_ft5x06.c
+		3rdparty/esp_lcd_st7701/esp_lcd_st7701.c
+		3rdparty/esp_lcd_st7701/esp_lcd_st7701_mipi.c
+		3rdparty/esp_lcd_st7701/esp_lcd_st7701_rgb.c
     )
     foreach(_SRCFILE ${SRCS_ESPIDF})
         list(APPEND SRCS_ESPIDF_ABS "src/${_SRCFILE}")
@@ -106,6 +109,7 @@ if(MGG_PLATFORM STREQUAL ESPIDF)
             ${SRCS_ESPIDF_ABS}
         INCLUDE_DIRS
             src
+			src/3rdparty/esp_lcd_st7701
         REQUIRES
             esp_adc
             esp_driver_gpio

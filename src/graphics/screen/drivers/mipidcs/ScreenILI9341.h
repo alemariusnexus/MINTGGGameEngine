@@ -70,7 +70,7 @@ public:
     };
 
 public:
-    static void initConfig(Config& cfg);
+    static void initConfig(Config& cfg, bool useMainScreenConfig = false);
 
 public:
     ScreenILI9341(const Config& cfg);
@@ -79,6 +79,8 @@ public:
     bool init() override;
     
     void commit() override;
+
+    std::string getModelID() override { return "ili9341"; }
 
 protected:
     bool mipiInitBus() override;

@@ -51,10 +51,12 @@ public:
     };
 
 public:
-    static void initConfig(Config& cfg);
+    static void initConfig(Config& cfg, bool useMainScreenConfig = false);
 
 public:
     ScreenRPiTC358762(const Config& cfg);
+
+    std::string getModelID() override { return "rpi_tc358762"; }
 
 protected:
     bool initPanel(uint8_t numFramebufs) override;

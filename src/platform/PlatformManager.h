@@ -19,9 +19,9 @@
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-// TODO: ESP32C3 supports it, but we haven't benchmarked it yet, and we're currently getting messages likes "peripheral
-//  0 is already used by another channel".
-#   if /*defined(CONFIG_IDF_TARGET_ESP32C3)  ||*/  defined(CONFIG_IDF_TARGET_ESP32P4)
+// TODO: ESP32C3/S3 supports it, but we haven't benchmarked it yet, and we're currently getting messages like
+//  "peripheral 0 is already used by another channel".
+#   if /*defined(CONFIG_IDF_TARGET_ESP32C3) ||*/ defined(CONFIG_IDF_TARGET_ESP32P4) /*|| defined(CONFIG_IDF_TARGET_ESP32S3)*/
 #       define MINTGGGAMEENGINE_ESP_ASYNC_MEMCPY_SUPPORTED
 #   endif
 #endif

@@ -34,7 +34,7 @@ namespace MINTGGGameEngine
 {
 
 
-void ScreenILI9341::initConfig(Config& cfg)
+void ScreenILI9341::initConfig(Config& cfg, bool useMainScreenConfig)
 {
     cfg.engine = nullptr;
 
@@ -67,6 +67,10 @@ void ScreenILI9341::initConfig(Config& cfg)
     cfg.pins.dat[6] = -1;
     cfg.pins.dat[7] = -1;
 
+    if (!useMainScreenConfig) {
+        return;
+    }
+
 #ifdef MGG_SCREEN_MAIN_WIDTH
     cfg.width = MGG_SCREEN_MAIN_WIDTH;
 #endif
@@ -91,10 +95,9 @@ void ScreenILI9341::initConfig(Config& cfg)
     cfg.swapXY = MGG_SCREEN_MAIN_SWAP_XY;
 #endif
 #ifdef MGG_SCREEN_MAIN_PIXEL_FORMAT
-    static_assert (
+    assert (
             MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565
-        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR565
-        , "Invalid setting for MGG_SCREEN_MAIN_PIXEL_FORMAT. Only RGB565 and BGR565 are allowed");
+        ||  MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::BGR565);
     if constexpr (MGG_SCREEN_MAIN_PIXEL_FORMAT == PixelFormat::RGB565) {
         cfg.bgrColors = false;
     } else {

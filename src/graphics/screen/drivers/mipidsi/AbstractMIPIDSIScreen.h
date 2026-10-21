@@ -92,7 +92,11 @@ protected:
 
     virtual PlatformData& getPlatformData() = 0;
 
-    virtual bool supportsHardwareMirrorAndSwapXY() const { return false; }
+    virtual bool supportsHardwareTransforms(bool mirrorX, bool mirrorY, bool swapXY) const
+            { return !(mirrorX || mirrorY || swapXY); }
+
+    bool shouldDoHardwareTransforms() const
+            { return supportsHardwareTransforms(cfg.mirrorX, cfg.mirrorY, cfg.swapXY); }
 
 private:
     bool initFinalTransformPass();
@@ -102,8 +106,8 @@ private:
     void shutdownTripleBuffering();
 
     bool useFinalTransformPass() const
-            { return !supportsHardwareMirrorAndSwapXY()  &&  (cfg.mirrorX  ||  cfg.mirrorY  ||  cfg.swapXY); }
-    bool mightUseHWForFinalTransformPass() const { return false; }
+            { return !shouldDoHardwareTransforms(); }
+    bool mightUseHWForFinalTransformPass() const { return true; }
     void performFinalTransformPass(void* outBuf, bool* outputTouchedByCPU);
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_ESP_PPA_SUPPORTED

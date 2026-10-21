@@ -55,6 +55,13 @@ public:
      * \brief Transfer any data to the actual screen if it hasn't been transferred yet.
      */
     virtual void commit() = 0;
+
+    /**
+     * \brief Return the screen's unique model identifier.
+     *
+     * @return The screen's model ID.
+     */
+    virtual std::string getModelID() = 0;
 };
 
 }

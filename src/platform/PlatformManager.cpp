@@ -69,7 +69,8 @@ bool PlatformManager::setupFastMemcpy()
     asyncMemcpySem = xSemaphoreCreateBinary();
 
     async_memcpy_config_t cfg = ASYNC_MEMCPY_DEFAULT_CONFIG();
-    cfg.dma_burst_size = 128;
+    //cfg.dma_burst_size = 128;
+    cfg.dma_burst_size = 64;
 #ifdef MINTGGGAMEENGINE_ESP_AXI_GDMA_SUPPORTED
     esp_err_t err = esp_async_memcpy_install_gdma_axi(&cfg, &asyncMemcpyHandle);
 #else
