@@ -29,7 +29,7 @@
 #include "ScreenRPiTC358762.h"
 
 
-#if MGG_ENABLE_COPYLEFT_ADDONS
+#if MGG_ENABLE_STRONG_COPYLEFT_ADDONS
 
 #include <cassert>
 

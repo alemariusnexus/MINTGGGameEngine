@@ -137,8 +137,8 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
 #endif
 
     LogInfo("Most of this engine is released under the MPL-2.0.");
-#if MGG_ENABLE_COPYLEFT_ADDONS
-    LogWarning("Engine compiled with copyleft addons. Make sure you follow their licensing terms!");
+#if MGG_ENABLE_STRONG_COPYLEFT_ADDONS
+    LogWarning("Engine compiled with strong copyleft addons. Make sure you follow their licensing terms!");
 #else
     LogInfo("Engine compiled without copyleft addons.");
 #endif
@@ -437,13 +437,13 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
     screenCfg.engine = this;
     screen = new ScreenILI9341(screenCfg);
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_RPI_TC358762
-#   if MGG_ENABLE_COPYLEFT_ADDONS
+#   if MGG_ENABLE_STRONG_COPYLEFT_ADDONS
     ScreenRPiTC358762::Config screenCfg;
     ScreenRPiTC358762::initConfig(screenCfg, true);
     screenCfg.dsi.engine = this;
     screen = new ScreenRPiTC358762(screenCfg);
 #   else
-#       error "Can't use RPI_TC358762 screen without MGG_ENABLE_COPYLEFT_ADDONS!"
+#       error "Can't use RPI_TC358762 screen without MGG_ENABLE_STRONG_COPYLEFT_ADDONS!"
 #   endif
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A
     ScreenWaveshare4_3_DSI_TOUCH_A::Config screenCfg;

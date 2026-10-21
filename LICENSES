@@ -7,6 +7,6 @@ The following components are instead licensed differently:
 
 These components are by default NOT compiled into the engine, to avoid the licensing implications of them being
 combined with user code into an executable/firmware. To enable them, you have to enable the configuration option
-MGG_ENABLE_COPYLEFT_ADDONS in your project.
+MGG_ENABLE_STRONG_COPYLEFT_ADDONS in your project.
 
 The full text of the relevant licenses can be found in the other LICENSE-* files in this directory.

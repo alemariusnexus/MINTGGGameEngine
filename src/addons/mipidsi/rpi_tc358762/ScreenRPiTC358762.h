@@ -26,7 +26,7 @@
 #include "../../../Globals.h"
 
 
-#if MGG_ENABLE_COPYLEFT_ADDONS
+#if MGG_ENABLE_STRONG_COPYLEFT_ADDONS
 
 #include "../../../core/Engine.h"
 #include "../../../graphics/screen/drivers/mipidsi/AbstractMIPIDSIScreen.h"
