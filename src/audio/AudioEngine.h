@@ -45,14 +45,14 @@ public:
 
     void setFrequency(float frequency);
 
+    size_t calcSampleSize() const;
+
 protected:
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char *data, qint64 len) override;
 
 private:
     bool generatePCMData(void* data, size_t numSamples);
-
-    size_t calcSampleSize() const;
 
 private:
     QAudioFormat format;

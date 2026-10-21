@@ -47,9 +47,8 @@ ToneGeneratorDevice::ToneGeneratorDevice(const QAudioFormat& format)
 
 qint64 ToneGeneratorDevice::bytesAvailable() const
 {
-    // Generate about 5ms of audio at a time
     return static_cast<qint64>(QIODevice::bytesAvailable()
-        + (format.sampleRate() * calcSampleSize()) / 200);
+        + (format.sampleRate() * calcSampleSize()) / 10);
 }
 
 void ToneGeneratorDevice::setFrequency(float frequency)
@@ -64,9 +63,9 @@ qint64 ToneGeneratorDevice::readData(char *data, qint64 maxlen)
     if (!generatePCMData(data, numSamples)) {
         return -1;
     }
-    QMetaObject::invokeMethod(this, [this] {
+    /*QMetaObject::invokeMethod(this, [this] {
         emit readyRead();
-    }, Qt::QueuedConnection);
+    }, Qt::QueuedConnection);*/
     dataReadSinceLastTick = true;
     return static_cast<qint64>(numSamples*sampleSize);
 }
@@ -87,13 +86,13 @@ bool ToneGeneratorDevice::generatePCMData(void* data, size_t numSamples)
     const auto channelCount = format.channelCount();
 
     const float phaseDelta = frequency / static_cast<float>(format.sampleRate());
-    const float amplitude = 1.0f / sqrtf(2.0f);
+    const float amplitude = 0.02f;
 
     if (sampleFormat == QAudioFormat::UInt8) {
         auto d = reinterpret_cast<uint8_t*>(data);
         while (numSamples != 0) {
             const auto sample = (phase < 0.5f) ? amplitude : -amplitude;
-            const auto rawSample = static_cast<uint8_t>((sample+1)*0.5f*INT8_MAX);
+            const auto rawSample = static_cast<uint8_t>(128.0f + sample*127.0f);
             for (size_t j = 0 ; j < channelCount ; j++) {
                 *d++ = rawSample;
             }
@@ -350,11 +349,12 @@ void AudioEngine::audioTaskMain()
     evtLoop = new QEventLoop;
 
     toneGen = new ToneGeneratorDevice(audioFormat);
+    toneGen->moveToThread(QThread::currentThread());
     toneGen->open(QIODevice::ReadOnly);
 
     audioSink = new QAudioSink(audioFormat);
     audioSink->moveToThread(QThread::currentThread());
-    audioSink->setBufferSize(audioFormat.sampleRate() / 200);
+    audioSink->setBufferSize((audioFormat.sampleRate() * toneGen->calcSampleSize()) / 10);
     audioSink->start(toneGen);
 #endif
 
