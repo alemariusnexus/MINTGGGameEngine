@@ -50,6 +50,9 @@ list(APPEND SRCS
 	graphics/Text.cpp
 
 	input/InputEngine.cpp
+	input/InputTouchEvent.cpp
+	input/ResTouchScreenInputDevice.cpp
+	input/TouchInputDevice.cpp
 
 	network/NetworkEngine.cpp
 
@@ -58,12 +61,18 @@ list(APPEND SRCS
 	physics/GravitySimulator.cpp
 
     platform/desktop/MainWindow.cpp
+	platform/i2c/I2CBusDevice.cpp
+	platform/i2c/I2CBusMaster.cpp
+	platform/spi/SPIBusDevice.cpp
+	platform/spi/SPIBusMaster.cpp
 	platform/ADCManager.cpp
 	platform/GPIODevice.cpp
-	platform/GPIODeviceMCP2300X.cpp
+	platform/GPIODeviceMCP230XX.cpp
 	platform/GPIODeviceNative.cpp
-	platform/MCP2300XDevice.cpp
+	platform/HardwareManager.cpp
+	platform/MCP230XXDevice.cpp
 	platform/PlatformManager.cpp
+	platform/ResTouchScreen.cpp
 
     storage/BufferedReader.cpp
 	storage/File.cpp
@@ -79,6 +88,7 @@ list(APPEND SRCS
 	util/RayCastResult.cpp
     util/Util.cpp
 	util/Vec2.cpp
+	util/Vec3.cpp
 	util/WorkerTask.cpp
 	)
 
@@ -101,6 +111,8 @@ if(MGG_PLATFORM STREQUAL ESPIDF)
 		3rdparty/esp_lcd_st7701/esp_lcd_st7701.c
 		3rdparty/esp_lcd_st7701/esp_lcd_st7701_mipi.c
 		3rdparty/esp_lcd_st7701/esp_lcd_st7701_rgb.c
+		3rdparty/esp_lcd_touch/esp_lcd_touch.c
+		3rdparty/esp_lcd_touch_gt911/esp_lcd_touch_gt911.c
     )
     foreach(_SRCFILE ${SRCS_ESPIDF})
         list(APPEND SRCS_ESPIDF_ABS "src/${_SRCFILE}")
@@ -113,6 +125,8 @@ if(MGG_PLATFORM STREQUAL ESPIDF)
         INCLUDE_DIRS
             src
 			src/3rdparty/esp_lcd_st7701
+			src/3rdparty/esp_lcd_touch
+			src/3rdparty/esp_lcd_touch_gt911
         REQUIRES
             esp_adc
             esp_driver_gpio
@@ -121,10 +135,13 @@ if(MGG_PLATFORM STREQUAL ESPIDF)
             esp_driver_ledc
             esp_driver_sdmmc
             esp_driver_spi
+			esp_hal_i2s
+			esp_hal_lcd
             esp_http_client
             esp_lcd
             esp_wifi
             fatfs
+			hal
             nvs_flash
             spiffs
 

@@ -22,6 +22,7 @@
 #endif
 
 #include <functional>
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -30,10 +31,14 @@
 #include "../platform/GPIODevice.h"
 #include "../platform/GPIODeviceNative.h"
 #include "../util/EngineThread.h"
+#include "InputTouchEvent.h"
+#include "TouchInputDevice.h"
 
 
 namespace MINTGGGameEngine
 {
+
+class Screen;
 
 /**
  * \brief Handles all game inputs.
@@ -92,7 +97,14 @@ public:
      * \brief Callback function for when a button combination is pressed.
      */
     typedef std::function<void()> ButtonComboCb;
-    //typedef void (*ButtonComboCb)();
+
+    struct TouchPointInfo
+    {
+        touch_id_t id;
+        uint16_t px, py;
+        uint16_t pressure;
+        bool active;
+    };
     
 private:
     enum
@@ -143,6 +155,20 @@ private:
         ButtonComboCb cb;
     };
 
+    struct TouchPointInfoPrivate
+    {
+        TouchPointInfo info;
+        TouchInputDevice::touchpoint_id_t driverID;
+    };
+
+    struct TouchInputDeviceData
+    {
+        TouchInputDeviceData(TouchInputDevice* dev) : dev(dev) {}
+
+        TouchInputDevice* dev;
+        std::list<TouchPointInfoPrivate> activePoints;
+    };
+
     enum class InjectedEventType
     {
         Button,
@@ -173,7 +199,7 @@ public:
      *
      * Note that begin() must still be called to initialize it.
      */
-    InputEngine() : inputThread("InputTask"), debounceCount(0) {}
+    InputEngine() : inputThread("InputTask"), nextTouchID(1), debounceCount(0) {}
     
     /**
      * \brief Initialize the input engine.
@@ -282,11 +308,21 @@ public:
 	std::vector<std::string> getAxisIDs() const;
     
     ///@}
+
+
+    /// \name Defining Touch Inputs
     
     
     /// \name Querying Button State
     ///@{
-    
+
+    bool defineTouchInputDevice(TouchInputDevice* device);
+
+    bool undefineTouchInputDevice(TouchInputDevice* device);
+
+    ///@}
+
+
     /**
      * \brief Check whether a button is defined.
      *
@@ -358,7 +394,16 @@ public:
     ///@}
 
 
-    /// \name Querying Button State
+    /// \name Querying Touch State
+    ///@{
+
+    std::vector<TouchPointInfo> getActiveTouchPoints(const TouchInputDevice* dev);
+    std::vector<TouchPointInfo> getActiveTouchPoints(const Screen& screen);
+
+    ///@}
+
+
+    /// \name Injecting Inputs
     ///@{
 
     /**
@@ -386,6 +431,8 @@ public:
      */
     bool injectAxis(const std::string& id, float value);
 
+    bool injectTouchInputUpdate(TouchInputDevice* dev, const TouchInputDevice::TouchDataPoint& data);
+
     ///@}
 
 private:
@@ -405,13 +452,23 @@ private:
 
     void lockInjectedEvtsMutex() { injectedEvtsMtx.lock(); }
     void unlockInjectedEvtsMutex() { injectedEvtsMtx.unlock(); }
+
+    void lockTouchMutex() { touchMtx.lock(); }
+    void unlockTouchMutex() { touchMtx.unlock(); }
 #else
     void lockMutex() { xSemaphoreTake(inputMtx, portMAX_DELAY); }
     void unlockMutex() { xSemaphoreGive(inputMtx); }
 
     void lockInjectedEvtsMutex() { xSemaphoreTake(injectedEvtsMtx, portMAX_DELAY); }
     void unlockInjectedEvtsMutex() { xSemaphoreGive(injectedEvtsMtx); }
+
+    void lockTouchMutex() { xSemaphoreTake(touchMtx, portMAX_DELAY); }
+    void unlockTouchMutex() { xSemaphoreGive(touchMtx); }
 #endif
+
+    void onTouchBegin(TouchInputDevice* dev, TouchPointInfoPrivate* info);
+    void onTouchEnd(TouchInputDevice* dev, TouchPointInfoPrivate* info);
+    void onTouchMove(TouchInputDevice* dev, TouchPointInfoPrivate* info);
 
 private:
     EngineThread inputThread;
@@ -419,9 +476,11 @@ private:
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     std::mutex inputMtx;
     std::mutex injectedEvtsMtx;
+    std::mutex touchMtx;
 #else
     SemaphoreHandle_t inputMtx;
     SemaphoreHandle_t injectedEvtsMtx;
+    SemaphoreHandle_t touchMtx;
 #endif
     
 	std::vector<std::string> buttonIDs;
@@ -430,6 +489,9 @@ private:
 	
 	std::vector<std::string> axisIDs;
     std::unordered_map<std::string, AxisDef*> axes;
+
+    std::vector<TouchInputDeviceData> touchDeviceData;
+    touch_id_t nextTouchID;
     
     std::vector<ButtonCombo*> buttonCombos;
     

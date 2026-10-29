@@ -17,6 +17,7 @@
 #   include <driver/gpio.h>
 #endif
 
+#include "../../../../platform/HardwareManager.h"
 #include "../../../../util/Util.h"
 
 
@@ -49,6 +50,8 @@ void ScreenST7735::initConfig(Config& cfg, bool useMainScreenConfig)
     cfg.pins.cs = -1;
     cfg.pins.dc = -1;
     cfg.pins.rst = -1;
+
+    cfg.spiBusMaster = HardwareManager::instance().getSPIBus();
 
     if (!useMainScreenConfig) {
         return;
@@ -90,6 +93,10 @@ void ScreenST7735::initConfig(Config& cfg, bool useMainScreenConfig)
 
 #ifdef MGG_SCREEN_MAIN_SPI_CLOCK
     cfg.clockFreqHz = MGG_SCREEN_MAIN_SPI_CLOCK;
+#endif
+
+#ifdef MGG_SCREEN_MAIN_SPI_BUS
+    cfg.spiBusMaster = HardwareManager::instance().getSPIBus(MGG_SCREEN_MAIN_SPI_BUS);
 #endif
 
 #ifdef MGG_SCREEN_MAIN_PIN_CS
@@ -210,16 +217,8 @@ bool ScreenST7735::mipiInitBus()
         gpio_set_level(static_cast<gpio_num_t>(cfg.pins.rst), 1);
     }
 
-    spi_device_interface_config_t devCfg = {
-        .mode = 0,
-        .clock_speed_hz = static_cast<int>(cfg.clockFreqHz),
-        .spics_io_num = cfg.pins.cs,
-        .flags = SPI_DEVICE_NO_DUMMY,
-        .queue_size = 8
-    };
-    esp_err_t res = spi_bus_add_device(cfg.engine->getESPSPIHostDevice(), &devCfg, &spiDev);
-    if (res != ESP_OK) {
-        LogError("Error adding SPI device: %s", esp_err_to_name(res));
+    spiDev = cfg.spiBusMaster->addDevice(cfg.pins.cs, cfg.clockFreqHz, 0);
+    if (!spiDev) {
         return false;
     }
 
@@ -232,21 +231,14 @@ bool ScreenST7735::mipiInitBus()
 bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length)
 {
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
-    spi_transaction_t transaction = {
-        .flags = SPI_TRANS_USE_TXDATA,
-        .length = 8,
-        .tx_data = {command},
-    };
-
     // Set DC -> command
     gpio_set_level(static_cast<gpio_num_t>(cfg.pins.dc), 0);
-    esp_err_t res = spi_device_polling_transmit(spiDev, &transaction);
-    if (res != ESP_OK) {
-        LogError("Error sending MIPI command %02X: %s", command, esp_err_to_name(res));
+    if (!spiDev->transmit(&command, 1)) {
+        LogError("Error sending MIPI command %02X: %s", command, spiDev->getLastErrorMessage().c_str());
         return false;
     }
 
-    const size_t maxTransferSize = cfg.engine->getESPSPIMaxTransferSize();
+    const size_t maxTransferSize = cfg.spiBusMaster->getMaxTransferSize();
 
     if (data  &&  length != 0) {
         // Set DC -> data
@@ -254,16 +246,8 @@ bool ScreenST7735::mipiWriteCommandPlusData(uint8_t command, const void* data, s
         for (size_t i = 0; i < length; i += maxTransferSize) {
             size_t chunk = std::min(maxTransferSize, length - i);
 
-            spi_transaction_t datTransaction = {
-                .flags = 0,
-                .length = chunk * 8,
-                .tx_buffer = reinterpret_cast<const uint8_t*>(data) + i,
-                .rx_buffer = nullptr
-            };
-
-            res = spi_device_polling_transmit(spiDev, &datTransaction);
-            if (res != ESP_OK) {
-                LogError("Error sending MIPI command %02X data: %s", command, esp_err_to_name(res));
+            if (!spiDev->transmit(reinterpret_cast<const uint8_t*>(data) + i, chunk)) {
+                LogError("Error sending MIPI command %02X data: %s", command, spiDev->getLastErrorMessage().c_str());
                 return false;
             }
         }

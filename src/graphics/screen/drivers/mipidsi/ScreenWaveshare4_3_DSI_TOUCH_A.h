@@ -13,11 +13,8 @@
 
 #include "../../../../Globals.h"
 
+#include "../../../../platform/i2c/I2CBusDevice.h"
 #include "ScreenST7701.h"
-
-#ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-#   include <driver/i2c_master.h>
-#endif
 
 
 namespace MINTGGGameEngine
@@ -25,6 +22,16 @@ namespace MINTGGGameEngine
 
 class ScreenWaveshare4_3_DSI_TOUCH_A : public ScreenST7701
 {
+public:
+    struct Config
+    {
+        ScreenST7701::Config st7701;
+        I2CBusMaster* i2cBusMaster;
+    };
+
+public:
+    static void initConfig(Config& cfg, bool useMainScreenConfig = false);
+
 public:
     ScreenWaveshare4_3_DSI_TOUCH_A(const Config& cfg);
 
@@ -39,9 +46,10 @@ protected:
 #endif
 
 private:
+    Config cfg;
+
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-    i2c_master_bus_handle_t i2cBusHandle;
-    i2c_master_dev_handle_t i2cDevHandle;
+    I2CBusDevice* i2cDev;
 #endif
 };
 

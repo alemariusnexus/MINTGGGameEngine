@@ -70,19 +70,7 @@
 #   endif
 
 #   ifndef      MGG_SCREEN_MAIN_SPI_BUS
-#       define  MGG_SCREEN_MAIN_SPI_BUS     MGG_BUS_SPI_GP0
-#   endif
-
-#   ifndef      MGG_SCREEN_MAIN_PIN_MISO
-#       define  MGG_SCREEN_MAIN_PIN_MISO    -1
-#   endif
-
-#   ifndef MGG_SCREEN_MAIN_PIN_MOSI
-#       error Missing config option in mgg_config.h: MGG_SCREEN_MAIN_PIN_MOSI
-#   endif
-
-#   ifndef MGG_SCREEN_MAIN_PIN_SCK
-#       error Missing config option in mgg_config.h: MGG_SCREEN_MAIN_PIN_SCK
+#       define  MGG_SCREEN_MAIN_SPI_BUS     MGG_BUS_SPI_DEFAULT
 #   endif
 
 #   ifndef MGG_SCREEN_MAIN_PIN_CS
@@ -189,6 +177,22 @@
 #       error Missing config option in mgg_config.h: MGG_SCREEN_MAIN_PIN_DAT7
 #   endif
 
+#   ifndef      MGG_SCREEN_MAIN_PIN_TOUCH_XM
+#       define  MGG_SCREEN_MAIN_PIN_TOUCH_XM    -1
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_PIN_TOUCH_XP
+#       define  MGG_SCREEN_MAIN_PIN_TOUCH_XP    -1
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_PIN_TOUCH_YM
+#       define  MGG_SCREEN_MAIN_PIN_TOUCH_YM    -1
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_PIN_TOUCH_YP
+#       define  MGG_SCREEN_MAIN_PIN_TOUCH_YP    -1
+#   endif
+
 
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_RPI_TC358762
 
@@ -217,6 +221,10 @@
 #       define  MGG_SCREEN_MAIN_SWAP_XY         0
 #   endif
 
+#   ifndef      MGG_SCREEN_MAIN_I2C_BUS
+#       define  MGG_SCREEN_MAIN_I2C_BUS         MGG_BUS_I2C_DEFAULT
+#   endif
+
 
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A
 
@@ -243,6 +251,10 @@
 
 #   ifndef      MGG_SCREEN_MAIN_SWAP_XY
 #       define  MGG_SCREEN_MAIN_SWAP_XY         0
+#   endif
+
+#   ifndef      MGG_SCREEN_MAIN_I2C_BUS
+#       define  MGG_SCREEN_MAIN_I2C_BUS         MGG_BUS_I2C_DEFAULT
 #   endif
 
 

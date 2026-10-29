@@ -44,6 +44,9 @@
 #include "graphics/Text.h"
 
 #include "input/InputEngine.h"
+#include "input/InputTouchEvent.h"
+#include "input/ResTouchScreenInputDevice.h"
+#include "input/TouchInputDevice.h"
 
 #include "network/NetworkEngine.h"
 
@@ -52,12 +55,17 @@
 #include "physics/GravitySimulator.h"
 
 #include "platform/desktop/MainWindow.h"
+#include "platform/i2c/I2CBusDevice.h"
+#include "platform/i2c/I2CBusMaster.h"
+#include "platform/spi/SPIBusDevice.h"
+#include "platform/spi/SPIBusMaster.h"
 #include "platform/ADCManager.h"
 #include "platform/GPIODevice.h"
-#include "platform/GPIODeviceMCP2300X.h"
+#include "platform/GPIODeviceMCP230XX.h"
 #include "platform/GPIODeviceNative.h"
-#include "platform/MCP2300XDevice.h"
+#include "platform/MCP230XXDevice.h"
 #include "platform/PlatformManager.h"
+#include "platform/ResTouchScreen.h"
 
 #include "storage/BufferedReader.h"
 #include "storage/File.h"
@@ -73,6 +81,7 @@
 #include "util/RayCastResult.h"
 #include "util/Util.h"
 #include "util/Vec2.h"
+#include "util/Vec3.h"
 #include "util/WorkerTask.h"
 
 

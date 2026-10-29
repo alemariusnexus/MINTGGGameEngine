@@ -118,9 +118,9 @@ std::string StorageEngine::getConfigDirectory() const
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
-bool StorageEngine::mountSDCard (
+bool StorageEngine::mountSDCardSPI (
     const char* mountPoint,
-    spi_host_device_t spiHost,
+    SPIBusMaster* master,
     gpionum_t csPin,
     uint32_t clkFreq
 ) {
@@ -132,7 +132,7 @@ bool StorageEngine::mountSDCard (
     }
 
     sdmmc_host_t host = SDSPI_HOST_DEFAULT();
-    host.slot = spiHost;
+    host.slot = master->getESPIDFHost();
     host.max_freq_khz = static_cast<int>(clkFreq/1000);
 
     sdspi_device_config_t devCfg = SDSPI_DEVICE_CONFIG_DEFAULT();
@@ -170,7 +170,7 @@ bool StorageEngine::mountSDCard (
     return true;
 }
 
-void StorageEngine::unmountSDCard(const char* mountPoint)
+void StorageEngine::unmountSDCardSPI(const char* mountPoint)
 {
     if (!mountPoint) {
         return;
@@ -244,66 +244,6 @@ bool StorageEngine::commitNVS()
 void StorageEngine::sync()
 {
     commitNVS();
-}
-
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-
-bool StorageEngine::mountSDCard (
-    const char* mountPoint,
-    SPIClass& spi,
-    gpionum_t csPin
-) {
-    sdMountPath = mountPoint;
-
-    // Remove trailing slashes
-    while (sdMountPath.ends_with('/')) {
-        sdMountPath.pop_back();
-    }
-
-    if (!SD.begin(csPin, spi)) {
-        LogError("Error initializing SD card.");
-        return false;
-    }
-
-    return true;
-}
-
-void StorageEngine::unmountSDCard(const char* mountPoint)
-{
-}
-
-bool StorageEngine::checkSDFilePath(const std::string& path, std::string* outRelPath)
-{
-    if (!path.starts_with(sdMountPath)) {
-        return false;
-    }
-    const size_t sdMountPathLen = sdMountPath.length();
-    if (path.length() == sdMountPathLen) {
-        // Exact mount point
-        if (outRelPath) {
-            *outRelPath = "/";
-        }
-        return true;
-    } else if (path[sdMountPathLen] != '/') {
-        // Not actually a path below the mount path (just starts the same)
-        return false;
-    }
-
-    if (outRelPath) {
-        *outRelPath = path.substr(sdMountPathLen);
-    }
-
-    return true;
-}
-
-bool StorageEngine::hasValue(const std::string_view& key)
-{
-    // TODO: Implement
-    return false;
-}
-
-void StorageEngine::sync()
-{
 }
 
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)

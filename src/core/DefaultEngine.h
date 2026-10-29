@@ -13,6 +13,7 @@
 
 #include "../Globals.h"
 
+#include "../platform/spi/SPIBusMaster.h"
 #include "Engine.h"
 #include "Game.h"
 
@@ -80,6 +81,8 @@ public:
          */
         const char* sdCardMountPoint;
 
+        SPIBusMaster* sdCardSPIBusMaster;
+
         /**
          * \brief Mount point for internal storage (e.g. SPIFFS for ESP32).
          *
@@ -92,21 +95,6 @@ public:
          */
         struct {
             struct {
-                /**
-                 * \brief MISO pin for the SPI bus, or -1 if unused.
-                 */
-                gpionum_t miso;
-
-                /**
-                 * \brief MOSI pin for the SPI bus, or -1 if unused.
-                 */
-                gpionum_t mosi;
-
-                /**
-                 * \brief SCK pin for the SPI bus, or -1 if unused.
-                 */
-                gpionum_t sck;
-
                 /**
                  * \brief CS pin for the SD card on the SPI bus, or -1 if unused.
                  */
@@ -121,13 +109,13 @@ public:
             } audio;
         } pins;
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+/*#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
         struct
         {
             spi_host_device_t spiHost;
             size_t spiMaxTransferSize;
         } pfESPIDF;
-#endif
+#endif*/
     };
 
 public:
@@ -195,17 +183,17 @@ public:
      */
     void setPrintFrameStatistics(bool print) { printFrameStats = print; }
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+/*#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     spi_host_device_t getESPSPIHostDevice() const override;
     size_t getESPSPIMaxTransferSize() const override;
-#endif
+#endif*/
 
 protected:
+    virtual void initHardware(SetupConfig* cfg);
+    virtual void shutdownHardware();
+
     virtual void initPlatform(SetupConfig* cfg);
     virtual void shutdownPlatform();
-
-    virtual void initSPI(SetupConfig* cfg);
-    virtual void shutdownSPI();
 
     virtual void initAudio(SetupConfig* cfg);
     virtual void shutdownAudio();
@@ -242,13 +230,13 @@ protected:
 
     bool printFrameStats;
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+/*#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     struct
     {
         spi_host_device_t spiHost;
         size_t spiMaxTransferSize;
     } pfESPIDF;
-#endif
+#endif*/
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
     struct

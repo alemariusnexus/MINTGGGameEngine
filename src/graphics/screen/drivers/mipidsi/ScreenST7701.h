@@ -16,7 +16,6 @@
 #include "AbstractMIPIDSIScreen.h"
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-#   include <driver/i2c_master.h>
 #   include <esp_lcd_io_i2c.h>
 #   include <esp_lcd_mipi_dsi.h>
 #   include <esp_ldo_regulator.h>
@@ -35,7 +34,7 @@ public:
         AbstractMIPIDSIScreen::Config dsi;
     };
 
-public:
+protected:
     static void initConfig(Config& cfg, bool useMainScreenConfig = false);
 
 public:

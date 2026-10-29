@@ -21,6 +21,8 @@
 #include "../graphics/screen/drivers/mipidcs/ScreenST7735.h"
 #include "../graphics/screen/drivers/mipidsi/ScreenWaveshare4_3_DSI_TOUCH_A.h"
 #include "../addons/mipidsi/rpi_tc358762/ScreenRPiTC358762.h"
+#include "../platform/ADCManager.h"
+#include "../platform/HardwareManager.h"
 #include "../platform/PlatformManager.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
@@ -67,18 +69,16 @@ void DefaultEngine::initConfig(SetupConfig& cfg)
     cfg.appName = MGG_APP_NAME;
 
     cfg.sdCardMountPoint = MGG_STORAGE_SDCARD_MOUNT_POINT;
+    cfg.sdCardSPIBusMaster = HardwareManager::instance().getSPIBus(MGG_STORAGE_SDCARD_SPI_BUS);
     cfg.internalStorageMountPoint = MGG_STORAGE_INTERNAL_MOUNT_POINT;
 
-    cfg.pins.sdcard.miso = MGG_STORAGE_SDCARD_PIN_MISO;
-    cfg.pins.sdcard.mosi = MGG_STORAGE_SDCARD_PIN_MOSI;
-    cfg.pins.sdcard.sck = MGG_STORAGE_SDCARD_PIN_SCK;
     cfg.pins.sdcard.cs = MGG_STORAGE_SDCARD_PIN_CS;
     cfg.pins.audio.speaker = MGG_AUDIO_SPEAKER_PIN;
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+/*#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     cfg.pfESPIDF.spiHost = SPI2_HOST;
     cfg.pfESPIDF.spiMaxTransferSize = 4092;
-#endif
+#endif*/
 }
 
 
@@ -140,7 +140,7 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
 #if MGG_ENABLE_STRONG_COPYLEFT_ADDONS
     LogWarning("Engine compiled with strong copyleft addons. Make sure you follow their licensing terms!");
 #else
-    LogInfo("Engine compiled without copyleft addons.");
+    LogInfo("Engine compiled without strong copyleft addons.");
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
@@ -153,8 +153,8 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     heap_caps_register_failed_alloc_callback(&HeapCapsAllocFailedHook);
 
-    pfESPIDF.spiHost = cfg->pfESPIDF.spiHost;
-    pfESPIDF.spiMaxTransferSize = cfg->pfESPIDF.spiMaxTransferSize;
+    /*pfESPIDF.spiHost = cfg->pfESPIDF.spiHost;
+    pfESPIDF.spiMaxTransferSize = cfg->pfESPIDF.spiMaxTransferSize;*/
 #endif
 
     TimerInit();
@@ -167,8 +167,8 @@ bool DefaultEngine::setup(SetupConfig* cfg, int argc, char** argv)
     LogInfo("Initializing platform...");
     initPlatform(cfg);
 
-    LogInfo("Initializing SPI bus...");
-    initSPI(cfg);
+    LogInfo("Initializing hardware...");
+    initHardware(cfg);
 
     LogInfo("Initializing storage...");
     initStorage(cfg);
@@ -285,8 +285,8 @@ void DefaultEngine::shutdown()
     LogInfo("Shutting down storage...");
     shutdownStorage();
 
-    LogInfo("Shutting down SPI bus...");
-    shutdownSPI();
+    LogInfo("Shutting down hardware...");
+    shutdownHardware();
 
     LogInfo("Shutting down platform...");
     shutdownPlatform();
@@ -331,6 +331,18 @@ void DefaultEngine::shutdownStorage()
     game->storage().shutdown();
 }
 
+void DefaultEngine::initHardware(SetupConfig* cfg)
+{
+    ADCManager::getInstance().begin();
+    HardwareManager::instance().begin();
+}
+
+void DefaultEngine::shutdownHardware()
+{
+    HardwareManager::instance().shutdown();
+    ADCManager::getInstance().shutdown();
+}
+
 void DefaultEngine::initPlatform(SetupConfig* cfg)
 {
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
@@ -358,36 +370,6 @@ void DefaultEngine::initPlatform(SetupConfig* cfg)
 void DefaultEngine::shutdownPlatform()
 {
     PlatformManager::getInstance().shutdown();
-}
-
-void DefaultEngine::initSPI(SetupConfig* cfg)
-{
-    if (cfg->pins.sdcard.mosi >= 0  ||  cfg->pins.sdcard.miso >= 0  ||  cfg->pins.sdcard.sck >= 0) {
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-        spi_bus_config_t busCfg = {
-            .mosi_io_num = cfg->pins.sdcard.mosi,
-            .miso_io_num = cfg->pins.sdcard.miso,
-            .sclk_io_num = cfg->pins.sdcard.sck,
-            .quadwp_io_num = -1,
-            .quadhd_io_num = -1,
-            .max_transfer_sz = static_cast<int>(cfg->pfESPIDF.spiMaxTransferSize),
-            .flags = 0
-        };
-
-        esp_err_t res = spi_bus_initialize(cfg->pfESPIDF.spiHost, &busCfg, SPI_DMA_CH_AUTO);
-        if (res != ESP_OK) {
-            LogError("Error initializing SPI bus: %s", esp_err_to_name(res));
-        }
-#else
-        LogWarning("SPI bus not currently implemented on this platform.");
-#endif
-    } else {
-        LogWarning("SPI bus is disabled since not all pins are configured.");
-    }
-}
-
-void DefaultEngine::shutdownSPI()
-{
 }
 
 void DefaultEngine::initAudio(SetupConfig* cfg)
@@ -448,7 +430,7 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
 #elif MGG_SCREEN_MAIN_TYPE == MGG_SCREEN_TYPE_ST7701_WAVESHARE4_3_DSI_TOUCH_A
     ScreenWaveshare4_3_DSI_TOUCH_A::Config screenCfg;
     ScreenWaveshare4_3_DSI_TOUCH_A::initConfig(screenCfg, true);
-    screenCfg.dsi.engine = this;
+    screenCfg.st7701.dsi.engine = this;
     screen = new ScreenWaveshare4_3_DSI_TOUCH_A(screenCfg);
 #endif
 
@@ -480,12 +462,24 @@ void DefaultEngine::initScreen(SetupConfig* cfg)
         // Fill the screen once to avoid uninitialized data if Game::setBackgroundSkipped(true) is used.
         screen->fill(Color::BLACK, false);
 
+        TouchInputDevice* touchDev = screen->getTouchInputDevice();
+        if (touchDev) {
+            LogInfo("Registering screen touch input device...");
+            game->input().defineTouchInputDevice(touchDev);
+        }
+
         game->begin(*screen);
     }
 }
 
 void DefaultEngine::shutdownScreen()
 {
+    TouchInputDevice* touchDev = screen->getTouchInputDevice();
+    if (touchDev) {
+        LogInfo("Unregistering screen touch input device...");
+        game->input().undefineTouchInputDevice(touchDev);
+    }
+
     screen->shutdown();
     delete screen;
     screen = nullptr;
@@ -520,15 +514,9 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
         LogInfo("Mounting SD card...");
         bool sdMountOk = false;
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-        sdMountOk = game->storage().mountSDCard (
+        sdMountOk = game->storage().mountSDCardSPI (
             cfg->sdCardMountPoint,
-            cfg->pfESPIDF.spiHost,
-            cfg->pins.sdcard.cs
-            );
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-        sdMountOk = game->storage().mountSDCard (
-            cfg->sdCardMountPoint,
-            *spi,
+            cfg->sdCardSPIBusMaster,
             cfg->pins.sdcard.cs
             );
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
@@ -547,15 +535,13 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 void DefaultEngine::unmountSDCard()
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    game->storage().unmountSDCard(setupCfg.sdCardMountPoint);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    game->storage().unmountSDCard(setupCfg.sdCardMountPoint);
+    game->storage().unmountSDCardSPI(setupCfg.sdCardMountPoint);
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
     game->storage().unmountPath(setupCfg.sdCardMountPoint);
 #endif
 }
 
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+/*#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
 
 spi_host_device_t DefaultEngine::getESPSPIHostDevice() const
 {
@@ -567,7 +553,7 @@ size_t DefaultEngine::getESPSPIMaxTransferSize() const
     return pfESPIDF.spiMaxTransferSize;
 }
 
-#endif
+#endif*/
 
 
 #ifdef MINTGGGAMEENGINE_PORT_ARDUINO

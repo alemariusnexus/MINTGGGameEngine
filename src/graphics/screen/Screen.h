@@ -13,6 +13,7 @@
 
 #include "../../Globals.h"
 
+#include "../../input/TouchInputDevice.h"
 #include "../surface/DrawSurface.h"
 
 
@@ -62,6 +63,8 @@ public:
      * @return The screen's model ID.
      */
     virtual std::string getModelID() = 0;
+
+    virtual TouchInputDevice* getTouchInputDevice() { return nullptr; }
 };
 
 }

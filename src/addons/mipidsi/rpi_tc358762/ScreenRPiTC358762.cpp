@@ -33,11 +33,11 @@
 
 #include <cassert>
 
+#include "../../../platform/HardwareManager.h"
 #include "../../../util/Log.h"
 #include "../../../util/Util.h"
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-#   include <driver/i2c_master.h>
 #   include <esp_err.h>
 #   include <esp_lcd_panel_dev.h>
 #   include <esp_lcd_panel_interface.h>
@@ -104,6 +104,8 @@ void ScreenRPiTC358762::initConfig(Config& cfg, bool useMainScreenConfig)
         .swapXY = false
     };
 
+    cfg.i2cBusMaster = HardwareManager::instance().getI2CBus();
+
     if (!useMainScreenConfig) {
         return;
     }
@@ -131,6 +133,10 @@ void ScreenRPiTC358762::initConfig(Config& cfg, bool useMainScreenConfig)
 #ifdef MGG_SCREEN_MAIN_SWAP_XY
     cfg.dsi.swapXY = static_cast<bool>(MGG_SCREEN_MAIN_SWAP_XY);
 #endif
+
+#ifdef MGG_SCREEN_MAIN_I2C_BUS
+    cfg.i2cBusMaster = HardwareManager::instance().getI2CBus(MGG_SCREEN_MAIN_I2C_BUS);
+#endif
 }
 
 
@@ -138,8 +144,8 @@ ScreenRPiTC358762::ScreenRPiTC358762(const Config& cfg)
     : AbstractMIPIDSIScreen(cfg.dsi),
       cfg(cfg)
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-      , ldoChanHandle(nullptr),
-        i2cBusHandle(nullptr), i2cAttinyHandle(nullptr),
+      , i2cDev(nullptr),
+        ldoChanHandle(nullptr),
         dsiBusHandle(nullptr), panelIOHandle(nullptr),
         i2cAttinyTimeout(100),
         dsiHALCtx(nullptr)
@@ -288,33 +294,11 @@ void ScreenRPiTC358762::shutdownLDO()
 
 bool ScreenRPiTC358762::initI2C()
 {
-    i2c_master_bus_config_t i2cConfig = {
-        .i2c_port = -1,
-        .sda_io_num = static_cast<gpio_num_t>(7),
-        .scl_io_num = static_cast<gpio_num_t>(8),
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .trans_queue_depth = 0,
-        .flags {
-            .enable_internal_pullup = true,
-            .allow_pd = false
-        }
-    };
-    esp_err_t err = i2c_new_master_bus(&i2cConfig, &i2cBusHandle);
-    if (err != ESP_OK) {
-        LogError("Error creating I2C master bus: %s", esp_err_to_name(err));
-        return false;
-    }
-
     return true;
 }
 
 void ScreenRPiTC358762::shutdownI2C()
 {
-    if (i2cBusHandle) {
-        i2c_del_master_bus(i2cBusHandle);
-        i2cBusHandle = nullptr;
-    }
 }
 
 bool ScreenRPiTC358762::initDSIDBI()
@@ -427,25 +411,17 @@ bool ScreenRPiTC358762::initLCDDriver(uint8_t numFramebufs)
         }
     };
 
-    i2c_device_config_t attinyCfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = 0x45,
-        .scl_speed_hz = 100000,
-        .scl_wait_us = 0,
-        .flags = {
-            .disable_ack_check = 1
-        }
-    };
-    esp_err_t err = i2c_master_bus_add_device(i2cBusHandle, &attinyCfg, &i2cAttinyHandle);
-    if (err != ESP_OK) {
-        LogError("Error adding ATtiny I2C device: %s", esp_err_to_name(err));
+    i2cDev = cfg.i2cBusMaster->addDevice(0x45, 100*1000, I2CBusDevice::FLAG_DISABLE_ACK_CHECK);
+    if (!i2cDev) {
+        LogError("Error adding ATtiny I2C device!");
         return false;
     }
 
-    err = esp_lcd_new_panel_dpi(dsiBusHandle, &dpiConfig, &plfData.panelHandle);
+    esp_err_t err = esp_lcd_new_panel_dpi(dsiBusHandle, &dpiConfig, &plfData.panelHandle);
     if (err != ESP_OK) {
         LogError("Error creating DPI panel: %s", esp_err_to_name(err));
-        i2c_master_bus_rm_device(i2cAttinyHandle);
+        delete i2cDev;
+        i2cDev = nullptr;
         return false;
     }
 
@@ -473,6 +449,11 @@ void ScreenRPiTC358762::shutdownLCDDriver()
 #endif
         esp_lcd_panel_del(plfData.panelHandle);
         plfData.panelHandle = nullptr;
+
+        if (i2cDev) {
+            cfg.i2cBusMaster->removeDevice(i2cDev);
+            i2cDev = nullptr;
+        }
     }
 }
 
@@ -668,20 +649,23 @@ esp_err_t ScreenRPiTC358762::lcdPanelDispOnOff(esp_lcd_panel_t* panel, bool onOf
 esp_err_t ScreenRPiTC358762::attinyWrite(uint8_t addr, uint8_t value)
 {
     const uint8_t data[] = {addr, value};
-    return i2c_master_transmit(i2cAttinyHandle, data, 2, i2cAttinyTimeout);
+    i2cDev->transmit(data, 2, i2cAttinyTimeout);
+    return i2cDev->getESPLastErrorCode();
 }
 
 esp_err_t ScreenRPiTC358762::attinyRead(uint8_t addr, uint8_t* value)
 {
     // Write register address
-    esp_err_t err = i2c_master_transmit(i2cAttinyHandle, &addr, 1, i2cAttinyTimeout);
+    i2cDev->transmit(&addr, 1, i2cAttinyTimeout);
+    esp_err_t err = i2cDev->getESPLastErrorCode();
     if (err != ESP_OK) {
         return err;
     }
     TimerDelaySpinUs(200);
 
     // Read response
-    return i2c_master_receive(i2cAttinyHandle, value, 1, i2cAttinyTimeout);
+    i2cDev->receive(value, 1, i2cAttinyTimeout);
+    return i2cDev->getESPLastErrorCode();
 }
 
 void ScreenRPiTC358762::bridgeWrite(uint16_t addr, uint32_t value)

@@ -48,6 +48,7 @@ public:
     struct Config
     {
         AbstractMIPIDSIScreen::Config dsi;
+        I2CBusMaster* i2cBusMaster;
     };
 
 public:
@@ -94,9 +95,8 @@ private:
     PlatformData plfData;
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
+    I2CBusDevice* i2cDev;
     esp_ldo_channel_handle_t ldoChanHandle;
-    i2c_master_bus_handle_t i2cBusHandle;
-    i2c_master_dev_handle_t i2cAttinyHandle;
     esp_lcd_dsi_bus_handle_t dsiBusHandle;
     esp_lcd_panel_io_handle_t panelIOHandle;
     int i2cAttinyTimeout;

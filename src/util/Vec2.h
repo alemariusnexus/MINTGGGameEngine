@@ -80,7 +80,7 @@ public:
     /**
      * \brief Calculate the length of this vector.
      */
-    float length() const { return sqrtf(lengthSq()); }
+    float length() const { return std::sqrt(lengthSq()); }
     
     /**
      * \brief Normalize this vector, i.e. make it length 1 without changing

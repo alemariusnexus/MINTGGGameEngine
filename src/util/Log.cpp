@@ -29,6 +29,12 @@
 #   include <unistd.h>
 #endif
 
+#if defined(MINTGGGAMEENGINE_PORT_DESKTOP)  &&  !defined(_WIN32)
+#   define LOG_NL_STR "\n"
+#else
+#   define LOG_NL_STR "\r\n"
+#endif
+
 
 namespace MINTGGGameEngine
 {
@@ -39,6 +45,9 @@ static bool LogColorEnabled = false;
 
 void LogInit()
 {
+#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
+    // Of course the Arduino serial monitor can't handle ANSI escape codes. What else did you expect?
+#else
     // Enable colored logs if the output is a TTY
 #ifdef _WIN32
     if (_isatty(_fileno(stdout))) {
@@ -55,6 +64,7 @@ void LogInit()
     if (noColor  &&  *noColor != '\0') {
         LogColorEnabled = false;
     }
+#endif
 }
 
 
@@ -110,9 +120,17 @@ bool LogMessageBegin(const char* tag, int level)
 void LogMessageEnd(const char* tag, int level)
 {
     if (LogColorEnabled) {
-        printf("\033[0m\n");
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+        Serial.println("\033[0m");
+#else
+        printf("\033[0m" LOG_NL_STR);
+#endif
     } else {
-        printf("\n");
+#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)
+        Serial.println();
+#else
+        printf(LOG_NL_STR);
+#endif
     }
     fflush(stdout);
 }

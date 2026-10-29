@@ -13,10 +13,8 @@
 
 #include "../../../../Globals.h"
 #include "../../../../core/Engine.h"
-
-#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
-#   include <driver/spi_master.h>
-#endif
+#include "../../../../platform/spi/SPIBusDevice.h"
+#include "../../../../platform/spi/SPIBusMaster.h"
 
 #include "AbstractMIPIDCSScreen.h"
 
@@ -53,6 +51,8 @@ public:
 
         uint32_t clockFreqHz;
 
+        SPIBusMaster* spiBusMaster;
+
         struct
         {
             gpionum_t cs;
@@ -84,7 +84,7 @@ private:
     Config cfg;
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
-    spi_device_handle_t spiDev;
+    SPIBusDevice* spiDev;
 #endif
 };
 

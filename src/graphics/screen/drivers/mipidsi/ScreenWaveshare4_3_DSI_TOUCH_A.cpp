@@ -12,6 +12,7 @@
 #include "ScreenWaveshare4_3_DSI_TOUCH_A.h"
 
 #include "../../../../util/Log.h"
+#include "../../../../platform/HardwareManager.h"
 
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
 #   include "../../../../3rdparty/esp_lcd_st7701/esp_lcd_st7701.h"
@@ -76,44 +77,36 @@ static const st7701_lcd_init_cmd_t DSIInitSequence[] = {
 #endif
 
 
+void ScreenWaveshare4_3_DSI_TOUCH_A::initConfig(Config& cfg, bool useMainScreenConfig)
+{
+    ScreenST7701::initConfig(cfg.st7701, useMainScreenConfig);
+
+    cfg.i2cBusMaster = HardwareManager::instance().getI2CBus();
+
+    if (!useMainScreenConfig) {
+        return;
+    }
+
+#ifdef MGG_SCREEN_MAIN_I2C_BUS
+    cfg.i2cBusMaster = HardwareManager::instance().getI2CBus(MGG_SCREEN_MAIN_I2C_BUS);
+#endif
+}
+
 ScreenWaveshare4_3_DSI_TOUCH_A::ScreenWaveshare4_3_DSI_TOUCH_A(const Config& cfg)
-    : ScreenST7701(cfg)
+    : ScreenST7701(cfg.st7701), cfg(cfg)
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-      , i2cBusHandle(nullptr), i2cDevHandle(nullptr)
+      , i2cDev(nullptr)
 #endif
 {
+
 }
 
 bool ScreenWaveshare4_3_DSI_TOUCH_A::initCustomPanelHW()
 {
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-    i2c_master_bus_config_t i2cConfig = {
-        .i2c_port = -1,
-        .sda_io_num = static_cast<gpio_num_t>(7),
-        .scl_io_num = static_cast<gpio_num_t>(8),
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .glitch_ignore_cnt = 7,
-        .trans_queue_depth = 0,
-        .flags {
-            .enable_internal_pullup = true,
-            .allow_pd = false
-        }
-    };
-    esp_err_t err = i2c_new_master_bus(&i2cConfig, &i2cBusHandle);
-    if (err != ESP_OK) {
-        LogError("Error creating I2C master bus: %s", esp_err_to_name(err));
-        return false;
-    }
-
-    i2c_device_config_t devCfg = {
-        .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-        .device_address = 0x45,
-        .scl_speed_hz = 100000,
-        .scl_wait_us = 0
-    };
-    err = i2c_master_bus_add_device(i2cBusHandle, &devCfg, &i2cDevHandle);
-    if (err != ESP_OK) {
-        LogError("Error adding I2C device: %s", esp_err_to_name(err));
+    i2cDev = cfg.i2cBusMaster->addDevice(0x45, 100*1000);
+    if (!i2cDev) {
+        LogError("Error creating I2C device!");
         return false;
     }
 
@@ -125,9 +118,8 @@ bool ScreenWaveshare4_3_DSI_TOUCH_A::initCustomPanelHW()
     };
 
     for (const uint8_t* initCmd : i2cInitSeq) {
-        err = i2c_master_transmit(i2cDevHandle, initCmd, 2, 100);
-        if (err != ESP_OK) {
-            LogError("Error sending I2C command: %s", esp_err_to_name(err));
+        if (!i2cDev->transmit(initCmd, 2, 100)) {
+            LogError("Error sending I2C command!");
             return false;
         }
     }
@@ -139,13 +131,9 @@ bool ScreenWaveshare4_3_DSI_TOUCH_A::initCustomPanelHW()
 void ScreenWaveshare4_3_DSI_TOUCH_A::shutdownCustomPanelHW()
 {
 #ifdef MINTGGGAMEENGINE_ABSTRACTMIPIDSISCREEN_LCD_ESP_DSI_SUPPORTED
-    if (i2cDevHandle) {
-        i2c_master_bus_rm_device(i2cDevHandle);
-        i2cDevHandle = nullptr;
-    }
-    if (i2cBusHandle) {
-        i2c_del_master_bus(i2cBusHandle);
-        i2cBusHandle = nullptr;
+    if (i2cDev) {
+        cfg.i2cBusMaster->removeDevice(i2cDev);
+        i2cDev = nullptr;
     }
 #endif
 }

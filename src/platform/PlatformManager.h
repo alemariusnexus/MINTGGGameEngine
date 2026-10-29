@@ -30,6 +30,8 @@
 #   include <esp_async_memcpy.h>
 #endif
 
+#include "i2c/I2CBusMaster.h"
+
 namespace MINTGGGameEngine
 {
 

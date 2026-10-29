@@ -15,6 +15,7 @@
 #include <cmath>
 #include <set>
 
+#include "../graphics/screen/Screen.h"
 #include "../platform/ADCManager.h"
 #include "../util/Log.h"
 #include "../util/Util.h"
@@ -33,6 +34,7 @@ bool InputEngine::begin(uint8_t debounceCount)
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     inputMtx = xSemaphoreCreateMutex();
     injectedEvtsMtx = xSemaphoreCreateMutex();
+    touchMtx = xSemaphoreCreateMutex();
 #endif
 
     bool ok = inputThread.start([this] { inputTaskMain(); }, 4096, 1);
@@ -49,6 +51,7 @@ void InputEngine::shutdown()
     inputThread.stopAndWait();
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+    vSemaphoreDelete(touchMtx);
     vSemaphoreDelete(injectedEvtsMtx);
     vSemaphoreDelete(inputMtx);
 #endif
@@ -320,6 +323,32 @@ std::vector<std::string> InputEngine::getAxisIDs() const
 	return axisIDs;
 }
 
+bool InputEngine::defineTouchInputDevice(TouchInputDevice* device)
+{
+    for (const auto& data : touchDeviceData) {
+        if (data.dev == device) {
+            return false;
+        }
+    }
+
+    touchDeviceData.emplace_back(device);
+    device->registerInputEngine(this);
+
+    return true;
+}
+
+bool InputEngine::undefineTouchInputDevice(TouchInputDevice* device)
+{
+    for (auto it = touchDeviceData.begin() ; it != touchDeviceData.end() ; ++it) {
+        if (it->dev == device) {
+            device->registerInputEngine(nullptr);
+            touchDeviceData.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
 bool InputEngine::hasButton(const std::string& id)
 {
     return getButtonDef(id) != nullptr;
@@ -377,6 +406,33 @@ float InputEngine::getAxisRaw(const std::string& id)
 {
     AxisDef* def = getAxisDef(id);
     return def ? def->rawValue : 0.0f;
+}
+
+std::vector<InputEngine::TouchPointInfo> InputEngine::getActiveTouchPoints(const TouchInputDevice* dev)
+{
+    if (!dev) {
+        return {};
+    }
+    const TouchInputDeviceData* devData = nullptr;
+    for (const auto& candDevData : touchDeviceData) {
+        if (candDevData.dev == dev) {
+            devData = &candDevData;
+            break;
+        }
+    }
+    if (!devData) {
+        return {};
+    }
+    std::vector<TouchPointInfo> infos;
+    for (const auto& pinfo : devData->activePoints) {
+        infos.push_back(pinfo.info);
+    }
+    return infos;
+}
+
+std::vector<InputEngine::TouchPointInfo> InputEngine::getActiveTouchPoints(const Screen& screen)
+{
+    return getActiveTouchPoints(const_cast<Screen&>(screen).getTouchInputDevice());
 }
 
 bool InputEngine::injectButtonPress(const std::string& id)
@@ -437,6 +493,73 @@ bool InputEngine::injectAxis(const std::string& id, float value)
     return true;
 }
 
+bool InputEngine::injectTouchInputUpdate(TouchInputDevice* dev, const TouchInputDevice::TouchDataPoint& data)
+{
+    lockTouchMutex();
+
+    TouchInputDeviceData* devData = nullptr;
+    for (auto& candDevData : touchDeviceData) {
+        if (candDevData.dev == dev) {
+            devData = &candDevData;
+            break;
+        }
+    }
+    if (!devData) {
+        unlockTouchMutex();
+        return false;
+    }
+
+    auto infoIt = devData->activePoints.end();
+
+    for (auto it = devData->activePoints.begin() ; it != devData->activePoints.end() ; ++it) {
+        if (it->driverID == data.id) {
+            infoIt = it;
+            break;
+        }
+    }
+
+    TouchPointInfoPrivate* info = (infoIt != devData->activePoints.end()) ? &*infoIt : nullptr;
+
+    if (info) {
+        info->info.px = data.px;
+        info->info.py = data.py;
+        info->info.pressure = data.pressure;
+
+        if ((data.flags & TouchInputDevice::TOUCH_DATA_FLAGS_ACTIVE) != 0) {
+            // Touch moved
+            onTouchMove(dev, info);
+        } else {
+            // Touch released
+            info->info.active = false;
+            onTouchEnd(dev, info);
+            devData->activePoints.erase(infoIt);
+        }
+    } else {
+        // Unknown touch ID
+
+        if ((data.flags & TouchInputDevice::TOUCH_DATA_FLAGS_ACTIVE) != 0) {
+            // New touch detected. It could also be the movement of a touch we're simply not aware of. For now, we'll
+            // handle it as a new touch anyway.
+
+            devData->activePoints.emplace_back();
+            info = &devData->activePoints.back();
+
+            info->driverID = data.id;
+            info->info.id = nextTouchID++;
+            info->info.px = data.px;
+            info->info.py = data.py;
+            info->info.pressure = data.pressure;
+            info->info.active = true;
+        } else {
+            // Release of unknown touch -> ignore it
+        }
+    }
+
+    unlockTouchMutex();
+
+    return true;
+}
+
 InputEngine::ButtonDef* InputEngine::getButtonDef(const std::string& id)
 {
     auto it = buttons.find(id);
@@ -452,6 +575,7 @@ InputEngine::AxisDef* InputEngine::getAxisDef(const std::string& id)
 bool InputEngine::debounceButton(ButtonDef* def, bool pressed)
 {
     if (pressed == def->pressed) {
+        def->debounceCount = 0;
         return false;
     }
     if (def->debounceCount++ >= debounceCount) {
@@ -482,6 +606,18 @@ void InputEngine::notifyBeginFrame()
 }
 
 void InputEngine::notifyEndFrame()
+{
+}
+
+void InputEngine::onTouchBegin(TouchInputDevice* dev, TouchPointInfoPrivate* info)
+{
+}
+
+void InputEngine::onTouchEnd(TouchInputDevice* dev, TouchPointInfoPrivate* info)
+{
+}
+
+void InputEngine::onTouchMove(TouchInputDevice* dev, TouchPointInfoPrivate* info)
 {
 }
 

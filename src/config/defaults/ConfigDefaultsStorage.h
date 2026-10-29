@@ -20,19 +20,7 @@
 #endif
 
 #ifndef     MGG_STORAGE_SDCARD_SPI_BUS
-#   define  MGG_STORAGE_SDCARD_SPI_BUS          MGG_BUS_SPI_GP0
-#endif
-
-#ifndef     MGG_STORAGE_SDCARD_PIN_MISO
-#   define  MGG_STORAGE_SDCARD_PIN_MISO         -1
-#endif
-
-#ifndef     MGG_STORAGE_SDCARD_PIN_MOSI
-#   define  MGG_STORAGE_SDCARD_PIN_MOSI         -1
-#endif
-
-#ifndef     MGG_STORAGE_SDCARD_PIN_SCK
-#   define  MGG_STORAGE_SDCARD_PIN_SCK          -1
+#   define  MGG_STORAGE_SDCARD_SPI_BUS          MGG_BUS_SPI_DEFAULT
 #endif
 
 #ifndef     MGG_STORAGE_SDCARD_PIN_CS

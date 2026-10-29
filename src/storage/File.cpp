@@ -17,12 +17,15 @@
 #include <dirent.h>
 #endif
 
+#ifdef _WIN32
+#   include <io.h>
+#endif
+
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 
 #include "StorageEngine.h"
-#include "../util/Log.h"
 
 
 // TODO: Provide proper Windows implementation, without relying on MinGW compat modules.
@@ -81,12 +84,6 @@ bool File::exists() const
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     struct stat st;
     return stat(rpath.c_str(), &st) == 0;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
-        return SD.exists(relPath.c_str());
-    }
-    return false;
 #else
     return false;
 #endif
@@ -101,14 +98,6 @@ bool File::isDirectory() const
         return false;
     }
     return S_ISDIR(st.st_mode);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    ::File f;
-    if (!openSDFile(&f)) {
-        return false;
-    }
-    bool isdir = f.isDirectory();
-    f.close();
-    return isdir;
 #else
     return false;
 #endif
@@ -123,8 +112,6 @@ bool File::isRegularFile() const
         return false;
     }
     return S_ISREG(st.st_mode);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    return !isDirectory();
 #else
     return false;
 #endif
@@ -139,14 +126,8 @@ size_t File::getSize() const
         return 0;
     }
     return static_cast<size_t>(st.st_size);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    ::File f;
-    if (!openSDFile(&f)) {
-        return false;
-    }
-    auto size = f.size();
-    f.close();
-    return static_cast<size_t>(size);
+#else
+    return 0;
 #endif
 }
 
@@ -170,17 +151,6 @@ bool File::listChildren(std::vector<File>& res, bool recursive) const
         res.emplace_back(*this, ent->d_name);
     }
     closedir(dir);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    ::File dir;
-    if (!openSDFile(&dir)) {
-        return false;
-    }
-    ::File entry;
-    while (entry = dir.openNextFile()) {
-        res.emplace_back(*this, entry.name());
-        entry.close();
-    }
-    dir.close();
 #endif
 
     if (recursive) {
@@ -202,12 +172,6 @@ bool File::mkdir()
     return ::mkdir(rpath.c_str()) == 0;
 #elif defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
     return ::mkdir(rpath.c_str(), 0) == 0;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
-        return SD.mkdir(relPath.c_str()) != 0;
-    }
-    return false;
 #endif
 }
 
@@ -216,11 +180,7 @@ bool File::remove()
     const std::string rpath = resolvePath(path);
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     return ::remove(rpath.c_str()) == 0;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    std::string relPath;
-    if (StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
-        return SD.remove(relPath.c_str()) != 0;
-    }
+#else
     return false;
 #endif
 }
@@ -252,32 +212,6 @@ bool File::open(OpenMode mode, const char** outErrmsg)
         return false;
     }
     return true;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    // Arduino does not specify data type of mode parameter, so we won't assume...
-    std::string relPath;
-    if (!StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
-        return false;
-    }
-    switch (mode) {
-    case ReadOnly:
-        fhandle = SD.open(relPath.c_str(), FILE_READ);
-        break;
-    case WriteOnly:
-        if (!remove()) {
-            return false;
-        }
-        fhandle = SD.open(relPath.c_str(), FILE_WRITE);
-        break;
-    case AppendOnly:
-        fhandle = SD.open(relPath.c_str(), FILE_WRITE);
-        break;
-    default:
-        return false;
-    }
-    if (!fhandle) {
-        return false;
-    }
-    return true;
 #else
     return false;
 #endif
@@ -290,11 +224,6 @@ void File::close()
         fclose(fhandle);
         fhandle = nullptr;
     }
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (fhandle) {
-        fhandle.close();
-        fhandle = ::File();
-    }
 #endif
 }
 
@@ -302,8 +231,6 @@ bool File::isOpen() const
 {
 #ifdef MINTGGGAMEENGINE_FILE_IMPL_POSIX
     return fhandle != nullptr;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    return (bool) fhandle;
 #else
     return false;
 #endif
@@ -316,12 +243,6 @@ bool File::flush()
         return false;
     }
     return fflush(fhandle) == 0;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (!fhandle) {
-        return false;
-    }
-    fhandle.flush();
-    return true;
 #else
     return false;
 #endif
@@ -334,15 +255,6 @@ size_t File::read(void* data, size_t size)
         return 0;
     }
     return fread(data, 1, size, fhandle);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (!fhandle) {
-        return 0;
-    }
-    auto res = fhandle.read(reinterpret_cast<uint8_t*>(data), size);
-    if (res < 0) {
-        return 0;
-    }
-    return static_cast<size_t>(res);
 #else
     return 0;
 #endif
@@ -369,11 +281,6 @@ size_t File::write(const void* data, size_t size)
         return 0;
     }
     return fwrite(data, 1, size, fhandle);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (!fhandle) {
-        return 0;
-    }
-    return fhandle.write(reinterpret_cast<const uint8_t*>(data), size);
 #else
     return 0;
 #endif
@@ -391,33 +298,6 @@ int File::printf(const char* format, ...)
     int res = vfprintf(fhandle, format, args);
     va_end(args);
     return res;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    // Adapted from esp32-arduino's Print::vprintf()
-    char stackBuf[128];
-    char* dataBuf = stackBuf;
-    va_list args;
-    va_start(args, format);
-    va_list args2;
-    va_copy(args2, args);
-    int len = vsnprintf(dataBuf, sizeof(stackBuf), format, args);
-    va_end(args);
-    if (len < 0) {
-        va_end(args2);
-        return len;
-    } else if (len >= sizeof(stackBuf)) {
-        dataBuf = new char[len+1];
-        if (!dataBuf) {
-            va_end(args2);
-            return -1;
-        }
-        len = vsnprintf(dataBuf, len+1, format, args2);
-        va_end(args2);
-    }
-    size_t numWritten = write(dataBuf, len);
-    if (dataBuf != stackBuf) {
-        delete[] dataBuf;
-    }
-    return static_cast<int>(numWritten);
 #else
     return 0;
 #endif
@@ -466,19 +346,6 @@ bool File::seek(ssize_t offset, SeekMode mode)
         return false;
     }
     return fseek(fhandle, offset, origin) == 0;
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (!fhandle) {
-        return false;
-    }
-    if (mode == SeekSet) {
-        return fhandle.seek(offset) != 0;
-    } else if (mode == SeekCur) {
-        ssize_t cpos = static_cast<ssize_t>(fhandle.position());
-        return fhandle.seek(cpos+offset) != 0;
-    } else if (mode == SeekEnd) {
-        ssize_t size = static_cast<ssize_t>(fhandle.size());
-        return fhandle.seek(size+offset) != 0;
-    }
 #else
     return false;
 #endif
@@ -491,11 +358,6 @@ ssize_t File::tell()
         return -1;
     }
     return ftell(fhandle);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    if (!fhandle) {
-        return -1;
-    }
-    return static_cast<ssize_t>(fhandle.position());
 #else
     return -1;
 #endif
@@ -531,22 +393,6 @@ bool File::setTextContent(const std::string& content)
     close();
     return true;
 }
-
-#if defined(MINTGGGAMEENGINE_PORT_ARDUINO)  &&  !defined(MINTGGGAMEENGINE_FILE_IMPL_POSIX)
-bool File::openSDFile(::File* outFile) const
-{
-    const std::string rpath = resolvePath(path);
-    std::string relPath;
-    if (!StorageEngine::getInstance().checkSDFilePath(rpath, &relPath)) {
-        return false;
-    }
-    *outFile = SD.open(relPath.c_str());
-    if (!*outFile) {
-        return false;
-    }
-    return true;
-}
-#endif
 
 
 }

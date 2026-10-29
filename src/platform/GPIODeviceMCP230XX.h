@@ -14,7 +14,7 @@
 #include "../Globals.h"
 
 #include "GPIODevice.h"
-#include "MCP2300XDevice.h"
+#include "MCP230XXDevice.h"
 
 
 namespace MINTGGGameEngine
@@ -22,32 +22,27 @@ namespace MINTGGGameEngine
 
 
 /**
- * \brief A GPIODevice that interfaces to an external MCP2300X I2C IO expander.
+ * \brief A GPIODevice that interfaces to an external MCP230XX I2C IO expander.
  *
  * Don't forget to call begin() at startup!
  *
- * For reading multiple pins at one, it is recommended to use readPins(), since
+ * For reading multiple pins at once, it is recommended to use readPins(), since
  * calling readPin() multiple times results in separate I2C messages being sent
  * for each pin.
  *
- * Note that the MCP2300X supports pullups, but no pulldowns, so pin modes of
+ * Note that the MCP230XX supports pullups, but no pulldowns, so pin modes of
  * PULLDOWN or INPUT_PULLDOWN will not work.
  */
-class GPIODeviceMCP2300X : public GPIODevice
+class GPIODeviceMCP230XX : public GPIODevice
 {
 public:
-    GPIODeviceMCP2300X(gpionum_t sclPin, gpionum_t sdaPin, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
-#ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-	GPIODeviceMCP2300X(TwoWire& bus, uint8_t i2cAddr = 0x20);
-#endif
-#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    GPIODeviceMCP2300X(i2c_master_bus_handle_t bus, i2c_master_dev_handle_t dev);
-#endif
+    GPIODeviceMCP230XX(I2CBusMaster* master, uint8_t widthBytes, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
+	GPIODeviceMCP230XX(uint8_t widthBytes, uint32_t clockFreq = 400000, uint8_t i2cAddr = 0x20);
 	
 	/**
 	 * \brief Initializes the MCP2300X.
 	 */
-	void begin();
+	void init();
 
 	bool setPinMode(gpionum_t pin, uint8_t mode) override;
 
@@ -57,7 +52,7 @@ public:
 	void readPins(const gpionum_t* pins, uint8_t* values, size_t numPins) override;
 	
 private:
-	MCP2300XDevice mcp;
+	MCP230XXDevice mcp;
 };
 
 

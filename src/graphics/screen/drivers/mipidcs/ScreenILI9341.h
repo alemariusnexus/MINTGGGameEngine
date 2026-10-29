@@ -12,14 +12,18 @@
 #pragma once
 
 #include "../../../../Globals.h"
-#include "../../../../core/Engine.h"
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#   include "freertos/FreeRTOS.h"
+#   include "freertos/semphr.h"
+#   include "freertos/task.h"
 #   include <driver/spi_master.h>
 #   include <esp_lcd_panel_io.h>
 #   include <esp_lcd_io_i80.h>
 #endif
 
+#include "../../../../core/Engine.h"
+#include "../../../../input/ResTouchScreenInputDevice.h"
 #include "AbstractMIPIDCSScreen.h"
 
 
@@ -66,6 +70,11 @@ public:
             gpionum_t wr;
             gpionum_t rd;
             gpionum_t dat[8];
+
+            gpionum_t touchXm; // Must be an ADC pin
+            gpionum_t touchXp;
+            gpionum_t touchYm;
+            gpionum_t touchYp; // Must be an ADC pin
         } pins;
     };
 
@@ -82,6 +91,10 @@ public:
 
     std::string getModelID() override { return "ili9341"; }
 
+    TouchInputDevice* getTouchInputDevice() override;
+
+    bool isTouchEnabled() const;
+
 protected:
     bool mipiInitBus() override;
     bool mipiWriteCommandPlusData(uint8_t command, const void* data, size_t length) override;
@@ -89,11 +102,27 @@ protected:
     bool doHWReset() override;
 
 private:
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+    bool onColorTransDone(esp_lcd_panel_io_handle_t ioHandle, esp_lcd_panel_io_event_data_t* edata);
+
+    void touchTaskMain();
+    void switchInterface(bool touch);
+    void sampleTouch();
+#endif
+
+private:
     Config cfg;
+
+    ResTouchScreenInputDevice* touchDev;
 
 #ifndef MINTGGGAMEENGINE_PORT_DESKTOP
     esp_lcd_i80_bus_handle_t busHandle;
     esp_lcd_panel_io_handle_t ioHandle;
+    SemaphoreHandle_t mipiWriteSem;
+
+    SemaphoreHandle_t ifaceMtx;
+    TaskHandle_t touchTask;
+    volatile bool touchTaskShutdownRequested;
 #endif
 };
 

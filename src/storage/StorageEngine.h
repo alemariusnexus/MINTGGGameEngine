@@ -15,19 +15,12 @@
 
 #include <string>
 
+#include "../platform/spi/SPIBusMaster.h"
 #include "../util/Log.h"
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-#   include <hal/spi_types.h>
 #   include <nvs_flash.h>
 #   include <esp_vfs_fat.h>
-#endif
-
-#ifndef MINTGGGAMEENGINE_PORT_ESPIDF
-#   ifdef MINTGGGAMEENGINE_PORT_ARDUINO
-#       include <SD.h>
-#       include <SPI.h>
-#   endif
 #endif
 
 #ifdef MINTGGGAMEENGINE_PORT_DESKTOP
@@ -58,25 +51,16 @@ public:
     std::string getConfigDirectory() const;
 
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
-    bool mountSDCard (
+    bool mountSDCardSPI (
         const char* mountPoint,
-        spi_host_device_t spiHost = SPI2_HOST,
+        SPIBusMaster* master,
         gpionum_t csPin = -1,
         uint32_t clkFreq = 20000000
         );
-    void unmountSDCard(const char* mountPoint);
+    void unmountSDCardSPI(const char* mountPoint);
 
     bool mountSPIFFS(const char* mountPoint);
     void unmountSPIFFS(const char* mountPoint);
-#elif defined(MINTGGGAMEENGINE_PORT_ARDUINO)
-    bool mountSDCard (
-        const char* mountPoint,
-        SPIClass& spi = SPI,
-        gpionum_t csPin = -1
-        );
-    void unmountSDCard(const char* mountPoint);
-
-    bool checkSDFilePath(const std::string& path, std::string* outRelPath);
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)
     bool mountPath(const char* mountPoint, const char* targetPath);
     bool mountStandardPath(const char* mountPoint, const char* targetDirName);

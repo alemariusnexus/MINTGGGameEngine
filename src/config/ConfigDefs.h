@@ -20,15 +20,17 @@
 
 // ********** BUS **********
 
-#define MGG_BUS_I2C_GP0     0
-#define MGG_BUS_I2C_GP1     1
-#define MGG_BUS_I2C_GP2     2
-#define MGG_BUS_I2C_GP3     3
+#define MGG_BUS_I2C_0           0
+#define MGG_BUS_I2C_1           1
+#define MGG_BUS_I2C_2           2
+#define MGG_BUS_I2C_3           3
+#define MGG_BUS_I2C_MAX_BUSES   4
 
-#define MGG_BUS_SPI_GP0     0
-#define MGG_BUS_SPI_GP1     1
-#define MGG_BUS_SPI_GP2     2
-#define MGG_BUS_SPI_GP3     3
+#define MGG_BUS_SPI_0           0
+#define MGG_BUS_SPI_1           1
+#define MGG_BUS_SPI_2           2
+#define MGG_BUS_SPI_3           3
+#define MGG_BUS_SPI_MAX_BUSES   4
 
 
 // ********** SCREEN **********
