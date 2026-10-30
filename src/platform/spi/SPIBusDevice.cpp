@@ -76,7 +76,7 @@ bool SPIBusDevice::transmit(const uint8_t* data, size_t dataSize)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     spi_transaction_t trans = {
         .flags = 0,
-        .length = dataSize * sizeof(uint8_t),
+        .length = dataSize * 8,
         .tx_buffer = data,
         .rx_buffer = nullptr
     };

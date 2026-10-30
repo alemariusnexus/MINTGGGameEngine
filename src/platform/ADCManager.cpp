@@ -22,6 +22,19 @@ namespace MINTGGGameEngine
 {
 
 
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+static const adc_unit_t ADCUnitsESPIDF[] = {
+    ADC_UNIT_1
+
+    // Quote from ESP-IDF documentation for ESP32C3 specifically:
+    // "ADC2 oneshot mode is no longer supported, due to hardware limitations"
+#ifndef MINTGGGAMEENGINE_CHIP_ESP32C3
+    , ADC_UNIT_2
+#endif
+};
+#endif
+
+
 ADCManager& ADCManager::getInstance()
 {
     static ADCManager inst;
@@ -40,7 +53,7 @@ bool ADCManager::begin()
         return false;
     }
 
-    for (const adc_unit_t adcUnit : {ADC_UNIT_1, ADC_UNIT_2}) {
+    for (const adc_unit_t adcUnit : ADCUnitsESPIDF) {
         setupADCInst(adcUnit);
 
         ADCUnitConfig& adcUnitCfg = adcUnitConfigs[adcUnit];
@@ -90,7 +103,7 @@ void ADCManager::shutdown()
         return;
     }
 
-    for (const adc_unit_t adcUnit : {ADC_UNIT_1, ADC_UNIT_2}) {
+    for (const adc_unit_t adcUnit : ADCUnitsESPIDF) {
         auto it = adcUnitConfigs.find(adcUnit);
         if (it == adcUnitConfigs.end()) {
             continue;

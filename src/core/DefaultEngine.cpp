@@ -69,7 +69,8 @@ void DefaultEngine::initConfig(SetupConfig& cfg)
     cfg.appName = MGG_APP_NAME;
 
     cfg.sdCardMountPoint = MGG_STORAGE_SDCARD_MOUNT_POINT;
-    cfg.sdCardSPIBusMaster = HardwareManager::instance().getSPIBus(MGG_STORAGE_SDCARD_SPI_BUS);
+    cfg.sdCardSPIBusMaster = nullptr;
+    cfg.sdCardSPIBusMasterID = MGG_STORAGE_SDCARD_SPI_BUS;
     cfg.internalStorageMountPoint = MGG_STORAGE_INTERNAL_MOUNT_POINT;
 
     cfg.pins.sdcard.cs = MGG_STORAGE_SDCARD_PIN_CS;
@@ -516,7 +517,9 @@ bool DefaultEngine::mountSDCard(SetupConfig* cfg)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
         sdMountOk = game->storage().mountSDCardSPI (
             cfg->sdCardMountPoint,
-            cfg->sdCardSPIBusMaster,
+            cfg->sdCardSPIBusMaster
+                ? cfg->sdCardSPIBusMaster
+                : HardwareManager::instance().getSPIBus(cfg->sdCardSPIBusMasterID),
             cfg->pins.sdcard.cs
             );
 #elif defined(MINTGGGAMEENGINE_PORT_DESKTOP)

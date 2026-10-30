@@ -127,6 +127,9 @@ bool StorageEngine::mountSDCardSPI (
     if (!mountPoint) {
         return false;
     }
+    if (!master) {
+        return false;
+    }
     if (csPin < 0) {
         return false;
     }

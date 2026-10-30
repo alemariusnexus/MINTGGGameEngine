@@ -14,6 +14,7 @@
 #include "../Globals.h"
 
 #include "../platform/spi/SPIBusMaster.h"
+#include "../platform/HardwareManager.h"
 #include "Engine.h"
 #include "Game.h"
 
@@ -81,7 +82,8 @@ public:
          */
         const char* sdCardMountPoint;
 
-        SPIBusMaster* sdCardSPIBusMaster;
+        SPIBusMaster* sdCardSPIBusMaster; // If null, use sdCardSPIBusMasterID instead
+        spibus_id_t sdCardSPIBusMasterID;
 
         /**
          * \brief Mount point for internal storage (e.g. SPIFFS for ESP32).

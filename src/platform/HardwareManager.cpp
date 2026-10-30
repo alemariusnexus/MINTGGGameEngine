@@ -51,9 +51,9 @@ void HardwareManager::shutdown()
 bool HardwareManager::initI2C()
 {
     return  initI2CBus(MGG_BUS_I2C_0, {.sclPin = MGG_BUS_I2C_0_PIN_SCL, .sdaPin = MGG_BUS_I2C_0_PIN_SDA})
-        &&  initI2CBus(MGG_BUS_I2C_1, {.sclPin = MGG_BUS_I2C_0_PIN_SCL, .sdaPin = MGG_BUS_I2C_0_PIN_SDA})
-        &&  initI2CBus(MGG_BUS_I2C_2, {.sclPin = MGG_BUS_I2C_0_PIN_SCL, .sdaPin = MGG_BUS_I2C_0_PIN_SDA})
-        &&  initI2CBus(MGG_BUS_I2C_3, {.sclPin = MGG_BUS_I2C_0_PIN_SCL, .sdaPin = MGG_BUS_I2C_0_PIN_SDA});
+        &&  initI2CBus(MGG_BUS_I2C_1, {.sclPin = MGG_BUS_I2C_1_PIN_SCL, .sdaPin = MGG_BUS_I2C_1_PIN_SDA})
+        &&  initI2CBus(MGG_BUS_I2C_2, {.sclPin = MGG_BUS_I2C_2_PIN_SCL, .sdaPin = MGG_BUS_I2C_2_PIN_SDA})
+        &&  initI2CBus(MGG_BUS_I2C_3, {.sclPin = MGG_BUS_I2C_3_PIN_SCL, .sdaPin = MGG_BUS_I2C_3_PIN_SDA});
 }
 
 void HardwareManager::shutdownI2C()
