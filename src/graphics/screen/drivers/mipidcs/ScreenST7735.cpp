@@ -217,8 +217,13 @@ bool ScreenST7735::mipiInitBus()
         gpio_set_level(static_cast<gpio_num_t>(cfg.pins.rst), 1);
     }
 
-    spiDev = cfg.spiBusMaster->addDevice(cfg.pins.cs, cfg.clockFreqHz, 0);
+    int devFlags = 0;
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    devFlags |= SPIBusDevice::FLAG_ESPIDF_NO_DUMMY;
+#endif
+    spiDev = cfg.spiBusMaster->addDevice(cfg.pins.cs, cfg.clockFreqHz, devFlags);
     if (!spiDev) {
+        LogError("Error adding SPI device: %s", cfg.spiBusMaster->getLastErrorMessage().c_str());
         return false;
     }
 

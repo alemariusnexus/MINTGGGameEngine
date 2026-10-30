@@ -29,9 +29,37 @@
 
 LOG_USE_TAG("ScreenILI9341")
 
+//esp_lcd_new_i80_bus
 
 #ifndef MINTGGGAMEENGINE_CHIP_ESP32C3
 #   define LCD_I80_DRIVER_SUPPORTED
+#endif
+
+// Figure out if the LCDCAM or I2S implementation is used (they are currently mutually exclusive
+#ifndef MINTGGGAMEENGINE_PORT_DESKTOP
+#ifdef LCD_I80_DRIVER_SUPPORTED
+#   if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+#       if defined(SOC_I2S_I80_LCD_SUPPORTED)  &&  defined(SOC_LCDCAM_I80_LCD_SUPPORTED)
+#           error "Can't figure out which I80 driver implementation is used!"
+#       elif defined(SOC_I2S_I80_LCD_SUPPORTED)
+#           define LCD_I80_DRIVER_IMPL_I2S
+#       elif defined(SOC_LCDCAM_I80_LCD_SUPPORTED)
+#           define LCD_I80_DRIVER_IMPL_LCDCAM
+#       else
+#           error "Unknown I80 driver implementation!"
+#       endif
+#   else
+#       if defined(SOC_I2S_SUPPORTS_LCD_CAMERA)  &&  defined(SOC_LCDCAM_I80_LCD_SUPPORTED)
+#           error "Can't figure out which I80 driver implementation is used!"
+#       elif defined(SOC_I2S_SUPPORTS_LCD_CAMERA)
+#           define LCD_I80_DRIVER_IMPL_I2S
+#       elif defined(SOC_LCDCAM_I80_LCD_SUPPORTED)
+#           define LCD_I80_DRIVER_IMPL_LCDCAM
+#       else
+#           error "Unknown I80 driver implementation!"
+#       endif
+#   endif
+#endif
 #endif
 
 #define LCD_PERIPH_MAX_TRANSFER_BYTES   (10*320*2+1)
@@ -651,16 +679,39 @@ void ScreenILI9341::switchInterface(bool touch)
 
         // This is necessary for the I80 driver. It mirrors what lcd_i80_bus_configure_gpio() does internally. That's
         // more implementation details than I'd like to have here, but seems like the best option right now.
+        // TODO: Test all these combinations. What a mess...
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+#   ifdef LCD_I80_DRIVER_IMPL_LCDCAM
         esp_rom_gpio_connect_out_signal(cfg.pins.touchXm, soc_lcd_i80_signals[busID].cs_sig, false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, soc_lcd_i80_signals[busID].data_sigs[1], false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, soc_lcd_i80_signals[busID].data_sigs[0], false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchYp, soc_lcd_i80_signals[busID].dc_sig, false, false);
+#   elif defined(LCD_I80_DRIVER_IMPL_I2S)
+        // NOTE: CS and DC are software-controlled in the I2S implementation
+#       if I2S_LL_GET(TRANS_SIZE_ALIGN_WORD)
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, soc_lcd_i2s_signals[busID].data_sigs[1 + 8], false, false);
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, soc_lcd_i2s_signals[busID].data_sigs[0 + 8], false, false);
+#       else
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, soc_lcd_i2s_signals[busID].data_sigs[1 + I2S_LL_GET(BUS_WIDTH) - 8], false, false);
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, soc_lcd_i2s_signals[busID].data_sigs[0 + I2S_LL_GET(BUS_WIDTH) - 8], false, false);
+#       endif
+#endif
 #else
+#   ifdef LCD_I80_DRIVER_IMPL_LCDCAM
         esp_rom_gpio_connect_out_signal(cfg.pins.touchXm, lcd_periph_i80_signals.buses[busID].cs_sig, false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, lcd_periph_i80_signals.buses[busID].data_sigs[1], false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, lcd_periph_i80_signals.buses[busID].data_sigs[0], false, false);
         esp_rom_gpio_connect_out_signal(cfg.pins.touchYp, lcd_periph_i80_signals.buses[busID].dc_sig, false, false);
+#   elif defined(LCD_I80_DRIVER_IMPL_I2S)
+        // NOTE: CS and DC are software-controlled in the I2S implementation
+#       if SOC_I2S_TRANS_SIZE_ALIGN_WORD
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, lcd_periph_i2s_signals.buses[busID].data_sigs[1 + 8], false, false);
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, lcd_periph_i2s_signals.buses[busID].data_sigs[0 + 8], false, false);
+#       else
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchXp, lcd_periph_i2s_signals.buses[busID].data_sigs[1 + SOC_I2S_MAX_DATA_WIDTH - 8], false, false);
+        esp_rom_gpio_connect_out_signal(cfg.pins.touchYm, lcd_periph_i2s_signals.buses[busID].data_sigs[0 + SOC_I2S_MAX_DATA_WIDTH - 8], false, false);
+#       endif
+#   endif
 #endif
 #endif
     }

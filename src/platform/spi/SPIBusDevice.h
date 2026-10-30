@@ -29,6 +29,9 @@ class SPIBusDevice
 public:
     enum Flags
     {
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+        FLAG_ESPIDF_NO_DUMMY    = 0x10000
+#endif
     };
 
 public:

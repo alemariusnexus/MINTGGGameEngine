@@ -49,9 +49,11 @@ SPIBusMaster::~SPIBusMaster()
 bool SPIBusMaster::init()
 {
     if (isInitialized()) {
+        resetError();
         return true;
     }
-    if (!isValid()) {
+    if (sckPin < 0) {
+        resetError();
         return true;
     }
 
@@ -68,28 +70,32 @@ bool SPIBusMaster::init()
 
     esp_err_t res = spi_bus_initialize(espidf.host, &busCfg, SPI_DMA_CH_AUTO);
     if (res != ESP_OK) {
-        LogError("Error initializing SPI bus: %s", esp_err_to_name(res));
+        setError(esp_err_to_name(res));
         return false;
     }
 #endif
 
     initialized = true;
 
+    resetError();
     return true;
 }
 
 SPIBusDevice* SPIBusMaster::addDevice(gpionum_t csPin, uint32_t clockFreqHz, int flags)
 {
     if (!isValid()) {
+        setError("master not valid");
         return nullptr;
     }
 
     auto dev = new SPIBusDevice(this, csPin, clockFreqHz, flags);
     if (!dev->init()) {
+        setError(dev->getLastErrorMessage());
         delete dev;
         return nullptr;
     }
     devices.push_back(dev);
+    resetError();
     return dev;
 }
 

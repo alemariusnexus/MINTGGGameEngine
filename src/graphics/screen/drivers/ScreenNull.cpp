@@ -11,6 +11,7 @@
 
 #include "ScreenNull.h"
 
+#include "../../../platform/PlatformManager.h"
 #include "../../../util/Util.h"
 
 LOG_USE_TAG("ScreenNull")
@@ -25,7 +26,10 @@ ScreenNull::ScreenNull(uint16_t width, uint16_t height)
         PixelFormat::RGB565,
         ByteOrder::Native,
         AdvancedAlignedAlloc(16, width * height * sizeof(uint16_t),
-            ADVANCED_ALLOC_FLAG_UNALIGNED_ACCESS | ADVANCED_ALLOC_FLAG_DMA_ACCESSIBLE | ADVANCED_ALLOC_FLAG_EXTERNAL_RAM),
+            ADVANCED_ALLOC_FLAG_UNALIGNED_ACCESS | ADVANCED_ALLOC_FLAG_DMA_ACCESSIBLE
+                | (PlatformManager::getInstance().hasExternalRAM()
+                    ? ADVANCED_ALLOC_FLAG_EXTERNAL_RAM
+                    : ADVANCED_ALLOC_FLAG_INTERNAL_RAM)),
         width,
         height,
         &AdvancedFree

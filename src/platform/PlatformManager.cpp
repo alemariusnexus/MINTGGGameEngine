@@ -183,6 +183,15 @@ void* PlatformManager::allocDataBuffer(size_t size, uint32_t flags)
     return malloc(size);
 }
 
+bool PlatformManager::hasExternalRAM() const
+{
+#ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    return heap_caps_get_total_size(MALLOC_CAP_SPIRAM) != 0;
+#else
+    return false;
+#endif
+}
+
 
 #ifdef MINTGGGAMEENGINE_ESP_ASYNC_MEMCPY_SUPPORTED
 

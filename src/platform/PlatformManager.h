@@ -58,6 +58,8 @@ public:
 
     void* allocDataBuffer(size_t size, uint32_t flags);
 
+    bool hasExternalRAM() const;
+
 private:
     bool setupFastMemcpy();
     void shutdownFastMemcpy();

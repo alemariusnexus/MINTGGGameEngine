@@ -45,11 +45,15 @@ bool SPIBusDevice::isValid() const
 bool SPIBusDevice::init()
 {
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
+    uint32_t devFlags = 0;
+    if ((flags & FLAG_ESPIDF_NO_DUMMY) != 0) {
+        devFlags |= SPI_DEVICE_NO_DUMMY;
+    }
     spi_device_interface_config_t devCfg = {
         .mode = 0,
         .clock_speed_hz = static_cast<int>(clockFreqHz),
         .spics_io_num = csPin,
-        /*.flags = SPI_DEVICE_NO_DUMMY,*/
+        .flags = devFlags,
         .queue_size = 8
     };
     esp_err_t res = spi_bus_add_device(master->getESPIDFHost(), &devCfg, &espidf.dev);

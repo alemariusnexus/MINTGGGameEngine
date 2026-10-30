@@ -127,7 +127,10 @@ bool HardwareManager::initSPIBus(spibus_id_t id, const SPIBusConfig& cfg)
 #ifdef MINTGGGAMEENGINE_PORT_ESPIDF
     spiBusData[id].master->setESPIDFHost(cfg.espidf.host);
 #endif
-    spiBusData[id].master->init();
+    if (!spiBusData[id].master->init()) {
+        LogError("Error initializing BUS_SPI_%u: %s", id, spiBusData[id].master->getLastErrorMessage().c_str());
+        return false;
+    }
     if (spiBusData[id].master->isValid()) {
         LogInfo("Initialized BUS_SPI_%u (miso: %d, mosi: %d, sck: %d, maxTrfSize: %llu)",
             id,
